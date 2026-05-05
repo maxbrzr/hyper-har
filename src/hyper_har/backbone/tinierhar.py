@@ -2,6 +2,7 @@ from typing import List
 
 import torch
 import torch.nn as nn
+from hyper_har.config import BackboneConfig
 
 
 class DepthwiseSeparableConv(nn.Module):
@@ -97,20 +98,27 @@ class TinierHAR(nn.Module):
         num_channels: int,
         num_classes: int,
         window_size: int,
-        nb_conv_blocks: int = 4,
-        nb_filters: int = 4,
-        nb_units_gru: int = 16,
-        drop_prob: float = 0.3,
-    ):
+        nb_conv_blocks: int | None = None,
+        nb_filters: int | None = None,
+        nb_units_gru: int | None = None,
+        drop_prob: float | None = None,
+        backbone_config: BackboneConfig | None = None,
+    ) -> None:
         super().__init__()
+        cfg = backbone_config or BackboneConfig()
+
         self.input_channels = num_channels
         self.seq_length = window_size
         self.nb_classes = num_classes
 
-        self.nb_conv_blocks = nb_conv_blocks
-        self.nb_units_gru = nb_units_gru
-        self.nb_filters = nb_filters
-        self.drop_prob = drop_prob
+        self.nb_conv_blocks = (
+            nb_conv_blocks if nb_conv_blocks is not None else cfg.nb_conv_blocks
+        )
+        self.nb_units_gru = (
+            nb_units_gru if nb_units_gru is not None else cfg.nb_units_gru
+        )
+        self.nb_filters = nb_filters if nb_filters is not None else cfg.nb_filters
+        self.drop_prob = drop_prob if drop_prob is not None else cfg.drop_prob
 
         conv_blocks: List[nn.Module] = []
         conv_blocks.append(

@@ -2,6 +2,7 @@ import torch
 from torch import nn
 
 from hyper_har.backbone.tinierhar import TinierHAR
+from hyper_har.config import SetEncoderConfig
 
 
 class AttentionSetEncoder(nn.Module):
@@ -9,11 +10,18 @@ class AttentionSetEncoder(nn.Module):
         self,
         backbone: TinierHAR,
         num_classes: int,
-        label_embed_dim: int = 32,
-        hidden_dim: int = 64,
-        num_heads: int = 4,
+        label_embed_dim: int | None = None,
+        hidden_dim: int | None = None,
+        num_heads: int | None = None,
+        set_encoder_config: SetEncoderConfig | None = None,
     ) -> None:
         super().__init__()
+        cfg = set_encoder_config or SetEncoderConfig()
+        label_embed_dim = (
+            label_embed_dim if label_embed_dim is not None else cfg.label_embed_dim
+        )
+        hidden_dim = hidden_dim if hidden_dim is not None else cfg.hidden_dim
+        num_heads = num_heads if num_heads is not None else cfg.num_heads
         self.backbone = backbone
         self.num_classes = num_classes
 

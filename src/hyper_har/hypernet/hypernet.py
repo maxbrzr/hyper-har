@@ -4,6 +4,7 @@ from typing import Dict, Tuple
 
 import torch
 import torch.nn as nn
+from hyper_har.config import BackboneConfig, HyperNetConfig, SetEncoderConfig
 
 
 class MLPResidualBlock(nn.Module):
@@ -98,13 +99,31 @@ class HyperNet(nn.Module):
         self,
         num_channels: int,  # number of sensors
         num_classes: int,
-        set_encoder_hidden_dim: int = 64,  # From PrototypicalSetEncoder
-        nb_filters: int = 4,  # From TinierHAR
-        nb_units_gru: int = 16,  # From TinierHAR
-        lora_rank: int = 8,
-        dropout: float = 0.05,
+        set_encoder_hidden_dim: int | None = None,  # From PrototypicalSetEncoder
+        nb_filters: int | None = None,  # From TinierHAR
+        nb_units_gru: int | None = None,  # From TinierHAR
+        lora_rank: int | None = None,
+        dropout: float | None = None,
+        backbone_config: BackboneConfig | None = None,
+        set_encoder_config: SetEncoderConfig | None = None,
+        hypernet_config: HyperNetConfig | None = None,
     ) -> None:
         super().__init__()
+        backbone_cfg = backbone_config or BackboneConfig()
+        set_encoder_cfg = set_encoder_config or SetEncoderConfig()
+        hypernet_cfg = hypernet_config or HyperNetConfig()
+
+        set_encoder_hidden_dim = (
+            set_encoder_hidden_dim
+            if set_encoder_hidden_dim is not None
+            else set_encoder_cfg.hidden_dim
+        )
+        nb_filters = nb_filters if nb_filters is not None else backbone_cfg.nb_filters
+        nb_units_gru = (
+            nb_units_gru if nb_units_gru is not None else backbone_cfg.nb_units_gru
+        )
+        lora_rank = lora_rank if lora_rank is not None else hypernet_cfg.lora_rank
+        dropout = dropout if dropout is not None else hypernet_cfg.dropout
         self.lora_rank = lora_rank
 
         # Calculate exactly what the set encoder outputs
