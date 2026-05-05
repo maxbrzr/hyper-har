@@ -8,7 +8,6 @@ from pathlib import Path
 import torch
 from whar_datasets import (
     Loader,
-    LOSOSplitter,
     PostProcessingPipeline,
     PreProcessingPipeline,
     TorchAdapter,
@@ -18,6 +17,7 @@ from whar_datasets import (
 
 from hyper_har.backbone.tinierhar import TinierHAR
 from hyper_har.config import DEFAULT_CONFIG
+from hyper_har.splitting import MetaLOSOSplitter
 from hyper_har.training.trainer import TinierHARTrainer, TrainerConfig
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,6 +29,31 @@ if str(SRC) not in sys.path:
 # Script-level run settings
 DATASET_ID = WHARDatasetID.WEAR
 OUTPUT_DIR = ROOT / "artifacts" / "loso_cv"
+
+
+def _is_completed_split(split_dir: Path) -> bool:
+    required_files = [
+        split_dir / "best_tinierhar.pt",
+        split_dir / "metrics.json",
+        split_dir / "history.json",
+        split_dir / "confusion_matrix.pt",
+        split_dir / "confusion_matrix.png",
+    ]
+    return all(path.exists() for path in required_files)
+
+
+def _load_existing_metrics(split_dir: Path) -> dict[str, float | int | str] | None:
+    metrics_path = split_dir / "metrics.json"
+    if not metrics_path.exists():
+        return None
+    try:
+        with metrics_path.open("r", encoding="utf-8") as f:
+            payload = json.load(f)
+        if isinstance(payload, dict):
+            return payload
+    except (json.JSONDecodeError, OSError):
+        return None
+    return None
 
 
 def _infer_window_size_from_batch(batch: object) -> int:
@@ -110,6 +135,30 @@ def _fetch_class_weights(
     return weights
 
 
+def _subject_id_from_split_identifier(identifier: str, fallback: int) -> int:
+    prefix = "subject_"
+    if identifier.startswith(prefix):
+        raw = identifier[len(prefix) :]
+        if raw.isdigit():
+            return int(raw)
+    return fallback
+
+
+def _subject_ids_for_indices(loader: Loader, indices: list[int]) -> list[int]:
+    if len(indices) == 0:
+        return []
+    subset = loader.window_df.loc[list(indices), ["session_id"]].copy()
+    session_meta = (
+        loader.session_df[["session_id", "subject_id"]]
+        .drop_duplicates("session_id")
+        .set_index("session_id")
+    )
+    merged = subset.join(session_meta, on="session_id", how="left")
+    if merged["subject_id"].isna().any():
+        raise ValueError("Missing subject_id while inferring split debug info.")
+    return sorted(set(int(x) for x in merged["subject_id"].tolist()))
+
+
 def main() -> None:
     cfg = get_dataset_cfg(DATASET_ID, datasets_dir=str(ROOT / "datasets"))
     train_cfg = DEFAULT_CONFIG.training
@@ -118,18 +167,37 @@ def main() -> None:
     pre_pipeline = PreProcessingPipeline(cfg)
     _, session_df, window_df = pre_pipeline.run()
 
-    splitter = LOSOSplitter(cfg)
-    splits = splitter.get_splits(session_df, window_df)
+    splitter = MetaLOSOSplitter(cfg)
+    folds = splitter.get_folds(session_df, window_df)
     summary_rows: list[dict[str, float | int | str]] = []
 
-    for split_idx, split in enumerate(splits):
-        subject_id = getattr(split, "test_subject_id", split_idx)
+    for split_idx, fold in enumerate(folds):
+        split = fold.pretrain_split
+        subject_id = _subject_id_from_split_identifier(split.identifier, split_idx)
         split_dir = OUTPUT_DIR / f"subject_{subject_id}"
         split_dir.mkdir(parents=True, exist_ok=True)
 
         print(
-            f"\n=== LOSO split {split_idx + 1}/{len(splits)} | subject={subject_id} ==="
+            f"\n=== LOSO split {split_idx + 1}/{len(folds)} | subject={subject_id} ==="
         )
+        print(
+            "Excluded meta-val subjects for pretraining: "
+            f"{sorted(fold.meta_val_subject_ids)}"
+        )
+
+        if _is_completed_split(split_dir):
+            existing = _load_existing_metrics(split_dir)
+            if existing is not None:
+                summary_rows.append(existing)
+                print(
+                    "Found existing completed artifacts, skipping training/evaluation for "
+                    f"subject {subject_id}."
+                )
+                continue
+            print(
+                "Found completed artifacts but could not parse metrics.json; "
+                f"retraining subject {subject_id}."
+            )
 
         post_pipeline = PostProcessingPipeline(
             cfg, pre_pipeline, window_df, split.train_indices
@@ -137,6 +205,15 @@ def main() -> None:
         samples = post_pipeline.run()
 
         loader = Loader(session_df, window_df, post_pipeline.samples_dir, samples)
+        train_subject_ids = _subject_ids_for_indices(loader, split.train_indices)
+        val_subject_ids = _subject_ids_for_indices(loader, split.val_indices)
+        test_subject_ids = _subject_ids_for_indices(loader, split.test_indices)
+        print(
+            "Pretrain split subjects "
+            f"(train/val/test)={len(train_subject_ids)}/{len(val_subject_ids)}/{len(test_subject_ids)} "
+            f"| train={train_subject_ids} val={val_subject_ids} test={test_subject_ids} "
+            f"| excluded_meta_val={sorted(fold.meta_val_subject_ids)}"
+        )
         adapter = TorchAdapter(cfg, loader, split)
         dataloaders = adapter.get_dataloaders(batch_size=train_cfg.batch_size)
 

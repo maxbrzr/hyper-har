@@ -79,10 +79,25 @@ class AttentionSetEncoder(nn.Module):
                 self.class_queries[c].unsqueeze(0).expand(B, -1, -1)
             )  # (B, 1, hidden_dim)
 
-            # Apply Cross-Attention: Q=query, K=z, V=z
-            attn_out, _ = self.mha(
-                query, z, z, key_padding_mask=key_padding_mask
-            )  # Output shape: (B, 1, hidden_dim)
+            # If all entries are masked for a given subject/class pair, MHA can produce NaNs.
+            # Compute attention only for valid rows and keep a zero fallback otherwise.
+            valid_rows = ~key_padding_mask.all(dim=1)  # (B,)
+            attn_out = torch.zeros(
+                (B, 1, z.size(-1)),
+                device=z.device,
+                dtype=z.dtype,
+            )
+            if valid_rows.any():
+                attn_valid, _ = self.mha(
+                    query[valid_rows],
+                    z[valid_rows],
+                    z[valid_rows],
+                    key_padding_mask=key_padding_mask[valid_rows],
+                )  # (B_valid, 1, hidden_dim)
+                attn_out[valid_rows] = attn_valid
+
+            # Extra guard against downstream NaN propagation from numerical edge cases.
+            attn_out = torch.nan_to_num(attn_out, nan=0.0, posinf=0.0, neginf=0.0)
 
             # Remove the sequence dimension length of 1
             class_representations.append(attn_out.squeeze(1))  # (B, hidden_dim)
