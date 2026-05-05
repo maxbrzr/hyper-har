@@ -1,7 +1,5 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 import pandas as pd
 from whar_datasets.config.config import WHARConfig
@@ -51,6 +49,9 @@ class MetaLOSOSplitter(Splitter):
             else pretrain_val_percentage
         )
 
+        # Add cache to prevent RNG advancement bugs on multiple calls
+        self._cached_folds: Optional[List[MetaLOSOFold]] = None
+
     @staticmethod
     def _indices_for_subjects(
         session_df: pd.DataFrame, window_df: pd.DataFrame, subject_ids: List[int]
@@ -85,7 +86,14 @@ class MetaLOSOSplitter(Splitter):
         session_df: pd.DataFrame,
         window_df: pd.DataFrame,
     ) -> List[MetaLOSOFold]:
-        subject_ids = [int(x) for x in (self.subject_ids or session_df["subject_id"].unique().tolist())]
+        # Return cached folds if already generated to maintain exact split alignment
+        if self._cached_folds is not None:
+            return self._cached_folds
+
+        subject_ids = [
+            int(x)
+            for x in (self.subject_ids or session_df["subject_id"].unique().tolist())
+        ]
         folds: List[MetaLOSOFold] = []
 
         for test_subject_id in subject_ids:
@@ -98,8 +106,10 @@ class MetaLOSOSplitter(Splitter):
             meta_train_subjects, meta_val_subjects = self._subject_level_partition(
                 self.rng, remaining_subjects, self.meta_val_percentage
             )
-            pretrain_train_subjects, pretrain_val_subjects = self._subject_level_partition(
-                self.rng, meta_train_subjects, self.pretrain_val_percentage
+            pretrain_train_subjects, pretrain_val_subjects = (
+                self._subject_level_partition(
+                    self.rng, meta_train_subjects, self.pretrain_val_percentage
+                )
             )
 
             test_indices = self._indices_for_subjects(
@@ -132,7 +142,9 @@ class MetaLOSOSplitter(Splitter):
             )
 
             assert not self._check_indices_overlap(
-                meta_split.train_indices, meta_split.val_indices, meta_split.test_indices
+                meta_split.train_indices,
+                meta_split.val_indices,
+                meta_split.test_indices,
             ), "Overlap detected in meta split indices!"
             assert not self._check_indices_overlap(
                 pretrain_split.train_indices,
@@ -153,6 +165,8 @@ class MetaLOSOSplitter(Splitter):
                 )
             )
 
+        # Cache the folds before returning
+        self._cached_folds = folds
         return folds
 
     def get_splits(
