@@ -167,7 +167,10 @@ class TinierHAR(nn.Module):
             nn.Linear(2 * self.nb_units_gru, self.nb_classes)
         )
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def number_of_parameters(self) -> int:
+        return sum(p.numel() for p in self.parameters() if p.requires_grad)
+
+    def encode(self, x: torch.Tensor) -> torch.Tensor:
         # Input x: (batch, 1, window_size, num_channels)
 
         x = self.conv_blocks(x)
@@ -189,7 +192,15 @@ class TinierHAR(nn.Module):
         x = torch.sum(attn_weights * x, dim=1)
         # x: (batch, 2 * nb_units_gru)
 
-        return self.classifier(x)
+        return x
 
-    def number_of_parameters(self) -> int:
-        return sum(p.numel() for p in self.parameters() if p.requires_grad)
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # x: (batch, 1, window_size, num_channels)
+
+        x = self.encode(x)
+        # x: (batch, 2 * nb_units_gru)
+
+        logits = self.classifier(x)
+        # logits: (batch, num_classes)
+
+        return logits
