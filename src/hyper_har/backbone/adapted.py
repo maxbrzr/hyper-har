@@ -26,12 +26,20 @@ class TinierHARWrapper(nn.Module):
         tinierhar: TinierHAR,
         adapters: AdapterDict | None = None,
         adapter_index: int = 0,
+        lora_alpha: float = 1.0,
+        lora_rank: int = 8,
+        lora_scale: float | None = None,
         copy_backbone: bool = True,
     ) -> None:
         super().__init__()
         self.model = copy.deepcopy(tinierhar) if copy_backbone else tinierhar
         self.adapters = adapters
         self.adapter_index = adapter_index
+        self.lora_scale = (
+            float(lora_scale)
+            if lora_scale is not None
+            else float(lora_alpha / max(1, lora_rank))
+        )
         self.target_param_names = {
             "conv1_pointwise": "conv_blocks.0.conv.0.pointwise.weight",
             "conv_last_pointwise": (
@@ -42,10 +50,9 @@ class TinierHARWrapper(nn.Module):
             "classifier": "classifier.0.weight",
         }
 
-    @staticmethod
-    def _compute_delta(A: torch.Tensor, B: torch.Tensor) -> torch.Tensor:
+    def _compute_delta(self, A: torch.Tensor, B: torch.Tensor) -> torch.Tensor:
         # Linear LoRA delta: B(out, r) @ A(r, in) -> (out, in)
-        return B @ A
+        return (B @ A) * self.lora_scale
 
     def _select_pair(
         self, name: str, adapters: AdapterDict, expected_dims: tuple[int, int]

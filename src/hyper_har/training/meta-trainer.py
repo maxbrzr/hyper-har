@@ -73,6 +73,10 @@ class SetToLoRAMetaTrainer:
 
         self._param_names = set(dict(self.base_model.named_parameters()).keys())
         self._buffers = dict(self.base_model.named_buffers())
+        self.lora_rank = int(getattr(self.hypernet, "lora_rank", 1))
+        default_alpha = float(self.lora_rank)
+        self.lora_alpha = float(getattr(self.hypernet, "lora_alpha", default_alpha))
+        self.lora_scale = float(self.lora_alpha / max(1, self.lora_rank))
         self.target_param_names: Dict[str, str] = {
             "conv1_pointwise": "conv_blocks.0.conv.0.pointwise.weight",
             "conv_last_pointwise": (
@@ -261,7 +265,9 @@ class SetToLoRAMetaTrainer:
                     f"Delta shape mismatch for {adapter_name}: "
                     f"delta={tuple(delta.shape)}, param={tuple(batched_params[param_name].shape)}"
                 )
-            batched_params[param_name] = batched_params[param_name] + delta
+            batched_params[param_name] = batched_params[param_name] + (
+                delta * self.lora_scale
+            )
 
         return batched_params
 

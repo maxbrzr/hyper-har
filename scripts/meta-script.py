@@ -494,6 +494,10 @@ def main() -> None:
             backbone_config=DEFAULT_CONFIG.backbone,
             hypernet_config=DEFAULT_CONFIG.hypernet,
         )
+        print(
+            "LoRA scaling "
+            f"(alpha/rank/scale)={hypernet.lora_alpha}/{hypernet.lora_rank}/{hypernet.lora_scale:.6f}"
+        )
 
         class_weights = _fetch_class_weights(loader, split, num_classes)
         if class_weights is not None:

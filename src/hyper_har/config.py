@@ -21,6 +21,7 @@ class SetEncoderConfig:
 @dataclass(frozen=True)
 class HyperNetConfig:
     lora_rank: int = 8
+    lora_alpha: float = 1.0
     dropout: float = 0.05
 
 

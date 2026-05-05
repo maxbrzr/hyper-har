@@ -103,6 +103,7 @@ class HyperNet(nn.Module):
         nb_filters: int | None = None,  # From TinierHAR
         nb_units_gru: int | None = None,  # From TinierHAR
         lora_rank: int | None = None,
+        lora_alpha: float | None = None,
         dropout: float | None = None,
         backbone_config: BackboneConfig | None = None,
         set_encoder_config: SetEncoderConfig | None = None,
@@ -123,8 +124,13 @@ class HyperNet(nn.Module):
             nb_units_gru if nb_units_gru is not None else backbone_cfg.nb_units_gru
         )
         lora_rank = lora_rank if lora_rank is not None else hypernet_cfg.lora_rank
+        lora_alpha = (
+            lora_alpha if lora_alpha is not None else hypernet_cfg.lora_alpha
+        )
         dropout = dropout if dropout is not None else hypernet_cfg.dropout
         self.lora_rank = lora_rank
+        self.lora_alpha = float(lora_alpha)
+        self.lora_scale = float(self.lora_alpha / max(1, self.lora_rank))
 
         # Calculate exactly what the set encoder outputs
         c_subject_dim = num_classes * set_encoder_hidden_dim
