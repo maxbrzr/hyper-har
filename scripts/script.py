@@ -272,9 +272,31 @@ def main() -> None:
             "subject_id": int(subject_id)
             if isinstance(subject_id, int)
             else str(subject_id),
+            "test_subject_id": int(fold.test_subject_id),
+            "pretrain_train_subject_ids": sorted(
+                int(x) for x in fold.pretrain_train_subject_ids
+            ),
+            "pretrain_val_subject_ids": sorted(
+                int(x) for x in fold.pretrain_val_subject_ids
+            ),
+            "meta_train_subject_ids": sorted(
+                int(x) for x in fold.meta_train_subject_ids
+            ),
+            "meta_val_subject_ids_excluded": sorted(
+                int(x) for x in fold.meta_val_subject_ids
+            ),
             "test_loss": float(test_metrics["loss"]),
             "test_macro_f1": float(test_metrics["macro_f1"]),
             "best_val_loss": float(trainer.state.best_val_loss),
+            "best_val_macro_f1": float(
+                max(history["val_macro_f1"]) if history["val_macro_f1"] else 0.0
+            ),
+            "final_val_loss": float(
+                history["val_loss"][-1] if history["val_loss"] else float("inf")
+            ),
+            "final_val_macro_f1": float(
+                history["val_macro_f1"][-1] if history["val_macro_f1"] else 0.0
+            ),
             "best_epoch": int(trainer.state.best_epoch),
         }
         with (split_dir / "metrics.json").open("w", encoding="utf-8") as f:

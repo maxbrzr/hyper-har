@@ -82,30 +82,39 @@ class TinierHARWrapper(nn.Module):
         params = dict(self.model.named_parameters())
 
         # conv1_pointwise (conv weight shape: out, in, 1, 1)
-        A, B = self._select_pair("conv1_pointwise", adapters, expected_dims=(4, 4))
-        delta = self._compute_delta(A.squeeze(-1).squeeze(-1), B.squeeze(-1).squeeze(-1))
-        key = self.target_param_names["conv1_pointwise"]
-        params[key] = params[key] + delta.unsqueeze(-1).unsqueeze(-1)
+        if "conv1_pointwise" in adapters:
+            A, B = self._select_pair("conv1_pointwise", adapters, expected_dims=(4, 4))
+            delta = self._compute_delta(
+                A.squeeze(-1).squeeze(-1), B.squeeze(-1).squeeze(-1)
+            )
+            key = self.target_param_names["conv1_pointwise"]
+            params[key] = params[key] + delta.unsqueeze(-1).unsqueeze(-1)
 
         # conv_last_pointwise
-        A, B = self._select_pair("conv_last_pointwise", adapters, expected_dims=(4, 4))
-        delta = self._compute_delta(A.squeeze(-1).squeeze(-1), B.squeeze(-1).squeeze(-1))
-        key = self.target_param_names["conv_last_pointwise"]
-        params[key] = params[key] + delta.unsqueeze(-1).unsqueeze(-1)
+        if "conv_last_pointwise" in adapters:
+            A, B = self._select_pair("conv_last_pointwise", adapters, expected_dims=(4, 4))
+            delta = self._compute_delta(
+                A.squeeze(-1).squeeze(-1), B.squeeze(-1).squeeze(-1)
+            )
+            key = self.target_param_names["conv_last_pointwise"]
+            params[key] = params[key] + delta.unsqueeze(-1).unsqueeze(-1)
 
         # gru input-hidden weights (forward + reverse)
-        A, B = self._select_pair("gru_ih_fwd", adapters, expected_dims=(2, 2))
-        key = self.target_param_names["gru_ih_fwd"]
-        params[key] = params[key] + self._compute_delta(A, B)
+        if "gru_ih_fwd" in adapters:
+            A, B = self._select_pair("gru_ih_fwd", adapters, expected_dims=(2, 2))
+            key = self.target_param_names["gru_ih_fwd"]
+            params[key] = params[key] + self._compute_delta(A, B)
 
-        A, B = self._select_pair("gru_ih_rev", adapters, expected_dims=(2, 2))
-        key = self.target_param_names["gru_ih_rev"]
-        params[key] = params[key] + self._compute_delta(A, B)
+        if "gru_ih_rev" in adapters:
+            A, B = self._select_pair("gru_ih_rev", adapters, expected_dims=(2, 2))
+            key = self.target_param_names["gru_ih_rev"]
+            params[key] = params[key] + self._compute_delta(A, B)
 
         # classifier weight
-        A, B = self._select_pair("classifier", adapters, expected_dims=(2, 2))
-        key = self.target_param_names["classifier"]
-        params[key] = params[key] + self._compute_delta(A, B)
+        if "classifier" in adapters:
+            A, B = self._select_pair("classifier", adapters, expected_dims=(2, 2))
+            key = self.target_param_names["classifier"]
+            params[key] = params[key] + self._compute_delta(A, B)
 
         return params
 

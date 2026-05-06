@@ -10,7 +10,8 @@ class PrototypicalSetEncoder(nn.Module):
         self,
         backbone: TinierHAR,
         num_classes: int,
-        freeze_backbone: bool = True,
+        freeze_backbone: bool | None = None,
+        backbone_train_mode: str = "freeze_all",
         label_embed_dim: int | None = None,
         hidden_dim: int | None = None,
         set_encoder_config: SetEncoderConfig | None = None,
@@ -24,11 +25,29 @@ class PrototypicalSetEncoder(nn.Module):
 
         self.backbone = backbone
         self.num_classes = num_classes
-        self.freeze_backbone = freeze_backbone
+        if freeze_backbone is not None:
+            self.backbone_train_mode = "freeze_all" if freeze_backbone else "unfreeze_all"
+        else:
+            self.backbone_train_mode = backbone_train_mode
 
-        # 1. Optionally freeze the pretrained TinierHAR backbone
-        for param in self.backbone.parameters():
-            param.requires_grad = not self.freeze_backbone
+        # 1. Apply backbone parameter freezing strategy
+        if self.backbone_train_mode == "freeze_all":
+            for param in self.backbone.parameters():
+                param.requires_grad = False
+        elif self.backbone_train_mode == "unfreeze_all":
+            for param in self.backbone.parameters():
+                param.requires_grad = True
+        elif self.backbone_train_mode == "freeze_conv_blocks":
+            for param in self.backbone.parameters():
+                param.requires_grad = True
+            for param in self.backbone.conv_blocks.parameters():
+                param.requires_grad = False
+        else:
+            raise ValueError(
+                "Unsupported backbone_train_mode. Expected one of "
+                "['freeze_all', 'unfreeze_all', 'freeze_conv_blocks']."
+            )
+        self._enforce_backbone_module_modes()
 
         # TinierHAR outputs a feature vector of size 2 * nb_units_gru
         self.feature_dim = 2 * backbone.nb_units_gru
@@ -42,11 +61,24 @@ class PrototypicalSetEncoder(nn.Module):
         )
 
     def extract_features(self, x: torch.Tensor) -> torch.Tensor:
-        if self.freeze_backbone:
+        if self.backbone_train_mode == "freeze_all":
             with torch.no_grad():
                 out = self.backbone.encode(x)
             return out
         return self.backbone.encode(x)
+
+    def _enforce_backbone_module_modes(self) -> None:
+        # Keep frozen modules in eval mode so BatchNorm running stats don't update.
+        if self.backbone_train_mode == "freeze_all":
+            self.backbone.eval()
+        elif self.backbone_train_mode == "freeze_conv_blocks":
+            self.backbone.train()
+            self.backbone.conv_blocks.eval()
+
+    def train(self, mode: bool = True):
+        super().train(mode)
+        self._enforce_backbone_module_modes()
+        return self
 
     def forward(self, x_support: torch.Tensor, y_support: torch.Tensor) -> torch.Tensor:
         # x_support: (Batch, N, 1, Window_Size, Num_Sensors)

@@ -77,7 +77,7 @@ class SetToLoRAMetaTrainer:
         default_alpha = float(self.lora_rank)
         self.lora_alpha = float(getattr(self.hypernet, "lora_alpha", default_alpha))
         self.lora_scale = float(self.lora_alpha / max(1, self.lora_rank))
-        self.target_param_names: Dict[str, str] = {
+        full_target_param_names: Dict[str, str] = {
             "conv1_pointwise": "conv_blocks.0.conv.0.pointwise.weight",
             "conv_last_pointwise": (
                 f"conv_blocks.{len(self.base_model.conv_blocks) - 1}.conv.0.pointwise.weight"
@@ -86,6 +86,17 @@ class SetToLoRAMetaTrainer:
             "gru_ih_rev": "gru.weight_ih_l0_reverse",
             "classifier": "classifier.0.weight",
         }
+        target_adapter_names = getattr(self.hypernet, "module_names", None)
+        if target_adapter_names is None:
+            self.target_param_names = full_target_param_names
+        else:
+            self.target_param_names = {
+                name: full_target_param_names[name]
+                for name in target_adapter_names
+                if name in full_target_param_names
+            }
+            if not self.target_param_names:
+                raise ValueError("No recognized target adapter names found in hypernet.")
         missing = set(self.target_param_names.values()) - self._param_names
         if missing:
             raise ValueError(

@@ -73,11 +73,17 @@ TRAIN_SUBJECTS_PER_EPISODE = 4
 SUPPORT_PER_CLASS = 20  # 4
 QUERY_PER_CLASS = 8
 TRAIN_EPISODES_PER_EPOCH = 64
-EVAL_EPISODES = 32
+EVAL_EPISODES = 128  # 32
 USE_VMAP = True
 SET_ENCODER_KIND = "attention"  # "prototypical" or "attention"
-ENABLE_EARLY_STOPPING = False
-FREEZE_SET_ENCODER_BACKBONE = False
+ENABLE_EARLY_STOPPING = True  # False
+SET_ENCODER_BACKBONE_TRAIN_MODE = (
+    "freeze_conv_blocks"  # "freeze_all" | "unfreeze_all" | "freeze_conv_blocks"
+)
+LORA_ALPHA = 1.0
+META_LEARNING_RATE = 1e-5
+ENABLE_CONV1_ADAPTER = False
+ENABLE_CONV_LAST_ADAPTER = False
 
 
 @dataclass
@@ -112,8 +118,11 @@ def _resolve_variant_name(train_cfg: Any) -> str:
         f"eval-ep-{EVAL_EPISODES}",
         f"vmap-{int(USE_VMAP)}",
         f"es-{int(ENABLE_EARLY_STOPPING)}",
-        f"se-freeze-{int(FREEZE_SET_ENCODER_BACKBONE)}",
-        f"lr-{train_cfg.learning_rate}",
+        f"se-mode-{SET_ENCODER_BACKBONE_TRAIN_MODE}",
+        f"alpha-{LORA_ALPHA}",
+        f"conv1-{int(ENABLE_CONV1_ADAPTER)}",
+        f"convlast-{int(ENABLE_CONV_LAST_ADAPTER)}",
+        f"meta-lr-{META_LEARNING_RATE}",
         f"wd-{train_cfg.weight_decay}",
         f"epochs-{train_cfg.num_epochs}",
         f"pat-{train_cfg.patience}",
@@ -321,22 +330,36 @@ def _build_set_encoder(
     backbone: TinierHAR,
     num_classes: int,
 ) -> torch.nn.Module:
+    if SET_ENCODER_BACKBONE_TRAIN_MODE not in {
+        "freeze_all",
+        "unfreeze_all",
+        "freeze_conv_blocks",
+    }:
+        raise ValueError(
+            "Unsupported SET_ENCODER_BACKBONE_TRAIN_MODE. Expected one of "
+            "['freeze_all', 'unfreeze_all', 'freeze_conv_blocks']."
+        )
+
+    # If the set-encoder backbone should receive gradients, keep it separate from
+    # the frozen adaptation backbone used by the meta-trainer.
     set_encoder_backbone = (
-        backbone if FREEZE_SET_ENCODER_BACKBONE else copy.deepcopy(backbone)
+        backbone
+        if SET_ENCODER_BACKBONE_TRAIN_MODE == "freeze_all"
+        else copy.deepcopy(backbone)
     )
     kind_norm = kind.strip().lower()
     if kind_norm == "prototypical":
         return PrototypicalSetEncoder(
             backbone=set_encoder_backbone,
             num_classes=num_classes,
-            freeze_backbone=FREEZE_SET_ENCODER_BACKBONE,
+            backbone_train_mode=SET_ENCODER_BACKBONE_TRAIN_MODE,
             set_encoder_config=DEFAULT_CONFIG.set_encoder,
         )
     if kind_norm == "attention":
         return AttentionSetEncoder(
             backbone=set_encoder_backbone,
             num_classes=num_classes,
-            freeze_backbone=FREEZE_SET_ENCODER_BACKBONE,
+            backbone_train_mode=SET_ENCODER_BACKBONE_TRAIN_MODE,
             set_encoder_config=DEFAULT_CONFIG.set_encoder,
         )
     raise ValueError(f"Unsupported SET_ENCODER_KIND={kind!r}.")
@@ -416,17 +439,18 @@ def main() -> None:
     _, session_df, window_df = pre_pipeline.run()
 
     splitter = MetaLOSOSplitter(cfg)
-    splits = splitter.get_splits(session_df, window_df)
+    folds = splitter.get_folds(session_df, window_df)
 
     summary_rows: list[dict[str, Any]] = []
 
-    for split_idx, split in enumerate(splits):
-        subject_id = split_idx
+    for split_idx, fold in enumerate(folds):
+        split = fold.meta_split
+        subject_id = int(fold.test_subject_id)
         split_dir = output_dir / f"subject_{subject_id}"
         split_dir.mkdir(parents=True, exist_ok=True)
 
         print(
-            f"\n=== LOSO META split {split_idx + 1}/{len(splits)} | subject={subject_id} ==="
+            f"\n=== LOSO META split {split_idx + 1}/{len(folds)} | subject={subject_id} ==="
         )
 
         if _is_completed_meta_split(split_dir):
@@ -500,6 +524,9 @@ def main() -> None:
         hypernet = HyperNet(
             num_channels=num_channels,
             num_classes=num_classes,
+            lora_alpha=LORA_ALPHA,
+            enable_conv1_adapter=ENABLE_CONV1_ADAPTER,
+            enable_conv_last_adapter=ENABLE_CONV_LAST_ADAPTER,
             set_encoder_config=DEFAULT_CONFIG.set_encoder,
             backbone_config=DEFAULT_CONFIG.backbone,
             hypernet_config=DEFAULT_CONFIG.hypernet,
@@ -508,7 +535,8 @@ def main() -> None:
             "LoRA scaling "
             f"(alpha/rank/scale)={hypernet.lora_alpha}/{hypernet.lora_rank}/{hypernet.lora_scale:.6f}"
         )
-        print(f"Set encoder backbone frozen={FREEZE_SET_ENCODER_BACKBONE}")
+        print(f"Active LoRA adapter modules={hypernet.module_names}")
+        print(f"Set encoder backbone train mode={SET_ENCODER_BACKBONE_TRAIN_MODE}")
 
         class_weights = _fetch_class_weights(loader, split, num_classes)
         if class_weights is not None:
@@ -544,7 +572,7 @@ def main() -> None:
         )
 
         train_meta_cfg = MetaTrainerConfig(
-            learning_rate=train_cfg.learning_rate,
+            learning_rate=META_LEARNING_RATE,
             weight_decay=train_cfg.weight_decay,
             batch_subjects=TRAIN_SUBJECTS_PER_EPISODE,
             support_per_class=SUPPORT_PER_CLASS,
@@ -554,7 +582,7 @@ def main() -> None:
         )
 
         val_meta_cfg = MetaTrainerConfig(
-            learning_rate=train_cfg.learning_rate,
+            learning_rate=META_LEARNING_RATE,
             weight_decay=train_cfg.weight_decay,
             batch_subjects=1,
             support_per_class=SUPPORT_PER_CLASS,
@@ -565,7 +593,7 @@ def main() -> None:
         )
 
         test_meta_cfg = MetaTrainerConfig(
-            learning_rate=train_cfg.learning_rate,
+            learning_rate=META_LEARNING_RATE,
             weight_decay=train_cfg.weight_decay,
             batch_subjects=1,
             support_per_class=SUPPORT_PER_CLASS,
@@ -622,10 +650,12 @@ def main() -> None:
         best_epoch = -1
         best_train_loss = float("inf")
         best_train_f1 = 0.0
-        best_val_f1 = 0.0
+        best_val_f1 = float("-inf")
         patience_counter = 0
 
         best_ckpt_path = split_dir / "best_meta_modules.pt"
+        val_loss_history: list[float] = []
+        val_macro_f1_history: list[float] = []
 
         for epoch in range(1, train_cfg.num_epochs + 1):
             train_losses: list[float] = []
@@ -650,8 +680,20 @@ def main() -> None:
             val_metrics = _run_meta_eval(val_trainer, EVAL_EPISODES, use_vmap=USE_VMAP)
             val_loss = float(val_metrics["loss"])
             val_macro_f1 = float(val_metrics["macro_f1"])
+            val_loss_history.append(val_loss)
+            val_macro_f1_history.append(val_macro_f1)
 
-            improved = bool(np.isfinite(val_loss) and (val_loss < best_val_loss))
+            improved = bool(
+                np.isfinite(val_macro_f1)
+                and (
+                    (val_macro_f1 > best_val_f1)
+                    or (
+                        np.isclose(val_macro_f1, best_val_f1)
+                        and np.isfinite(val_loss)
+                        and (val_loss < best_val_loss)
+                    )
+                )
+            )
             if improved:
                 best_val_loss = val_loss
                 best_epoch = epoch
@@ -683,7 +725,8 @@ def main() -> None:
                 f"[Meta Epoch {epoch:03d}] "
                 f"train_loss={train_loss:.4f} train_macro_f1={train_macro_f1:.4f} "
                 f"val_loss={val_loss:.4f} val_macro_f1={val_macro_f1:.4f} "
-                f"best_val_loss={best_val_loss:.4f} patience={patience_str}"
+                f"best_val_macro_f1={best_val_f1:.4f} best_val_loss={best_val_loss:.4f} "
+                f"patience={patience_str}"
             )
 
             if ENABLE_EARLY_STOPPING and patience_counter >= train_cfg.patience:
@@ -733,11 +776,49 @@ def main() -> None:
         )
 
         result_dict = asdict(result)
+        result_dict["test_subject_id"] = int(fold.test_subject_id)
+        result_dict["meta_train_subject_ids"] = sorted(
+            int(x) for x in fold.meta_train_subject_ids
+        )
+        result_dict["meta_val_subject_ids"] = sorted(
+            int(x) for x in fold.meta_val_subject_ids
+        )
+        result_dict["pretrain_train_subject_ids"] = sorted(
+            int(x) for x in fold.pretrain_train_subject_ids
+        )
+        result_dict["pretrain_val_subject_ids"] = sorted(
+            int(x) for x in fold.pretrain_val_subject_ids
+        )
+        result_dict["best_val_macro_f1"] = float(
+            max(val_macro_f1_history) if val_macro_f1_history else 0.0
+        )
+        result_dict["final_val_loss"] = float(
+            val_loss_history[-1] if val_loss_history else float("inf")
+        )
+        result_dict["final_val_macro_f1"] = float(
+            val_macro_f1_history[-1] if val_macro_f1_history else 0.0
+        )
         with (split_dir / "meta_metrics.json").open("w", encoding="utf-8") as f:
             json.dump(result_dict, f, indent=2)
 
+        meta_history = dict(train_trainer.state.history)
+        meta_history["val_loss"] = val_loss_history
+        meta_history["val_macro_f1"] = val_macro_f1_history
+        meta_history["partition_subject_ids"] = {
+            "test_subject_id": int(fold.test_subject_id),
+            "meta_train_subject_ids": sorted(
+                int(x) for x in fold.meta_train_subject_ids
+            ),
+            "meta_val_subject_ids": sorted(int(x) for x in fold.meta_val_subject_ids),
+            "pretrain_train_subject_ids": sorted(
+                int(x) for x in fold.pretrain_train_subject_ids
+            ),
+            "pretrain_val_subject_ids": sorted(
+                int(x) for x in fold.pretrain_val_subject_ids
+            ),
+        }
         with (split_dir / "meta_history.json").open("w", encoding="utf-8") as f:
-            json.dump(train_trainer.state.history, f, indent=2)
+            json.dump(meta_history, f, indent=2)
 
         summary_rows.append(result_dict)
 

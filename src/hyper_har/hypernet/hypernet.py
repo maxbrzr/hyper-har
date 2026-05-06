@@ -4,6 +4,7 @@ from typing import Dict, Tuple
 
 import torch
 import torch.nn as nn
+
 from hyper_har.config import BackboneConfig, HyperNetConfig, SetEncoderConfig
 
 
@@ -44,18 +45,29 @@ class HyperNetBackbone(nn.Module):
         super().__init__()
         self.num_target_modules = num_target_modules
 
+        # 1. Dynamic Bottleneck Calculation
+        # Halve the input, but keep it between 128 (floor) and 512 (ceiling)
+        subj_proj_dim = max(128, min(512, c_subject_dim // 2))
+        module_embed_dim = 32
+
         self.subject_encoder = nn.Sequential(
-            nn.Linear(c_subject_dim, 96), nn.LayerNorm(96, eps=1e-5)
+            nn.Linear(c_subject_dim, subj_proj_dim),
+            nn.LayerNorm(subj_proj_dim, eps=1e-5),
         )
 
         self.module_encoder = nn.Sequential(
-            nn.Embedding(num_target_modules, 32), nn.LayerNorm(32, eps=1e-5)
+            nn.Embedding(num_target_modules, module_embed_dim),
+            nn.LayerNorm(module_embed_dim, eps=1e-5),
         )
 
+        # 2. Dynamic Mixer Input Size
+        mixer_in_dim = subj_proj_dim + module_embed_dim
+
         self.mixer = nn.Sequential(
-            nn.Linear(128, 512),
+            nn.Linear(mixer_in_dim, 512),
             nn.SiLU(),
             nn.Dropout(p=dropout),
+            # Project back down to 128 so it matches MLPResidualBlock
             nn.Linear(512, 128),
             nn.SiLU(),
             nn.Dropout(p=dropout),
@@ -104,6 +116,8 @@ class HyperNet(nn.Module):
         nb_units_gru: int | None = None,  # From TinierHAR
         lora_rank: int | None = None,
         lora_alpha: float | None = None,
+        enable_conv1_adapter: bool | None = None,
+        enable_conv_last_adapter: bool | None = None,
         dropout: float | None = None,
         backbone_config: BackboneConfig | None = None,
         set_encoder_config: SetEncoderConfig | None = None,
@@ -124,13 +138,23 @@ class HyperNet(nn.Module):
             nb_units_gru if nb_units_gru is not None else backbone_cfg.nb_units_gru
         )
         lora_rank = lora_rank if lora_rank is not None else hypernet_cfg.lora_rank
-        lora_alpha = (
-            lora_alpha if lora_alpha is not None else hypernet_cfg.lora_alpha
+        lora_alpha = lora_alpha if lora_alpha is not None else hypernet_cfg.lora_alpha
+        enable_conv1_adapter = (
+            enable_conv1_adapter
+            if enable_conv1_adapter is not None
+            else hypernet_cfg.enable_conv1_adapter
+        )
+        enable_conv_last_adapter = (
+            enable_conv_last_adapter
+            if enable_conv_last_adapter is not None
+            else hypernet_cfg.enable_conv_last_adapter
         )
         dropout = dropout if dropout is not None else hypernet_cfg.dropout
         self.lora_rank = lora_rank
         self.lora_alpha = float(lora_alpha)
         self.lora_scale = float(self.lora_alpha / max(1, self.lora_rank))
+        self.enable_conv1_adapter = bool(enable_conv1_adapter)
+        self.enable_conv_last_adapter = bool(enable_conv_last_adapter)
 
         # Calculate exactly what the set encoder outputs
         c_subject_dim = num_classes * set_encoder_hidden_dim
@@ -145,18 +169,27 @@ class HyperNet(nn.Module):
         # gru_input = conv_out_channels (2 * nb_filters) * sensor_channels (num_channels)
         gru_in_dim = (2 * nb_filters) * num_channels
 
-        # 1. Define the 5 target modules and their expected PyTorch parameter shapes
+        # 1. Define target modules and expected parameter shapes.
         # Map: name -> (out_features, in_features)
-        self.target_shapes: Dict[str, Tuple[int, int]] = {
-            "conv1_pointwise": (out_c_conv1, in_c_conv1),
-            "conv_last_pointwise": (out_c_conv_last, in_c_conv_last),
-            "gru_ih_fwd": (
-                3 * nb_units_gru,
-                gru_in_dim,
-            ),  # 3x for Reset, Update, New gates
-            "gru_ih_rev": (3 * nb_units_gru, gru_in_dim),
-            "classifier": (num_classes, 2 * nb_units_gru),  # 2x for Bidirectional
-        }
+        self.target_shapes: Dict[str, Tuple[int, int]] = {}
+        if self.enable_conv1_adapter:
+            self.target_shapes["conv1_pointwise"] = (out_c_conv1, in_c_conv1)
+        if self.enable_conv_last_adapter:
+            self.target_shapes["conv_last_pointwise"] = (
+                out_c_conv_last,
+                in_c_conv_last,
+            )
+        self.target_shapes["gru_ih_fwd"] = (
+            3 * nb_units_gru,
+            gru_in_dim,
+        )  # 3x for Reset, Update, New gates
+        self.target_shapes["gru_ih_rev"] = (3 * nb_units_gru, gru_in_dim)
+        self.target_shapes["classifier"] = (
+            num_classes,
+            2 * nb_units_gru,
+        )  # 2x for Bidirectional
+        if not self.target_shapes:
+            raise ValueError("HyperNet must target at least one adapter module.")
         self.module_names = list(self.target_shapes.keys())
 
         # 2. Shared Backbone
@@ -175,8 +208,10 @@ class HyperNet(nn.Module):
 
             head = nn.Linear(512, size_A + size_B)
 
-            # Initialization (A = tiny random, B = zero)
-            nn.init.zeros_(head.weight)
+            # Initialization:
+            # Use microscopic non-zero weights to avoid zero-gradient trap into
+            # the set encoder on the first optimization steps.
+            nn.init.normal_(head.weight, std=1e-4)
             nn.init.uniform_(head.bias[:size_A], -1e-3, 1e-3)
             nn.init.zeros_(head.bias[size_A:])
 
