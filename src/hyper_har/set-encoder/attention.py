@@ -10,6 +10,7 @@ class AttentionSetEncoder(nn.Module):
         self,
         backbone: TinierHAR,
         num_classes: int,
+        freeze_backbone: bool = True,
         label_embed_dim: int | None = None,
         hidden_dim: int | None = None,
         num_heads: int | None = None,
@@ -24,10 +25,11 @@ class AttentionSetEncoder(nn.Module):
         num_heads = num_heads if num_heads is not None else cfg.num_heads
         self.backbone = backbone
         self.num_classes = num_classes
+        self.freeze_backbone = freeze_backbone
 
-        # 1. Freeze the pretrained TinierHAR backbone
+        # 1. Optionally freeze the pretrained TinierHAR backbone
         for param in self.backbone.parameters():
-            param.requires_grad = False
+            param.requires_grad = not self.freeze_backbone
 
         self.feature_dim = 2 * backbone.nb_units_gru
 
@@ -48,9 +50,11 @@ class AttentionSetEncoder(nn.Module):
         )
 
     def extract_features(self, x: torch.Tensor) -> torch.Tensor:
-        with torch.no_grad():
-            out = self.backbone.encode(x)
-        return out
+        if self.freeze_backbone:
+            with torch.no_grad():
+                out = self.backbone.encode(x)
+            return out
+        return self.backbone.encode(x)
 
     def forward(self, x_support: torch.Tensor, y_support: torch.Tensor) -> torch.Tensor:
         B, N, C_in, T, S = x_support.shape

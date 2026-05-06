@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import importlib.util
 import inspect
 import json
@@ -74,7 +75,9 @@ QUERY_PER_CLASS = 8
 TRAIN_EPISODES_PER_EPOCH = 64
 EVAL_EPISODES = 32
 USE_VMAP = True
-SET_ENCODER_KIND = "prototypical"  # "prototypical" or "attention"
+SET_ENCODER_KIND = "attention"  # "prototypical" or "attention"
+ENABLE_EARLY_STOPPING = False
+FREEZE_SET_ENCODER_BACKBONE = False
 
 
 @dataclass
@@ -108,6 +111,8 @@ def _resolve_variant_name(train_cfg: Any) -> str:
         f"train-ep-{TRAIN_EPISODES_PER_EPOCH}",
         f"eval-ep-{EVAL_EPISODES}",
         f"vmap-{int(USE_VMAP)}",
+        f"es-{int(ENABLE_EARLY_STOPPING)}",
+        f"se-freeze-{int(FREEZE_SET_ENCODER_BACKBONE)}",
         f"lr-{train_cfg.learning_rate}",
         f"wd-{train_cfg.weight_decay}",
         f"epochs-{train_cfg.num_epochs}",
@@ -316,17 +321,22 @@ def _build_set_encoder(
     backbone: TinierHAR,
     num_classes: int,
 ) -> torch.nn.Module:
+    set_encoder_backbone = (
+        backbone if FREEZE_SET_ENCODER_BACKBONE else copy.deepcopy(backbone)
+    )
     kind_norm = kind.strip().lower()
     if kind_norm == "prototypical":
         return PrototypicalSetEncoder(
-            backbone=backbone,
+            backbone=set_encoder_backbone,
             num_classes=num_classes,
+            freeze_backbone=FREEZE_SET_ENCODER_BACKBONE,
             set_encoder_config=DEFAULT_CONFIG.set_encoder,
         )
     if kind_norm == "attention":
         return AttentionSetEncoder(
-            backbone=backbone,
+            backbone=set_encoder_backbone,
             num_classes=num_classes,
+            freeze_backbone=FREEZE_SET_ENCODER_BACKBONE,
             set_encoder_config=DEFAULT_CONFIG.set_encoder,
         )
     raise ValueError(f"Unsupported SET_ENCODER_KIND={kind!r}.")
@@ -498,6 +508,7 @@ def main() -> None:
             "LoRA scaling "
             f"(alpha/rank/scale)={hypernet.lora_alpha}/{hypernet.lora_rank}/{hypernet.lora_scale:.6f}"
         )
+        print(f"Set encoder backbone frozen={FREEZE_SET_ENCODER_BACKBONE}")
 
         class_weights = _fetch_class_weights(loader, split, num_classes)
         if class_weights is not None:
@@ -640,7 +651,7 @@ def main() -> None:
             val_loss = float(val_metrics["loss"])
             val_macro_f1 = float(val_metrics["macro_f1"])
 
-            improved = val_loss < best_val_loss
+            improved = bool(np.isfinite(val_loss) and (val_loss < best_val_loss))
             if improved:
                 best_val_loss = val_loss
                 best_epoch = epoch
@@ -663,21 +674,44 @@ def main() -> None:
             else:
                 patience_counter += 1
 
+            patience_str = (
+                f"{patience_counter}/{train_cfg.patience}"
+                if ENABLE_EARLY_STOPPING
+                else f"{patience_counter}/off"
+            )
             print(
                 f"[Meta Epoch {epoch:03d}] "
                 f"train_loss={train_loss:.4f} train_macro_f1={train_macro_f1:.4f} "
                 f"val_loss={val_loss:.4f} val_macro_f1={val_macro_f1:.4f} "
-                f"best_val_loss={best_val_loss:.4f} patience={patience_counter}/{train_cfg.patience}"
+                f"best_val_loss={best_val_loss:.4f} patience={patience_str}"
             )
 
-            if patience_counter >= train_cfg.patience:
+            if ENABLE_EARLY_STOPPING and patience_counter >= train_cfg.patience:
                 print(
                     f"Meta early stopping triggered at epoch {epoch}. Best epoch: {best_epoch}."
                 )
                 break
 
         if not best_ckpt_path.exists():
-            raise RuntimeError("No best meta checkpoint was saved.")
+            # Fallback for runs where validation never yields a finite/better score.
+            best_epoch = train_cfg.num_epochs
+            best_train_loss = train_loss
+            best_train_f1 = train_macro_f1
+            best_val_f1 = val_macro_f1
+            best_val_loss = val_loss
+            torch.save(
+                {
+                    "set_encoder": set_encoder.state_dict(),
+                    "hypernet": hypernet.state_dict(),
+                    "meta_config": asdict(train_meta_cfg),
+                    "train_activity_ids": train_activity_ids,
+                    "val_activity_ids": val_activity_ids,
+                    "test_activity_ids": test_activity_ids,
+                    "backbone_checkpoint": str(backbone_ckpt),
+                    "checkpoint_reason": "fallback_last_epoch",
+                },
+                best_ckpt_path,
+            )
 
         ckpt = torch.load(best_ckpt_path, map_location=train_trainer.device)
         set_encoder.load_state_dict(ckpt["set_encoder"])

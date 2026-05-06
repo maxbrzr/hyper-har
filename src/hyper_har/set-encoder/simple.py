@@ -10,6 +10,7 @@ class PrototypicalSetEncoder(nn.Module):
         self,
         backbone: TinierHAR,
         num_classes: int,
+        freeze_backbone: bool = True,
         label_embed_dim: int | None = None,
         hidden_dim: int | None = None,
         set_encoder_config: SetEncoderConfig | None = None,
@@ -23,10 +24,11 @@ class PrototypicalSetEncoder(nn.Module):
 
         self.backbone = backbone
         self.num_classes = num_classes
+        self.freeze_backbone = freeze_backbone
 
-        # 1. Freeze the pretrained TinierHAR backbone
+        # 1. Optionally freeze the pretrained TinierHAR backbone
         for param in self.backbone.parameters():
-            param.requires_grad = False
+            param.requires_grad = not self.freeze_backbone
 
         # TinierHAR outputs a feature vector of size 2 * nb_units_gru
         self.feature_dim = 2 * backbone.nb_units_gru
@@ -40,9 +42,11 @@ class PrototypicalSetEncoder(nn.Module):
         )
 
     def extract_features(self, x: torch.Tensor) -> torch.Tensor:
-        with torch.no_grad():
-            out = self.backbone.encode(x)
-        return out
+        if self.freeze_backbone:
+            with torch.no_grad():
+                out = self.backbone.encode(x)
+            return out
+        return self.backbone.encode(x)
 
     def forward(self, x_support: torch.Tensor, y_support: torch.Tensor) -> torch.Tensor:
         # x_support: (Batch, N, 1, Window_Size, Num_Sensors)
