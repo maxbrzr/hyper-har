@@ -80,6 +80,7 @@ ENABLE_EARLY_STOPPING = True  # False
 SET_ENCODER_BACKBONE_TRAIN_MODE = (
     "freeze_conv_blocks"  # "freeze_all" | "unfreeze_all" | "freeze_conv_blocks"
 )
+FORCE_CONV_BN_EVAL = True
 LORA_ALPHA = 1.0
 META_LEARNING_RATE = 1e-5
 ENABLE_CONV1_ADAPTER = False
@@ -119,6 +120,7 @@ def _resolve_variant_name(train_cfg: Any) -> str:
         f"vmap-{int(USE_VMAP)}",
         f"es-{int(ENABLE_EARLY_STOPPING)}",
         f"se-mode-{SET_ENCODER_BACKBONE_TRAIN_MODE}",
+        f"conv-bn-eval-{int(FORCE_CONV_BN_EVAL)}",
         f"alpha-{LORA_ALPHA}",
         f"conv1-{int(ENABLE_CONV1_ADAPTER)}",
         f"convlast-{int(ENABLE_CONV_LAST_ADAPTER)}",
@@ -353,6 +355,7 @@ def _build_set_encoder(
             backbone=set_encoder_backbone,
             num_classes=num_classes,
             backbone_train_mode=SET_ENCODER_BACKBONE_TRAIN_MODE,
+            force_conv_bn_eval=FORCE_CONV_BN_EVAL,
             set_encoder_config=DEFAULT_CONFIG.set_encoder,
         )
     if kind_norm == "attention":
@@ -360,6 +363,7 @@ def _build_set_encoder(
             backbone=set_encoder_backbone,
             num_classes=num_classes,
             backbone_train_mode=SET_ENCODER_BACKBONE_TRAIN_MODE,
+            force_conv_bn_eval=FORCE_CONV_BN_EVAL,
             set_encoder_config=DEFAULT_CONFIG.set_encoder,
         )
     raise ValueError(f"Unsupported SET_ENCODER_KIND={kind!r}.")
@@ -537,6 +541,7 @@ def main() -> None:
         )
         print(f"Active LoRA adapter modules={hypernet.module_names}")
         print(f"Set encoder backbone train mode={SET_ENCODER_BACKBONE_TRAIN_MODE}")
+        print(f"Force conv-block BN eval={FORCE_CONV_BN_EVAL}")
 
         class_weights = _fetch_class_weights(loader, split, num_classes)
         if class_weights is not None:

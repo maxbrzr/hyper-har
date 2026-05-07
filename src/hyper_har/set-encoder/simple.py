@@ -12,6 +12,7 @@ class PrototypicalSetEncoder(nn.Module):
         num_classes: int,
         freeze_backbone: bool | None = None,
         backbone_train_mode: str = "freeze_all",
+        force_conv_bn_eval: bool = True,
         label_embed_dim: int | None = None,
         hidden_dim: int | None = None,
         set_encoder_config: SetEncoderConfig | None = None,
@@ -29,6 +30,7 @@ class PrototypicalSetEncoder(nn.Module):
             self.backbone_train_mode = "freeze_all" if freeze_backbone else "unfreeze_all"
         else:
             self.backbone_train_mode = backbone_train_mode
+        self.force_conv_bn_eval = force_conv_bn_eval
 
         # 1. Apply backbone parameter freezing strategy
         if self.backbone_train_mode == "freeze_all":
@@ -74,6 +76,16 @@ class PrototypicalSetEncoder(nn.Module):
         elif self.backbone_train_mode == "freeze_conv_blocks":
             self.backbone.train()
             self.backbone.conv_blocks.eval()
+        elif self.backbone_train_mode == "unfreeze_all":
+            self.backbone.train()
+        if self.force_conv_bn_eval:
+            self._set_conv_block_batchnorm_eval()
+
+    def _set_conv_block_batchnorm_eval(self) -> None:
+        # Optional stabilization: keep conv-block BatchNorm in eval mode.
+        for module in self.backbone.conv_blocks.modules():
+            if isinstance(module, nn.modules.batchnorm._BatchNorm):
+                module.eval()
 
     def train(self, mode: bool = True):
         super().train(mode)

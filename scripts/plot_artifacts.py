@@ -302,22 +302,29 @@ def _plot_meta_val_metric(
 def _plot_improvement_bars(rows: list[dict[str, Any]], output_path: Path) -> None:
     subject_ids = [int(r["subject_id"]) for r in rows]
     improvements = [float(r["improvement"]) for r in rows]
-    colors = ["#2a9d8f" if v >= 0 else "#d62828" for v in improvements]
+    mean_improvement = sum(improvements) / len(improvements)
+    mean_x = (max(subject_ids) + 1) if subject_ids else 0
+
+    all_x = subject_ids + [mean_x]
+    all_y = improvements + [mean_improvement]
+    colors = ["#2a9d8f" if v >= 0 else "#d62828" for v in improvements] + ["#264653"]
 
     fig, ax = plt.subplots(figsize=(16, 8))
-    bars = ax.bar(subject_ids, improvements, color=colors, alpha=0.9)
+    bars = ax.bar(all_x, all_y, color=colors, alpha=0.9)
     ax.axhline(0.0, color="black", linewidth=1.0)
     ax.set_xlabel("Subject ID")
     ax.set_ylabel("Improvement in Test Macro F1 (Meta LOSO - LOSO)")
     ax.set_title("Per-Subject Test Macro F1 Improvement After Meta Adaptation")
     ax.grid(axis="y", alpha=0.25)
+    ax.set_xticks(all_x)
+    ax.set_xticklabels([str(s) for s in subject_ids] + ["mean"])
 
-    y_min = min(improvements) if improvements else 0.0
-    y_max = max(improvements) if improvements else 0.0
+    y_min = min(all_y) if all_y else 0.0
+    y_max = max(all_y) if all_y else 0.0
     y_range = max(1e-9, y_max - y_min)
     pad = 0.03 * y_range
 
-    for bar, row in zip(bars, rows):
+    for bar, row in zip(bars[:-1], rows):
         improvement = float(row["improvement"])
         loso_f1 = float(row["loso_test_macro_f1"])
         meta_f1 = float(row["meta_test_macro_f1"])
@@ -350,6 +357,31 @@ def _plot_improvement_bars(rows: list[dict[str, Any]], output_path: Path) -> Non
                 fontsize=8,
                 rotation=90,
             )
+
+    mean_bar = bars[-1]
+    mean_xpos = mean_bar.get_x() + mean_bar.get_width() / 2.0
+    mean_y = mean_bar.get_height()
+    mean_annotation = f"mean\n{mean_improvement:+.4f}"
+    if mean_improvement >= 0:
+        ax.text(
+            mean_xpos,
+            mean_y + pad,
+            mean_annotation,
+            ha="center",
+            va="bottom",
+            fontsize=9,
+            fontweight="bold",
+        )
+    else:
+        ax.text(
+            mean_xpos,
+            mean_y - pad,
+            mean_annotation,
+            ha="center",
+            va="top",
+            fontsize=9,
+            fontweight="bold",
+        )
 
     fig.tight_layout()
     fig.savefig(output_path, dpi=200)
