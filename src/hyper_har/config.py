@@ -16,6 +16,7 @@ class SetEncoderConfig:
     label_embed_dim: int = 32
     hidden_dim: int = 64
     num_heads: int = 4
+    include_global_context: bool = True
 
 
 @dataclass(frozen=True)

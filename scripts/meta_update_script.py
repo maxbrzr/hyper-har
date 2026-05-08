@@ -1,18 +1,19 @@
 from __future__ import annotations
 
-import copy
 import importlib.util
 import inspect
 import json
+import math
 import os
 import re
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
 
 import numpy as np
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from sklearn.metrics import f1_score
 from tqdm.auto import tqdm
@@ -26,7 +27,7 @@ from whar_datasets import (
 
 from hyper_har.backbone.tinierhar import TinierHAR
 from hyper_har.config import DEFAULT_CONFIG
-from hyper_har.hypernet.hypernet import HyperNet
+from hyper_har.hypernet.hypernet import MLPResidualBlock
 from hyper_har.splitting import MetaLOSOSplitter
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -45,55 +46,272 @@ def _load_module_from_path(name: str, path: Path) -> Any:
     return module
 
 
-SET_ENCODER_SIMPLE_MODULE = _load_module_from_path(
-    "hyper_har_set_encoder_simple", SRC / "hyper_har" / "set-encoder" / "simple.py"
-)
-SET_ENCODER_ATTENTION_MODULE = _load_module_from_path(
-    "hyper_har_set_encoder_attention",
-    SRC / "hyper_har" / "set-encoder" / "attention.py",
-)
 META_TRAINER_MODULE = _load_module_from_path(
-    "hyper_har_meta_trainer", SRC / "hyper_har" / "training" / "meta-trainer.py"
+    "hyper_har_meta_trainer_update",
+    SRC / "hyper_har" / "training" / "meta-trainer.py",
 )
-
-PrototypicalSetEncoder = SET_ENCODER_SIMPLE_MODULE.PrototypicalSetEncoder
-AttentionSetEncoder = SET_ENCODER_ATTENTION_MODULE.AttentionSetEncoder
 MetaTrainerConfig = META_TRAINER_MODULE.MetaTrainerConfig
 SetToLoRAMetaTrainer = META_TRAINER_MODULE.SetToLoRAMetaTrainer
 
 
-# Script-level run settings
+# Run settings
 DATASET_ID = WHARDatasetID.WEAR
 BACKBONE_DIR = ROOT / "artifacts" / "loso_cv"
-OUTPUT_ROOT_DIR = ROOT / "artifacts" / "meta_loso_cv"
-META_VARIANT_NAME = os.getenv("META_VARIANT_NAME")
+OUTPUT_ROOT_DIR = ROOT / "artifacts" / "meta_update_loso_cv"
+META_UPDATE_VARIANT_NAME = os.getenv("META_UPDATE_VARIANT_NAME")
 
-# Meta episodic settings
+# Episodic settings
 TRAIN_SUBJECTS_PER_EPISODE = 4
-SUPPORT_PER_CLASS = 20
 TRAIN_SUPPORT_PER_CLASS_CHOICES = (2, 4, 8, 12, 16, 20)
 QUERY_PER_CLASS = 8
 EVAL_SUPPORT_PER_CLASS_CHOICES = (2, 4, 8, 12, 16, 20)
 EVAL_QUERY_PER_CLASS = 16
 TRAIN_EPISODES_PER_EPOCH = 64
-EVAL_EPISODES = 128  # 32
+EVAL_EPISODES = 128
 USE_VMAP = True
-SET_ENCODER_KIND = "attention"  # "prototypical" or "attention"
-ENABLE_EARLY_STOPPING = True  # False
-SET_ENCODER_BACKBONE_TRAIN_MODE = (
-    "freeze_conv_blocks"  # "freeze_all" | "unfreeze_all" | "freeze_conv_blocks"
-)
-FORCE_CONV_BN_EVAL = True
+ENABLE_EARLY_STOPPING = True
+
+# Learned-update model settings
+HIDDEN_DIM = 64
+LABEL_EMBED_DIM = 32
+NUM_HEADS = 4
 LORA_RANK = 4
 LORA_ALPHA = 1.0
 ADAPTER_DELTA_L2 = 1e-4
 META_LEARNING_RATE = 1e-5
+WEIGHT_DECAY = 0.0
 ENABLE_CONV1_ADAPTER = False
 ENABLE_CONV_LAST_ADAPTER = False
+FORCE_BASE_EVAL = True
+
+
+class SupportErrorSetEncoder(nn.Module):
+    """Encode support examples using frozen-base features, logits, and residuals."""
+
+    def __init__(
+        self,
+        base_model: TinierHAR,
+        num_classes: int,
+        hidden_dim: int = HIDDEN_DIM,
+        label_embed_dim: int = LABEL_EMBED_DIM,
+        num_heads: int = NUM_HEADS,
+    ) -> None:
+        super().__init__()
+        self.base_model = base_model
+        self.num_classes = num_classes
+        self.hidden_dim = hidden_dim
+        self.feature_dim = 2 * base_model.nb_units_gru
+        self.output_dim = (num_classes + 1) * hidden_dim
+
+        for param in self.base_model.parameters():
+            param.requires_grad = False
+        self.base_model.eval()
+
+        self.label_embedding = nn.Embedding(num_classes, label_embed_dim)
+        token_dim = (
+            self.feature_dim
+            + label_embed_dim
+            + num_classes  # logits
+            + num_classes  # probabilities
+            + num_classes  # one_hot(label) - probabilities
+            + 1  # per-item CE
+        )
+        self.token_mlp = nn.Sequential(
+            nn.Linear(token_dim, 2 * hidden_dim),
+            nn.LayerNorm(2 * hidden_dim, eps=1e-5),
+            nn.SiLU(),
+            nn.Linear(2 * hidden_dim, hidden_dim),
+        )
+        self.class_queries = nn.Parameter(
+            torch.randn(num_classes, 1, hidden_dim) * 0.02
+        )
+        self.class_attention = nn.MultiheadAttention(
+            embed_dim=hidden_dim, num_heads=num_heads, batch_first=True
+        )
+
+        raw_stats_dim = 2 * base_model.input_channels
+        error_stats_dim = (3 * num_classes) + 1
+        self.global_mlp = nn.Sequential(
+            nn.Linear(hidden_dim + raw_stats_dim + error_stats_dim, 2 * hidden_dim),
+            nn.LayerNorm(2 * hidden_dim, eps=1e-5),
+            nn.SiLU(),
+            nn.Linear(2 * hidden_dim, hidden_dim),
+        )
+
+    def train(self, mode: bool = True):
+        super().train(mode)
+        if FORCE_BASE_EVAL:
+            self.base_model.eval()
+        return self
+
+    def _base_support_signals(
+        self, x_flat: torch.Tensor, y_flat: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        with torch.no_grad():
+            features = self.base_model.encode(x_flat)
+            logits = self.base_model.classifier(features)
+            probs = torch.softmax(logits, dim=-1)
+            one_hot = F.one_hot(y_flat, num_classes=self.num_classes).to(probs.dtype)
+            residual = one_hot - probs
+            ce = F.cross_entropy(logits, y_flat, reduction="none").unsqueeze(-1)
+        return features, logits, probs, residual, ce
+
+    def forward(self, x_support: torch.Tensor, y_support: torch.Tensor) -> torch.Tensor:
+        # x_support: (B, N, 1, T, S), y_support: (B, N)
+        B, N, C_in, T, S = x_support.shape
+        x_flat = x_support.reshape(B * N, C_in, T, S)
+        y_flat = y_support.reshape(-1)
+
+        features, logits, probs, residual, ce = self._base_support_signals(
+            x_flat, y_flat
+        )
+        labels = self.label_embedding(y_flat)
+        token = self.token_mlp(
+            torch.cat([features, labels, logits, probs, residual, ce], dim=-1)
+        )
+        z = token.view(B, N, self.hidden_dim)
+
+        class_contexts: list[torch.Tensor] = []
+        for class_id in range(self.num_classes):
+            key_padding_mask = y_support != class_id
+            query = self.class_queries[class_id].unsqueeze(0).expand(B, -1, -1)
+            valid_rows = ~key_padding_mask.all(dim=1)
+            class_out = torch.zeros(
+                (B, 1, self.hidden_dim), device=z.device, dtype=z.dtype
+            )
+            if valid_rows.any():
+                attn_out, _ = self.class_attention(
+                    query[valid_rows],
+                    z[valid_rows],
+                    z[valid_rows],
+                    key_padding_mask=key_padding_mask[valid_rows],
+                )
+                class_out[valid_rows] = attn_out
+            class_contexts.append(class_out.squeeze(1))
+
+        raw = x_support.squeeze(2)
+        raw_mean = raw.mean(dim=(1, 2))
+        raw_std = raw.std(dim=(1, 2), unbiased=False)
+        z_global = z.mean(dim=1)
+        logits_b = logits.view(B, N, self.num_classes)
+        probs_b = probs.view(B, N, self.num_classes)
+        residual_b = residual.view(B, N, self.num_classes)
+        ce_b = ce.view(B, N, 1)
+        error_stats = torch.cat(
+            [
+                logits_b.mean(dim=1),
+                probs_b.mean(dim=1),
+                residual_b.mean(dim=1),
+                ce_b.mean(dim=1),
+            ],
+            dim=-1,
+        )
+        global_context = self.global_mlp(
+            torch.cat([z_global, raw_mean, raw_std, error_stats], dim=-1)
+        )
+
+        return torch.cat([*class_contexts, global_context], dim=-1)
+
+
+class LoRAUpdateNet(nn.Module):
+    """Predict a support-conditioned LoRA update.
+
+    This is framed as a learned update from a shared low-rank basis: each target
+    module owns a learned A matrix, while the support-conditioned network
+    predicts B. This avoids starting both LoRA factors at zero.
+    """
+
+    def __init__(
+        self,
+        num_channels: int,
+        num_classes: int,
+        c_subject_dim: int,
+        lora_rank: int = LORA_RANK,
+        lora_alpha: float = LORA_ALPHA,
+        enable_conv1_adapter: bool = ENABLE_CONV1_ADAPTER,
+        enable_conv_last_adapter: bool = ENABLE_CONV_LAST_ADAPTER,
+        dropout: float = 0.05,
+    ) -> None:
+        super().__init__()
+        backbone_cfg = DEFAULT_CONFIG.backbone
+        nb_filters = backbone_cfg.nb_filters
+        nb_units_gru = backbone_cfg.nb_units_gru
+        self.lora_rank = int(lora_rank)
+        self.lora_alpha = float(lora_alpha)
+        self.lora_scale = float(self.lora_alpha / max(1, self.lora_rank))
+
+        gru_in_dim = (2 * nb_filters) * num_channels
+        self.target_shapes: dict[str, tuple[int, int]] = {}
+        if enable_conv1_adapter:
+            self.target_shapes["conv1_pointwise"] = (nb_filters, 1)
+        if enable_conv_last_adapter:
+            self.target_shapes["conv_last_pointwise"] = (2 * nb_filters, 2 * nb_filters)
+        self.target_shapes["gru_ih_fwd"] = (3 * nb_units_gru, gru_in_dim)
+        self.target_shapes["gru_ih_rev"] = (3 * nb_units_gru, gru_in_dim)
+        self.target_shapes["classifier"] = (num_classes, 2 * nb_units_gru)
+        self.module_names = list(self.target_shapes.keys())
+
+        self.context_encoder = nn.Sequential(
+            nn.Linear(c_subject_dim, 256),
+            nn.LayerNorm(256, eps=1e-5),
+            nn.SiLU(),
+            nn.Dropout(dropout),
+            nn.Linear(256, 128),
+            nn.SiLU(),
+        )
+        self.module_embedding = nn.Embedding(len(self.module_names), 32)
+        self.mixer = nn.Sequential(
+            nn.Linear(160, 128),
+            nn.SiLU(),
+            MLPResidualBlock(dim=128, hidden_dim=512, dropout=dropout),
+            nn.LayerNorm(128, eps=1e-5),
+            nn.Linear(128, 256),
+            nn.SiLU(),
+        )
+
+        self.shared_A = nn.ParameterDict()
+        self.b_heads = nn.ModuleDict()
+        for name, (out_dim, in_dim) in self.target_shapes.items():
+            A = nn.Parameter(torch.empty(self.lora_rank, in_dim))
+            nn.init.normal_(A, mean=0.0, std=1.0 / math.sqrt(max(1, in_dim)))
+            self.shared_A[name] = A
+
+            head = nn.Linear(256, out_dim * self.lora_rank)
+            nn.init.normal_(head.weight, mean=0.0, std=1e-4)
+            nn.init.zeros_(head.bias)
+            self.b_heads[name] = head
+
+    def forward(
+        self, c_subject: torch.Tensor
+    ) -> dict[str, tuple[torch.Tensor, torch.Tensor]]:
+        batch_size = c_subject.size(0)
+        device = c_subject.device
+        c = self.context_encoder(c_subject)
+        module_ids = torch.arange(len(self.module_names), device=device)
+        e_mod = (
+            self.module_embedding(module_ids).unsqueeze(0).expand(batch_size, -1, -1)
+        )
+        c_mod = c.unsqueeze(1).expand(-1, len(self.module_names), -1)
+        mixed = self.mixer(torch.cat([c_mod, e_mod], dim=-1))
+
+        updates: dict[str, tuple[torch.Tensor, torch.Tensor]] = {}
+        for module_idx, name in enumerate(self.module_names):
+            out_dim, in_dim = self.target_shapes[name]
+            A_base = self.shared_A[name].unsqueeze(0).expand(batch_size, -1, -1)
+            B = self.b_heads[name](mixed[:, module_idx, :]).view(
+                batch_size, out_dim, self.lora_rank
+            )
+            if "conv" in name:
+                A = A_base.view(batch_size, self.lora_rank, in_dim, 1, 1)
+                B = B.view(batch_size, out_dim, self.lora_rank, 1, 1)
+            else:
+                A = A_base
+            updates[name] = (A, B)
+        return updates
 
 
 @dataclass
-class SplitMetaResult:
+class SplitMetaUpdateResult:
     split_index: int
     subject_id: int
     best_epoch: int
@@ -101,8 +319,11 @@ class SplitMetaResult:
     train_loss_at_best: float
     train_macro_f1_at_best: float
     val_macro_f1_at_best: float
+    val_macro_f1_improvement_at_best: float
     test_loss: float
     test_macro_f1: float
+    test_base_macro_f1: float
+    test_macro_f1_improvement: float
     checkpoint_path: str
 
 
@@ -112,11 +333,10 @@ def _slugify_path_component(value: str) -> str:
 
 
 def _resolve_variant_name(train_cfg: Any) -> str:
-    if META_VARIANT_NAME and META_VARIANT_NAME.strip():
-        return _slugify_path_component(META_VARIANT_NAME)
-
+    if META_UPDATE_VARIANT_NAME and META_UPDATE_VARIANT_NAME.strip():
+        return _slugify_path_component(META_UPDATE_VARIANT_NAME)
     parts = [
-        f"enc-{SET_ENCODER_KIND}",
+        "upd",
         f"b{TRAIN_SUBJECTS_PER_EPISODE}",
         f"ktrain{'-'.join(str(k) for k in TRAIN_SUPPORT_PER_CLASS_CHOICES)}",
         f"keval{'-'.join(str(k) for k in EVAL_SUPPORT_PER_CLASS_CHOICES)}",
@@ -125,9 +345,8 @@ def _resolve_variant_name(train_cfg: Any) -> str:
         f"a{LORA_ALPHA:g}",
         f"lr{META_LEARNING_RATE:g}",
         f"l2{ADAPTER_DELTA_L2:g}",
-        f"ctx{int(DEFAULT_CONFIG.set_encoder.include_global_context)}",
-        f"bn{int(FORCE_CONV_BN_EVAL)}",
         f"conv{int(ENABLE_CONV1_ADAPTER)}{int(ENABLE_CONV_LAST_ADAPTER)}",
+        f"epochs{train_cfg.num_epochs}",
     ]
     return _slugify_path_component("_".join(parts))
 
@@ -135,10 +354,10 @@ def _resolve_variant_name(train_cfg: Any) -> str:
 def _run_config_payload(train_cfg: Any, variant_name: str) -> dict[str, Any]:
     return {
         "variant_name": variant_name,
+        "method": "support_error_conditioned_lora_update",
         "dataset_id": str(DATASET_ID),
         "backbone_dir": str(BACKBONE_DIR),
         "train_subjects_per_episode": TRAIN_SUBJECTS_PER_EPISODE,
-        "support_per_class": SUPPORT_PER_CLASS,
         "train_support_per_class_choices": list(TRAIN_SUPPORT_PER_CLASS_CHOICES),
         "query_per_class": QUERY_PER_CLASS,
         "eval_support_per_class_choices": list(EVAL_SUPPORT_PER_CLASS_CHOICES),
@@ -146,45 +365,143 @@ def _run_config_payload(train_cfg: Any, variant_name: str) -> dict[str, Any]:
         "train_episodes_per_epoch": TRAIN_EPISODES_PER_EPOCH,
         "eval_episodes": EVAL_EPISODES,
         "use_vmap": USE_VMAP,
-        "set_encoder_kind": SET_ENCODER_KIND,
-        "enable_early_stopping": ENABLE_EARLY_STOPPING,
         "early_stopping_metric": "val_macro_f1_improvement",
-        "set_encoder_backbone_train_mode": SET_ENCODER_BACKBONE_TRAIN_MODE,
-        "force_conv_bn_eval": FORCE_CONV_BN_EVAL,
-        "include_global_context": DEFAULT_CONFIG.set_encoder.include_global_context,
+        "hidden_dim": HIDDEN_DIM,
+        "label_embed_dim": LABEL_EMBED_DIM,
+        "num_heads": NUM_HEADS,
         "lora_rank": LORA_RANK,
         "lora_alpha": LORA_ALPHA,
         "adapter_delta_l2": ADAPTER_DELTA_L2,
         "meta_learning_rate": META_LEARNING_RATE,
+        "weight_decay": WEIGHT_DECAY,
         "enable_conv1_adapter": ENABLE_CONV1_ADAPTER,
         "enable_conv_last_adapter": ENABLE_CONV_LAST_ADAPTER,
-        "weight_decay": train_cfg.weight_decay,
         "epochs": train_cfg.num_epochs,
         "patience": train_cfg.patience,
     }
 
 
-def _is_completed_meta_split(split_dir: Path) -> bool:
-    required_files = [
-        split_dir / "best_meta_modules.pt",
-        split_dir / "meta_metrics.json",
-        split_dir / "meta_history.json",
-    ]
-    return all(path.exists() for path in required_files)
+def _is_completed_split(split_dir: Path) -> bool:
+    return all(
+        path.exists()
+        for path in [
+            split_dir / "best_meta_update_modules.pt",
+            split_dir / "meta_update_metrics.json",
+            split_dir / "meta_update_history.json",
+        ]
+    )
 
 
-def _load_existing_meta_metrics(split_dir: Path) -> dict[str, Any] | None:
-    metrics_path = split_dir / "meta_metrics.json"
+def _load_existing_metrics(split_dir: Path) -> dict[str, Any] | None:
+    metrics_path = split_dir / "meta_update_metrics.json"
     if not metrics_path.exists():
         return None
     try:
         with metrics_path.open("r", encoding="utf-8") as f:
             payload = json.load(f)
-        if isinstance(payload, dict):
-            return payload
+        return payload if isinstance(payload, dict) else None
     except (json.JSONDecodeError, OSError):
         return None
-    return None
+
+
+def _infer_window_size(loader: Loader, indices: Sequence[int]) -> int:
+    sample = loader.get_sample(int(indices[0]))
+    if not sample:
+        raise ValueError("Could not infer window size: empty sample.")
+    x = np.asarray(sample[0])
+    if x.ndim == 2:
+        return int(x.shape[0])
+    if x.ndim == 3 and x.shape[0] == 1:
+        return int(x.shape[1])
+    raise ValueError(f"Unexpected sample shape for window inference: {tuple(x.shape)}")
+
+
+def _infer_subject_id(loader: Loader, indices: Sequence[int], fallback: int) -> int:
+    subset = loader.window_df.loc[list(indices), ["session_id"]].copy()
+    session_meta = (
+        loader.session_df[["session_id", "subject_id"]]
+        .drop_duplicates("session_id")
+        .set_index("session_id")
+    )
+    merged = subset.join(session_meta, on="session_id", how="left")
+    subjects = merged["subject_id"].dropna().astype(int).unique().tolist()
+    return int(subjects[0]) if len(subjects) == 1 else fallback
+
+
+def _subject_ids_for_indices(loader: Loader, indices: Sequence[int]) -> list[int]:
+    if len(indices) == 0:
+        return []
+    subset = loader.window_df.loc[list(indices), ["session_id"]].copy()
+    session_meta = (
+        loader.session_df[["session_id", "subject_id"]]
+        .drop_duplicates("session_id")
+        .set_index("session_id")
+    )
+    merged = subset.join(session_meta, on="session_id", how="left")
+    if merged["subject_id"].isna().any():
+        raise ValueError("Missing subject_id while inferring split debug info.")
+    return sorted(set(int(x) for x in merged["subject_id"].tolist()))
+
+
+def _activity_support_by_subject(
+    loader: Loader, indices: Sequence[int]
+) -> tuple[dict[int, dict[int, int]], list[int]]:
+    subset = loader.window_df.loc[list(indices), ["session_id"]].copy()
+    subset["window_index"] = subset.index.astype(int)
+    session_meta = loader.session_df[
+        ["session_id", "subject_id", "activity_id"]
+    ].drop_duplicates("session_id")
+    merged = subset.merge(session_meta, on="session_id", how="left")
+    if merged["subject_id"].isna().any() or merged["activity_id"].isna().any():
+        raise ValueError("Missing subject/activity metadata.")
+
+    counts = (
+        merged.groupby(["subject_id", "activity_id"])
+        .size()
+        .rename("count")
+        .reset_index()
+    )
+    activity_ids = sorted(int(x) for x in counts["activity_id"].unique().tolist())
+    support: dict[int, dict[int, int]] = {}
+    for row in counts.itertuples(index=False):
+        support.setdefault(int(row.subject_id), {})[int(row.activity_id)] = int(
+            row.count
+        )
+    return support, activity_ids
+
+
+def _choose_activity_ids(
+    loader: Loader,
+    indices: Sequence[int],
+    needed_per_subject_activity: int,
+    min_subjects: int,
+) -> list[int]:
+    support, activities = _activity_support_by_subject(loader, indices)
+    candidate = activities.copy()
+    while candidate:
+        eligible_subjects = [
+            sid
+            for sid, per_activity in support.items()
+            if all(
+                per_activity.get(aid, 0) >= needed_per_subject_activity
+                for aid in candidate
+            )
+        ]
+        if len(eligible_subjects) >= min_subjects:
+            return candidate
+
+        support_counts = {
+            aid: sum(
+                1
+                for per_activity in support.values()
+                if per_activity.get(aid, 0) >= needed_per_subject_activity
+            )
+            for aid in candidate
+        }
+        drop_aid = min(candidate, key=lambda aid: (support_counts[aid], aid))
+        candidate = [aid for aid in candidate if aid != drop_aid]
+
+    raise ValueError("No activity set has enough support for episodic sampling.")
 
 
 def _fetch_class_weights(
@@ -221,7 +538,6 @@ def _fetch_class_weights(
         weights = torch.ones(num_classes, dtype=torch.float32)
         for class_id in range(num_classes):
             raw_w = float(weights_obj.get(class_id, 1.0))
-            # whar_datasets uses -1 for classes absent in windows -> ignore via zero weight.
             weights[class_id] = 0.0 if raw_w < 0.0 else raw_w
         return weights
 
@@ -230,175 +546,23 @@ def _fetch_class_weights(
         raise ValueError(
             f"Class weights length mismatch: expected {num_classes}, got {weights.numel()}."
         )
-    weights = torch.where(weights < 0.0, torch.zeros_like(weights), weights)
-    return weights
+    return torch.where(weights < 0.0, torch.zeros_like(weights), weights)
 
 
-def _infer_window_size(loader: Loader, indices: Sequence[int]) -> int:
-    if len(indices) == 0:
-        raise ValueError("Cannot infer window size from an empty index set.")
-    sample = loader.get_sample(int(indices[0]))
-    if not sample:
-        raise ValueError("Could not infer window size: empty sample.")
-    x = np.asarray(sample[0])
-    if x.ndim == 2:
-        return int(x.shape[0])
-    if x.ndim == 3 and x.shape[0] == 1:
-        return int(x.shape[1])
-    raise ValueError(f"Unexpected sample shape for window inference: {tuple(x.shape)}")
-
-
-def _infer_subject_id(loader: Loader, indices: Sequence[int], fallback: int) -> int:
-    if len(indices) == 0:
-        return fallback
-
-    subset = loader.window_df.loc[list(indices), ["session_id"]].copy()
-    session_meta = (
-        loader.session_df[["session_id", "subject_id"]]
-        .drop_duplicates("session_id")
-        .set_index("session_id")
-    )
-    merged = subset.join(session_meta, on="session_id", how="left")
-    subjects = merged["subject_id"].dropna().astype(int).unique().tolist()
-    if len(subjects) == 1:
-        return int(subjects[0])
-    return fallback
-
-
-def _subject_ids_for_indices(loader: Loader, indices: Sequence[int]) -> list[int]:
-    if len(indices) == 0:
-        return []
-    subset = loader.window_df.loc[list(indices), ["session_id"]].copy()
-    session_meta = (
-        loader.session_df[["session_id", "subject_id"]]
-        .drop_duplicates("session_id")
-        .set_index("session_id")
-    )
-    merged = subset.join(session_meta, on="session_id", how="left")
-    if merged["subject_id"].isna().any():
-        raise ValueError(
-            "Missing subject_id while inferring subject partition debug info."
-        )
-    return sorted(set(int(x) for x in merged["subject_id"].tolist()))
-
-
-def _activity_support_by_subject(
-    loader: Loader, indices: Sequence[int]
-) -> tuple[dict[int, dict[int, int]], list[int]]:
-    subset = loader.window_df.loc[list(indices), ["session_id"]].copy()
-    subset["window_index"] = subset.index.astype(int)
-
-    session_meta = loader.session_df[
-        ["session_id", "subject_id", "activity_id"]
-    ].drop_duplicates("session_id")
-    merged = subset.merge(session_meta, on="session_id", how="left")
-
-    if merged["subject_id"].isna().any() or merged["activity_id"].isna().any():
-        raise ValueError(
-            "Missing subject/activity metadata while preparing episodic splits."
-        )
-
-    counts = (
-        merged.groupby(["subject_id", "activity_id"])
-        .size()
-        .rename("count")
-        .reset_index()
-    )
-    activity_ids = sorted(int(x) for x in counts["activity_id"].unique().tolist())
-
-    support: dict[int, dict[int, int]] = {}
-    for row in counts.itertuples(index=False):
-        subject_id = int(row.subject_id)
-        activity_id = int(row.activity_id)
-        count = int(row.count)
-        support.setdefault(subject_id, {})[activity_id] = count
-
-    return support, activity_ids
-
-
-def _choose_activity_ids(
-    loader: Loader,
-    indices: Sequence[int],
-    needed_per_subject_activity: int,
-    min_subjects: int,
-) -> list[int]:
-    if len(indices) == 0:
-        raise ValueError("Cannot choose activity ids from empty indices.")
-
-    support, activities = _activity_support_by_subject(loader, indices)
-    if not activities:
-        raise ValueError("No activity ids found in selected indices.")
-
-    candidate = activities.copy()
-    while candidate:
-        eligible_subjects = [
-            sid
-            for sid, per_activity in support.items()
-            if all(
-                per_activity.get(aid, 0) >= needed_per_subject_activity
-                for aid in candidate
+def _build_episode_bank(
+    trainer: SetToLoRAMetaTrainer,
+    episodes: int,
+    support_per_class_choices: Sequence[int],
+) -> list[tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, list[int]]]:
+    choices = [int(k) for k in support_per_class_choices if int(k) > 0]
+    bank = []
+    for episode_idx in range(episodes):
+        bank.append(
+            trainer._sample_episode(
+                support_per_class=choices[episode_idx % len(choices)]
             )
-        ]
-        if len(eligible_subjects) >= min_subjects:
-            return candidate
-
-        # Prune least-supported activity and try again.
-        support_counts = {
-            aid: sum(
-                1
-                for per_activity in support.values()
-                if per_activity.get(aid, 0) >= needed_per_subject_activity
-            )
-            for aid in candidate
-        }
-        drop_aid = min(candidate, key=lambda aid: (support_counts[aid], aid))
-        candidate = [aid for aid in candidate if aid != drop_aid]
-
-    raise ValueError(
-        "Could not find a non-empty activity set with sufficient per-subject support for episodic sampling."
-    )
-
-
-def _build_set_encoder(
-    kind: str,
-    backbone: TinierHAR,
-    num_classes: int,
-) -> torch.nn.Module:
-    if SET_ENCODER_BACKBONE_TRAIN_MODE not in {
-        "freeze_all",
-        "unfreeze_all",
-        "freeze_conv_blocks",
-    }:
-        raise ValueError(
-            "Unsupported SET_ENCODER_BACKBONE_TRAIN_MODE. Expected one of "
-            "['freeze_all', 'unfreeze_all', 'freeze_conv_blocks']."
         )
-
-    # If the set-encoder backbone should receive gradients, keep it separate from
-    # the frozen adaptation backbone used by the meta-trainer.
-    set_encoder_backbone = (
-        backbone
-        if SET_ENCODER_BACKBONE_TRAIN_MODE == "freeze_all"
-        else copy.deepcopy(backbone)
-    )
-    kind_norm = kind.strip().lower()
-    if kind_norm == "prototypical":
-        return PrototypicalSetEncoder(
-            backbone=set_encoder_backbone,
-            num_classes=num_classes,
-            backbone_train_mode=SET_ENCODER_BACKBONE_TRAIN_MODE,
-            force_conv_bn_eval=FORCE_CONV_BN_EVAL,
-            set_encoder_config=DEFAULT_CONFIG.set_encoder,
-        )
-    if kind_norm == "attention":
-        return AttentionSetEncoder(
-            backbone=set_encoder_backbone,
-            num_classes=num_classes,
-            backbone_train_mode=SET_ENCODER_BACKBONE_TRAIN_MODE,
-            force_conv_bn_eval=FORCE_CONV_BN_EVAL,
-            set_encoder_config=DEFAULT_CONFIG.set_encoder,
-        )
-    raise ValueError(f"Unsupported SET_ENCODER_KIND={kind!r}.")
+    return bank
 
 
 def _run_meta_eval(
@@ -419,25 +583,23 @@ def _run_meta_eval(
     all_preds: list[torch.Tensor] = []
     all_targets: list[torch.Tensor] = []
     base_preds_all: list[torch.Tensor] = []
-    support_per_class_values: list[int] = []
     delta_norms_by_module: dict[str, list[float]] = {}
 
+    iterator = (
+        episode_bank
+        if episode_bank is not None
+        else (trainer._sample_episode() for _ in range(episodes))
+    )
+    base_params = dict(trainer.base_model.named_parameters())
+
     with torch.no_grad():
-        iterator = (
-            episode_bank
-            if episode_bank is not None
-            else (trainer._sample_episode() for _ in range(episodes))
-        )
-        for x_support, y_support, x_query, y_query, _ in iterator:
+        for x_support, y_support, x_query, y_query, _subjects in iterator:
             x_support = x_support.to(trainer.device)
             y_support = y_support.to(trainer.device)
             x_query = x_query.to(trainer.device)
             y_query = y_query.to(trainer.device)
-            support_per_class_values.append(
-                int(x_support.size(1) // max(1, len(trainer.activity_ids)))
-            )
-
             targets_flat = y_query.reshape(-1)
+
             base_logits = trainer.base_model(
                 x_query.reshape(-1, *x_query.shape[2:])
             ).reshape(x_query.size(0), x_query.size(1), -1)
@@ -445,12 +607,9 @@ def _run_meta_eval(
             base_loss = F.cross_entropy(
                 base_logits_flat, targets_flat, weight=trainer.class_weights
             )
-            base_losses.append(float(base_loss.item()))
-            base_preds_all.append(base_logits.argmax(dim=-1).reshape(-1).cpu())
 
             c_subject = trainer.set_encoder(x_support, y_support)
             lora_weights = trainer.hypernet(c_subject)
-            base_params = dict(trainer.base_model.named_parameters())
             for adapter_name, param_name in trainer.target_param_names.items():
                 A, B = lora_weights[adapter_name]
                 delta = trainer._compute_lora_delta(A, B) * trainer.lora_scale
@@ -459,10 +618,10 @@ def _run_meta_eval(
                 delta_norms_by_module.setdefault(adapter_name, []).append(
                     float(rel_norm.mean().item())
                 )
+
             batched_params = trainer._build_batched_params(
                 x_query.size(0), lora_weights
             )
-
             if use_vmap:
                 try:
                     logits = trainer._forward_queries_vmap(batched_params, x_query)
@@ -477,73 +636,37 @@ def _run_meta_eval(
             loss = F.cross_entropy(
                 logits_flat, targets_flat, weight=trainer.class_weights
             )
-
             losses.append(float(loss.item()))
+            base_losses.append(float(base_loss.item()))
             all_preds.append(logits.argmax(dim=-1).reshape(-1).cpu())
+            base_preds_all.append(base_logits.argmax(dim=-1).reshape(-1).cpu())
             all_targets.append(targets_flat.cpu())
 
-    preds_t = torch.cat(all_preds) if all_preds else torch.empty((0,), dtype=torch.long)
-    targets_t = (
-        torch.cat(all_targets) if all_targets else torch.empty((0,), dtype=torch.long)
+    preds_t = torch.cat(all_preds)
+    base_preds_t = torch.cat(base_preds_all)
+    targets_t = torch.cat(all_targets)
+    macro_f1 = f1_score(
+        targets_t.numpy(), preds_t.numpy(), average="macro", zero_division=0
     )
-    macro_f1 = (
-        f1_score(targets_t.numpy(), preds_t.numpy(), average="macro", zero_division=0)
-        if preds_t.numel() > 0
-        else 0.0
-    )
-    base_preds_t = (
-        torch.cat(base_preds_all) if base_preds_all else torch.empty((0,), dtype=torch.long)
-    )
-    base_macro_f1 = (
-        f1_score(
-            targets_t.numpy(), base_preds_t.numpy(), average="macro", zero_division=0
-        )
-        if base_preds_t.numel() > 0
-        else 0.0
+    base_macro_f1 = f1_score(
+        targets_t.numpy(), base_preds_t.numpy(), average="macro", zero_division=0
     )
     delta_norm_by_module_mean = {
         name: sum(values) / max(1, len(values))
         for name, values in delta_norms_by_module.items()
     }
-    delta_norm_mean = (
-        sum(delta_norm_by_module_mean.values())
-        / max(1, len(delta_norm_by_module_mean))
+    delta_norm_mean = sum(delta_norm_by_module_mean.values()) / max(
+        1, len(delta_norm_by_module_mean)
     )
-
     return {
         "loss": sum(losses) / max(1, len(losses)),
         "macro_f1": float(macro_f1),
         "base_loss": sum(base_losses) / max(1, len(base_losses)),
         "base_macro_f1": float(base_macro_f1),
         "macro_f1_improvement": float(macro_f1 - base_macro_f1),
-        "mean_support_per_class": float(
-            sum(support_per_class_values) / max(1, len(support_per_class_values))
-        ),
         "lora_relative_delta_norm": float(delta_norm_mean),
         "lora_relative_delta_norm_by_module": delta_norm_by_module_mean,
     }
-
-
-def _build_episode_bank(
-    trainer: SetToLoRAMetaTrainer,
-    episodes: int,
-    support_per_class_choices: Sequence[int] | None,
-) -> list[tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, list[int]]]:
-    if episodes <= 0:
-        return []
-
-    if support_per_class_choices is None:
-        return [trainer._sample_episode() for _ in range(episodes)]
-
-    choices = [int(k) for k in support_per_class_choices if int(k) > 0]
-    if not choices:
-        raise ValueError("support_per_class_choices must contain positive integers.")
-
-    episode_bank = []
-    for episode_idx in range(episodes):
-        k = choices[episode_idx % len(choices)]
-        episode_bank.append(trainer._sample_episode(support_per_class=k))
-    return episode_bank
 
 
 def main() -> None:
@@ -558,10 +681,8 @@ def main() -> None:
 
     pre_pipeline = PreProcessingPipeline(cfg)
     _, session_df, window_df = pre_pipeline.run()
-
     splitter = MetaLOSOSplitter(cfg)
     folds = splitter.get_folds(session_df, window_df)
-
     summary_rows: list[dict[str, Any]] = []
 
     for split_idx, fold in enumerate(folds):
@@ -569,66 +690,45 @@ def main() -> None:
         subject_id = int(fold.test_subject_id)
         split_dir = output_dir / f"subject_{subject_id}"
         split_dir.mkdir(parents=True, exist_ok=True)
-
         print(
-            f"\n=== LOSO META split {split_idx + 1}/{len(folds)} | subject={subject_id} ==="
+            f"\n=== Meta-update split {split_idx + 1}/{len(folds)} | subject={subject_id} ==="
         )
 
-        if _is_completed_meta_split(split_dir):
-            existing = _load_existing_meta_metrics(split_dir)
+        if _is_completed_split(split_dir):
+            existing = _load_existing_metrics(split_dir)
             if existing is not None:
                 summary_rows.append(existing)
-                print(
-                    "Found existing completed meta artifacts, skipping training/evaluation "
-                    f"for subject {subject_id}."
-                )
+                print(f"Found completed artifacts, skipping subject {subject_id}.")
                 continue
-            print(
-                "Found completed meta artifacts but could not parse meta_metrics.json; "
-                f"retraining subject {subject_id}."
-            )
 
         post_pipeline = PostProcessingPipeline(
-            cfg,
-            pre_pipeline,
-            window_df,
-            split.train_indices,
+            cfg, pre_pipeline, window_df, split.train_indices
         )
         samples = post_pipeline.run()
-
         loader = Loader(session_df, window_df, post_pipeline.samples_dir, samples)
-
-        # Infer true held-out subject id from test windows if unique.
         inferred_subject = _infer_subject_id(
             loader, split.test_indices, fallback=subject_id
         )
-        train_subject_ids = _subject_ids_for_indices(loader, split.train_indices)
-        val_subject_ids = _subject_ids_for_indices(loader, split.val_indices)
-        test_subject_ids = _subject_ids_for_indices(loader, split.test_indices)
         print(
             "Meta split subjects "
-            f"(train/val/test)={len(train_subject_ids)}/{len(val_subject_ids)}/{len(test_subject_ids)} "
-            f"| train={train_subject_ids} val={val_subject_ids} test={test_subject_ids}"
+            f"(train/val/test)="
+            f"{len(_subject_ids_for_indices(loader, split.train_indices))}/"
+            f"{len(_subject_ids_for_indices(loader, split.val_indices))}/"
+            f"{len(_subject_ids_for_indices(loader, split.test_indices))}"
         )
 
         num_channels = cfg.num_of_channels
         num_classes = cfg.num_of_activities
         window_size = _infer_window_size(loader, split.train_indices)
-
         base_model = TinierHAR(
             num_channels=num_channels,
             num_classes=num_classes,
             window_size=window_size,
             backbone_config=DEFAULT_CONFIG.backbone,
         )
-
         backbone_ckpt = BACKBONE_DIR / f"subject_{subject_id}" / "best_tinierhar.pt"
         if not backbone_ckpt.exists():
-            raise FileNotFoundError(
-                "Missing pretrained backbone checkpoint for split "
-                f"{split_idx}: {backbone_ckpt}"
-            )
-
+            raise FileNotFoundError(f"Missing pretrained backbone: {backbone_ckpt}")
         map_location = (
             "mps"
             if torch.backends.mps.is_available()
@@ -637,81 +737,60 @@ def main() -> None:
             else "cpu"
         )
         base_model.load_state_dict(torch.load(backbone_ckpt, map_location=map_location))
-        for p in base_model.parameters():
-            p.requires_grad = False
         base_model.eval()
+        for param in base_model.parameters():
+            param.requires_grad = False
 
-        set_encoder = _build_set_encoder(SET_ENCODER_KIND, base_model, num_classes)
-        hypernet = HyperNet(
+        set_encoder = SupportErrorSetEncoder(
+            base_model=base_model,
+            num_classes=num_classes,
+            hidden_dim=HIDDEN_DIM,
+            label_embed_dim=LABEL_EMBED_DIM,
+            num_heads=NUM_HEADS,
+        )
+        update_net = LoRAUpdateNet(
             num_channels=num_channels,
             num_classes=num_classes,
-            set_encoder_output_dim=getattr(set_encoder, "output_dim", None),
+            c_subject_dim=set_encoder.output_dim,
             lora_rank=LORA_RANK,
             lora_alpha=LORA_ALPHA,
             enable_conv1_adapter=ENABLE_CONV1_ADAPTER,
             enable_conv_last_adapter=ENABLE_CONV_LAST_ADAPTER,
-            set_encoder_config=DEFAULT_CONFIG.set_encoder,
-            backbone_config=DEFAULT_CONFIG.backbone,
-            hypernet_config=DEFAULT_CONFIG.hypernet,
         )
-        print(
-            "LoRA scaling "
-            f"(alpha/rank/scale)={hypernet.lora_alpha}/{hypernet.lora_rank}/{hypernet.lora_scale:.6f}"
-        )
-        print(f"Active LoRA adapter modules={hypernet.module_names}")
-        print(f"Set encoder output dim={getattr(set_encoder, 'output_dim', 'unknown')}")
-        print(f"Set encoder backbone train mode={SET_ENCODER_BACKBONE_TRAIN_MODE}")
-        print(f"Force conv-block BN eval={FORCE_CONV_BN_EVAL}")
-
-        class_weights = _fetch_class_weights(loader, split, num_classes)
-        if class_weights is not None:
-            print(
-                f"Using class weights from loader.get_class_weights: shape={tuple(class_weights.shape)}"
-            )
-        else:
-            print("No class weights returned, using unweighted cross-entropy.")
+        print(f"Set encoder output dim={set_encoder.output_dim}")
+        print(f"Active learned-update adapters={update_net.module_names}")
 
         train_needed = max(TRAIN_SUPPORT_PER_CLASS_CHOICES) + QUERY_PER_CLASS
         eval_needed = max(EVAL_SUPPORT_PER_CLASS_CHOICES) + EVAL_QUERY_PER_CLASS
         train_activity_ids = _choose_activity_ids(
-            loader,
-            split.train_indices,
-            needed_per_subject_activity=train_needed,
-            min_subjects=TRAIN_SUBJECTS_PER_EPISODE,
+            loader, split.train_indices, train_needed, TRAIN_SUBJECTS_PER_EPISODE
         )
         val_activity_ids = _choose_activity_ids(
-            loader,
-            split.val_indices,
-            needed_per_subject_activity=eval_needed,
-            min_subjects=1,
+            loader, split.val_indices, eval_needed, 1
         )
         test_activity_ids = _choose_activity_ids(
-            loader,
-            split.test_indices,
-            needed_per_subject_activity=eval_needed,
-            min_subjects=1,
+            loader, split.test_indices, eval_needed, 1
         )
-
         print(
             "Episode activity counts "
-            f"(train/val/test)={len(train_activity_ids)}/{len(val_activity_ids)}/{len(test_activity_ids)}"
+            f"(train/val/test)="
+            f"{len(train_activity_ids)}/{len(val_activity_ids)}/{len(test_activity_ids)}"
         )
 
         train_meta_cfg = MetaTrainerConfig(
             learning_rate=META_LEARNING_RATE,
-            weight_decay=train_cfg.weight_decay,
+            weight_decay=WEIGHT_DECAY,
             adapter_delta_l2=ADAPTER_DELTA_L2,
             batch_subjects=TRAIN_SUBJECTS_PER_EPISODE,
-            support_per_class=SUPPORT_PER_CLASS,
+            support_per_class=max(TRAIN_SUPPORT_PER_CLASS_CHOICES),
             support_per_class_choices=TRAIN_SUPPORT_PER_CLASS_CHOICES,
             query_per_class=QUERY_PER_CLASS,
             use_vmap=USE_VMAP,
             seed=split_idx,
         )
-
         val_meta_cfg = MetaTrainerConfig(
             learning_rate=META_LEARNING_RATE,
-            weight_decay=train_cfg.weight_decay,
+            weight_decay=WEIGHT_DECAY,
             adapter_delta_l2=ADAPTER_DELTA_L2,
             batch_subjects=1,
             support_per_class=max(EVAL_SUPPORT_PER_CLASS_CHOICES),
@@ -721,10 +800,9 @@ def main() -> None:
             seed=10_000 + split_idx,
             device=train_meta_cfg.device,
         )
-
         test_meta_cfg = MetaTrainerConfig(
             learning_rate=META_LEARNING_RATE,
-            weight_decay=train_cfg.weight_decay,
+            weight_decay=WEIGHT_DECAY,
             adapter_delta_l2=ADAPTER_DELTA_L2,
             batch_subjects=1,
             support_per_class=max(EVAL_SUPPORT_PER_CLASS_CHOICES),
@@ -735,16 +813,20 @@ def main() -> None:
             device=train_meta_cfg.device,
         )
 
-        optimizer = torch.optim.Adam(
-            list(set_encoder.parameters()) + list(hypernet.parameters()),
-            lr=train_meta_cfg.learning_rate,
-            weight_decay=train_meta_cfg.weight_decay,
+        optimizer = torch.optim.AdamW(
+            list(set_encoder.parameters()) + list(update_net.parameters()),
+            lr=META_LEARNING_RATE,
+            weight_decay=WEIGHT_DECAY,
         )
-
+        class_weights = _fetch_class_weights(loader, split, num_classes)
+        if class_weights is not None:
+            print(f"Using class weights: shape={tuple(class_weights.shape)}")
+        else:
+            print("No class weights returned, using unweighted cross-entropy.")
         train_trainer = SetToLoRAMetaTrainer(
             base_model=base_model,
             set_encoder=set_encoder,
-            hypernet=hypernet,
+            hypernet=update_net,
             loader=loader,
             num_classes=num_classes,
             config=train_meta_cfg,
@@ -756,7 +838,7 @@ def main() -> None:
         val_trainer = SetToLoRAMetaTrainer(
             base_model=base_model,
             set_encoder=set_encoder,
-            hypernet=hypernet,
+            hypernet=update_net,
             loader=loader,
             num_classes=num_classes,
             config=val_meta_cfg,
@@ -768,7 +850,7 @@ def main() -> None:
         test_trainer = SetToLoRAMetaTrainer(
             base_model=base_model,
             set_encoder=set_encoder,
-            hypernet=hypernet,
+            hypernet=update_net,
             loader=loader,
             num_classes=num_classes,
             config=test_meta_cfg,
@@ -777,22 +859,11 @@ def main() -> None:
             indices=split.test_indices,
             activity_ids=test_activity_ids,
         )
-
         val_episode_bank = _build_episode_bank(
-            val_trainer,
-            episodes=EVAL_EPISODES,
-            support_per_class_choices=EVAL_SUPPORT_PER_CLASS_CHOICES,
+            val_trainer, EVAL_EPISODES, EVAL_SUPPORT_PER_CLASS_CHOICES
         )
         test_episode_bank = _build_episode_bank(
-            test_trainer,
-            episodes=EVAL_EPISODES,
-            support_per_class_choices=EVAL_SUPPORT_PER_CLASS_CHOICES,
-        )
-        print(
-            "Fixed eval episode banks "
-            f"(val/test episodes)={len(val_episode_bank)}/{len(test_episode_bank)} "
-            f"| eval_k={list(EVAL_SUPPORT_PER_CLASS_CHOICES)} "
-            f"| eval_q={EVAL_QUERY_PER_CLASS}"
+            test_trainer, EVAL_EPISODES, EVAL_SUPPORT_PER_CLASS_CHOICES
         )
 
         best_val_loss = float("inf")
@@ -802,8 +873,7 @@ def main() -> None:
         best_val_f1 = float("-inf")
         best_val_improvement = float("-inf")
         patience_counter = 0
-
-        best_ckpt_path = split_dir / "best_meta_modules.pt"
+        best_ckpt_path = split_dir / "best_meta_update_modules.pt"
         val_loss_history: list[float] = []
         val_macro_f1_history: list[float] = []
         val_base_macro_f1_history: list[float] = []
@@ -812,10 +882,9 @@ def main() -> None:
         for epoch in range(1, train_cfg.num_epochs + 1):
             train_losses: list[float] = []
             train_f1s: list[float] = []
-
             progress = tqdm(
                 range(TRAIN_EPISODES_PER_EPOCH),
-                desc=f"MetaTrain {epoch}/{train_cfg.num_epochs}",
+                desc=f"MetaUpdate {epoch}/{train_cfg.num_epochs}",
                 leave=False,
             )
             for _ in progress:
@@ -849,15 +918,13 @@ def main() -> None:
                 and (
                     (val_macro_f1_improvement > best_val_improvement)
                     or (
-                        np.isclose(
-                            val_macro_f1_improvement, best_val_improvement
-                        )
+                        np.isclose(val_macro_f1_improvement, best_val_improvement)
                         and (
                             (val_macro_f1 > best_val_f1)
                             or (
                                 np.isclose(val_macro_f1, best_val_f1)
                                 and np.isfinite(val_loss)
-                                and (val_loss < best_val_loss)
+                                and val_loss < best_val_loss
                             )
                         )
                     )
@@ -874,16 +941,9 @@ def main() -> None:
                 torch.save(
                     {
                         "set_encoder": set_encoder.state_dict(),
-                        "hypernet": hypernet.state_dict(),
+                        "update_net": update_net.state_dict(),
                         "meta_config": asdict(train_meta_cfg),
-                        "train_support_per_class_choices": list(
-                            TRAIN_SUPPORT_PER_CLASS_CHOICES
-                        ),
-                        "eval_support_per_class_choices": list(
-                            EVAL_SUPPORT_PER_CLASS_CHOICES
-                        ),
-                        "eval_query_per_class": EVAL_QUERY_PER_CLASS,
-                        "early_stopping_metric": "val_macro_f1_improvement",
+                        "run_config": run_config,
                         "train_activity_ids": train_activity_ids,
                         "val_activity_ids": val_activity_ids,
                         "test_activity_ids": test_activity_ids,
@@ -894,31 +954,21 @@ def main() -> None:
             else:
                 patience_counter += 1
 
-            patience_str = (
-                f"{patience_counter}/{train_cfg.patience}"
-                if ENABLE_EARLY_STOPPING
-                else f"{patience_counter}/off"
-            )
             print(
-                f"[Meta Epoch {epoch:03d}] "
+                f"[MetaUpdate Epoch {epoch:03d}] "
                 f"train_loss={train_loss:.4f} train_macro_f1={train_macro_f1:.4f} "
                 f"val_loss={val_loss:.4f} val_macro_f1={val_macro_f1:.4f} "
                 f"val_base_macro_f1={val_base_macro_f1:.4f} "
                 f"val_improvement={val_macro_f1_improvement:+.4f} "
-                f"best_val_improvement={best_val_improvement:+.4f} "
-                f"best_val_macro_f1={best_val_f1:.4f} best_val_loss={best_val_loss:.4f} "
-                f"patience={patience_str}"
+                f"best_improvement={best_val_improvement:+.4f} "
+                f"patience={patience_counter}/{train_cfg.patience}"
             )
-
             if ENABLE_EARLY_STOPPING and patience_counter >= train_cfg.patience:
-                print(
-                    f"Meta early stopping triggered at epoch {epoch}. Best epoch: {best_epoch}."
-                )
+                print(f"Early stopping at epoch {epoch}. Best epoch: {best_epoch}.")
                 break
 
         if not best_ckpt_path.exists():
-            # Fallback for runs where validation never yields a finite/better score.
-            best_epoch = train_cfg.num_epochs
+            best_epoch = epoch
             best_train_loss = train_loss
             best_train_f1 = train_macro_f1
             best_val_f1 = val_macro_f1
@@ -927,16 +977,9 @@ def main() -> None:
             torch.save(
                 {
                     "set_encoder": set_encoder.state_dict(),
-                    "hypernet": hypernet.state_dict(),
+                    "update_net": update_net.state_dict(),
                     "meta_config": asdict(train_meta_cfg),
-                    "train_support_per_class_choices": list(
-                        TRAIN_SUPPORT_PER_CLASS_CHOICES
-                    ),
-                    "eval_support_per_class_choices": list(
-                        EVAL_SUPPORT_PER_CLASS_CHOICES
-                    ),
-                    "eval_query_per_class": EVAL_QUERY_PER_CLASS,
-                    "early_stopping_metric": "val_macro_f1_improvement",
+                    "run_config": run_config,
                     "train_activity_ids": train_activity_ids,
                     "val_activity_ids": val_activity_ids,
                     "test_activity_ids": test_activity_ids,
@@ -948,8 +991,7 @@ def main() -> None:
 
         ckpt = torch.load(best_ckpt_path, map_location=train_trainer.device)
         set_encoder.load_state_dict(ckpt["set_encoder"])
-        hypernet.load_state_dict(ckpt["hypernet"])
-
+        update_net.load_state_dict(ckpt["update_net"])
         test_metrics = _run_meta_eval(
             test_trainer,
             EVAL_EPISODES,
@@ -957,7 +999,7 @@ def main() -> None:
             episode_bank=test_episode_bank,
         )
 
-        result = SplitMetaResult(
+        result = SplitMetaUpdateResult(
             split_index=split_idx,
             subject_id=inferred_subject,
             best_epoch=best_epoch,
@@ -965,137 +1007,74 @@ def main() -> None:
             train_loss_at_best=best_train_loss,
             train_macro_f1_at_best=best_train_f1,
             val_macro_f1_at_best=best_val_f1,
+            val_macro_f1_improvement_at_best=best_val_improvement,
             test_loss=float(test_metrics["loss"]),
             test_macro_f1=float(test_metrics["macro_f1"]),
+            test_base_macro_f1=float(test_metrics["base_macro_f1"]),
+            test_macro_f1_improvement=float(test_metrics["macro_f1_improvement"]),
             checkpoint_path=str(best_ckpt_path),
         )
-
         result_dict = asdict(result)
         result_dict["test_subject_id"] = int(fold.test_subject_id)
-        result_dict["meta_train_subject_ids"] = sorted(
-            int(x) for x in fold.meta_train_subject_ids
-        )
-        result_dict["meta_val_subject_ids"] = sorted(
-            int(x) for x in fold.meta_val_subject_ids
-        )
-        result_dict["pretrain_train_subject_ids"] = sorted(
-            int(x) for x in fold.pretrain_train_subject_ids
-        )
-        result_dict["pretrain_val_subject_ids"] = sorted(
-            int(x) for x in fold.pretrain_val_subject_ids
-        )
-        result_dict["best_val_macro_f1"] = float(
-            max(val_macro_f1_history) if val_macro_f1_history else 0.0
-        )
-        result_dict["best_val_base_macro_f1"] = float(
-            val_base_macro_f1_history[best_epoch - 1]
-            if 1 <= best_epoch <= len(val_base_macro_f1_history)
-            else 0.0
-        )
-        result_dict["best_val_macro_f1_improvement"] = float(
-            val_macro_f1_improvement_history[best_epoch - 1]
-            if 1 <= best_epoch <= len(val_macro_f1_improvement_history)
-            else 0.0
-        )
-        result_dict["best_val_selection_metric"] = float(best_val_improvement)
-        result_dict["early_stopping_metric"] = "val_macro_f1_improvement"
-        result_dict["final_val_loss"] = float(
-            val_loss_history[-1] if val_loss_history else float("inf")
-        )
-        result_dict["final_val_macro_f1"] = float(
-            val_macro_f1_history[-1] if val_macro_f1_history else 0.0
-        )
-        result_dict["test_base_loss"] = float(test_metrics["base_loss"])
-        result_dict["test_base_macro_f1"] = float(test_metrics["base_macro_f1"])
-        result_dict["test_macro_f1_improvement"] = float(
-            test_metrics["macro_f1_improvement"]
-        )
         result_dict["test_lora_relative_delta_norm"] = float(
             test_metrics["lora_relative_delta_norm"]
         )
         result_dict["test_lora_relative_delta_norm_by_module"] = test_metrics[
             "lora_relative_delta_norm_by_module"
         ]
-        result_dict["eval_support_per_class"] = float(
-            test_metrics["mean_support_per_class"]
+        result_dict["early_stopping_metric"] = "val_macro_f1_improvement"
+        result_dict["train_support_per_class_choices"] = list(
+            TRAIN_SUPPORT_PER_CLASS_CHOICES
         )
         result_dict["eval_support_per_class_choices"] = list(
             EVAL_SUPPORT_PER_CLASS_CHOICES
         )
-        result_dict["eval_query_per_class"] = int(EVAL_QUERY_PER_CLASS)
-        result_dict["train_support_per_class_choices"] = list(
-            TRAIN_SUPPORT_PER_CLASS_CHOICES
-        )
-        with (split_dir / "meta_metrics.json").open("w", encoding="utf-8") as f:
+        result_dict["eval_query_per_class"] = EVAL_QUERY_PER_CLASS
+        with (split_dir / "meta_update_metrics.json").open("w", encoding="utf-8") as f:
             json.dump(result_dict, f, indent=2)
 
-        meta_history = dict(train_trainer.state.history)
-        meta_history["val_loss"] = val_loss_history
-        meta_history["val_macro_f1"] = val_macro_f1_history
-        meta_history["val_base_macro_f1"] = val_base_macro_f1_history
-        meta_history["val_macro_f1_improvement"] = val_macro_f1_improvement_history
-        meta_history["partition_subject_ids"] = {
-            "test_subject_id": int(fold.test_subject_id),
-            "meta_train_subject_ids": sorted(
-                int(x) for x in fold.meta_train_subject_ids
-            ),
-            "meta_val_subject_ids": sorted(int(x) for x in fold.meta_val_subject_ids),
-            "pretrain_train_subject_ids": sorted(
-                int(x) for x in fold.pretrain_train_subject_ids
-            ),
-            "pretrain_val_subject_ids": sorted(
-                int(x) for x in fold.pretrain_val_subject_ids
-            ),
-        }
-        with (split_dir / "meta_history.json").open("w", encoding="utf-8") as f:
-            json.dump(meta_history, f, indent=2)
+        history = dict(train_trainer.state.history)
+        history["val_loss"] = val_loss_history
+        history["val_macro_f1"] = val_macro_f1_history
+        history["val_base_macro_f1"] = val_base_macro_f1_history
+        history["val_macro_f1_improvement"] = val_macro_f1_improvement_history
+        with (split_dir / "meta_update_history.json").open("w", encoding="utf-8") as f:
+            json.dump(history, f, indent=2)
 
         summary_rows.append(result_dict)
-
         print(
-            f"Subject {inferred_subject}: test_loss={result.test_loss:.4f}, "
-            f"test_macro_f1={result.test_macro_f1:.4f}"
+            f"Subject {inferred_subject}: "
+            f"base_f1={result.test_base_macro_f1:.4f} "
+            f"adapted_f1={result.test_macro_f1:.4f} "
+            f"improvement={result.test_macro_f1_improvement:+.4f}"
         )
 
     mean_macro_f1 = sum(float(r["test_macro_f1"]) for r in summary_rows) / max(
         1, len(summary_rows)
     )
     mean_base_macro_f1 = sum(
-        float(r.get("test_base_macro_f1", 0.0)) for r in summary_rows
+        float(r["test_base_macro_f1"]) for r in summary_rows
     ) / max(1, len(summary_rows))
-    mean_macro_f1_improvement = sum(
-        float(r.get("test_macro_f1_improvement", 0.0)) for r in summary_rows
+    mean_improvement = sum(
+        float(r["test_macro_f1_improvement"]) for r in summary_rows
     ) / max(1, len(summary_rows))
-    mean_loss = sum(float(r["test_loss"]) for r in summary_rows) / max(
-        1, len(summary_rows)
-    )
     summary = {
         "num_splits": len(summary_rows),
         "mean_test_macro_f1": mean_macro_f1,
         "mean_test_base_macro_f1": mean_base_macro_f1,
-        "mean_test_macro_f1_improvement": mean_macro_f1_improvement,
-        "mean_test_loss": mean_loss,
-        "splits": summary_rows,
-        "backbone_dir": str(BACKBONE_DIR),
-        "meta_output_root_dir": str(OUTPUT_ROOT_DIR),
-        "meta_output_dir": str(output_dir),
+        "mean_test_macro_f1_improvement": mean_improvement,
         "variant_name": variant_name,
+        "meta_output_dir": str(output_dir),
         "run_config": run_config,
-        "early_stopping_metric": "val_macro_f1_improvement",
-        "train_support_per_class_choices": list(TRAIN_SUPPORT_PER_CLASS_CHOICES),
-        "eval_support_per_class_choices": list(EVAL_SUPPORT_PER_CLASS_CHOICES),
-        "eval_query_per_class": EVAL_QUERY_PER_CLASS,
+        "splits": summary_rows,
     }
-
     with (output_dir / "summary.json").open("w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
 
-    print("\n=== LOSO meta-training finished ===")
-    print(f"Mean meta-test macro F1: {mean_macro_f1:.4f}")
-    print(f"Mean episodic base macro F1: {mean_base_macro_f1:.4f}")
-    print(f"Mean episodic improvement: {mean_macro_f1_improvement:+.4f}")
-    print(f"Mean meta-test loss: {mean_loss:.4f}")
-    print(f"Variant: {variant_name}")
+    print("\n=== Meta-update training finished ===")
+    print(f"Mean base macro F1: {mean_base_macro_f1:.4f}")
+    print(f"Mean adapted macro F1: {mean_macro_f1:.4f}")
+    print(f"Mean improvement: {mean_improvement:+.4f}")
     print(f"Saved results to: {output_dir}")
 
 

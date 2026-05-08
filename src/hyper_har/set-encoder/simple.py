@@ -23,6 +23,7 @@ class PrototypicalSetEncoder(nn.Module):
             label_embed_dim if label_embed_dim is not None else cfg.label_embed_dim
         )
         hidden_dim = hidden_dim if hidden_dim is not None else cfg.hidden_dim
+        self.include_global_context = bool(cfg.include_global_context)
 
         self.backbone = backbone
         self.num_classes = num_classes
@@ -53,6 +54,12 @@ class PrototypicalSetEncoder(nn.Module):
 
         # TinierHAR outputs a feature vector of size 2 * nb_units_gru
         self.feature_dim = 2 * backbone.nb_units_gru
+        self.hidden_dim = hidden_dim
+        self.output_dim = (
+            (num_classes + 1) * hidden_dim
+            if self.include_global_context
+            else num_classes * hidden_dim
+        )
 
         # 2. Label Fusion Layers
         self.label_embedding = nn.Embedding(num_classes, label_embed_dim)
@@ -61,6 +68,17 @@ class PrototypicalSetEncoder(nn.Module):
             nn.ReLU(),
             nn.Linear(hidden_dim * 2, hidden_dim),
         )
+        if self.include_global_context:
+            self.raw_stats_mlp = nn.Sequential(
+                nn.Linear(2 * backbone.input_channels, hidden_dim),
+                nn.ReLU(),
+                nn.Linear(hidden_dim, hidden_dim),
+            )
+            self.global_fusion_mlp = nn.Sequential(
+                nn.Linear(2 * hidden_dim, hidden_dim),
+                nn.ReLU(),
+                nn.Linear(hidden_dim, hidden_dim),
+            )
 
     def extract_features(self, x: torch.Tensor) -> torch.Tensor:
         if self.backbone_train_mode == "freeze_all":
@@ -89,7 +107,12 @@ class PrototypicalSetEncoder(nn.Module):
 
     def train(self, mode: bool = True):
         super().train(mode)
-        self._enforce_backbone_module_modes()
+        if mode:
+            self._enforce_backbone_module_modes()
+        else:
+            self.backbone.eval()
+            if self.force_conv_bn_eval:
+                self._set_conv_block_batchnorm_eval()
         return self
 
     def forward(self, x_support: torch.Tensor, y_support: torch.Tensor) -> torch.Tensor:
@@ -126,5 +149,15 @@ class PrototypicalSetEncoder(nn.Module):
 
         # Concatenate all prototypes: (B, num_classes * hidden_dim)
         c_subject = torch.cat(class_prototypes, dim=-1)
+        if self.include_global_context:
+            z_global = z.mean(dim=1)
+            raw = x_support.squeeze(2)
+            raw_mean = raw.mean(dim=(1, 2))
+            raw_std = raw.std(dim=(1, 2), unbiased=False)
+            raw_context = self.raw_stats_mlp(torch.cat([raw_mean, raw_std], dim=-1))
+            global_context = self.global_fusion_mlp(
+                torch.cat([z_global, raw_context], dim=-1)
+            )
+            c_subject = torch.cat([c_subject, global_context], dim=-1)
 
         return c_subject

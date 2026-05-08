@@ -112,6 +112,7 @@ class HyperNet(nn.Module):
         num_channels: int,  # number of sensors
         num_classes: int,
         set_encoder_hidden_dim: int | None = None,  # From PrototypicalSetEncoder
+        set_encoder_output_dim: int | None = None,
         nb_filters: int | None = None,  # From TinierHAR
         nb_units_gru: int | None = None,  # From TinierHAR
         lora_rank: int | None = None,
@@ -156,8 +157,15 @@ class HyperNet(nn.Module):
         self.enable_conv1_adapter = bool(enable_conv1_adapter)
         self.enable_conv_last_adapter = bool(enable_conv_last_adapter)
 
-        # Calculate exactly what the set encoder outputs
-        c_subject_dim = num_classes * set_encoder_hidden_dim
+        # Calculate exactly what the set encoder outputs. Newer set encoders may
+        # append a global subject context in addition to class-wise prototypes.
+        c_subject_dim = (
+            int(set_encoder_output_dim)
+            if set_encoder_output_dim is not None
+            else (num_classes + int(set_encoder_cfg.include_global_context))
+            * set_encoder_hidden_dim
+        )
+        self.c_subject_dim = c_subject_dim
 
         # Calculate exactly what TinierHAR shapes are at each point
         in_c_conv1 = 1

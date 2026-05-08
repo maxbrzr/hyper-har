@@ -25,6 +25,7 @@ class AttentionSetEncoder(nn.Module):
         )
         hidden_dim = hidden_dim if hidden_dim is not None else cfg.hidden_dim
         num_heads = num_heads if num_heads is not None else cfg.num_heads
+        self.include_global_context = bool(cfg.include_global_context)
         self.backbone = backbone
         self.num_classes = num_classes
         if freeze_backbone is not None:
@@ -53,6 +54,12 @@ class AttentionSetEncoder(nn.Module):
         self._enforce_backbone_module_modes()
 
         self.feature_dim = 2 * backbone.nb_units_gru
+        self.hidden_dim = hidden_dim
+        self.output_dim = (
+            (num_classes + 1) * hidden_dim
+            if self.include_global_context
+            else num_classes * hidden_dim
+        )
 
         # 2. Label Fusion Layers
         self.label_embedding = nn.Embedding(num_classes, label_embed_dim)
@@ -61,6 +68,17 @@ class AttentionSetEncoder(nn.Module):
             nn.ReLU(),
             nn.Linear(hidden_dim * 2, hidden_dim),
         )
+        if self.include_global_context:
+            self.raw_stats_mlp = nn.Sequential(
+                nn.Linear(2 * backbone.input_channels, hidden_dim),
+                nn.ReLU(),
+                nn.Linear(hidden_dim, hidden_dim),
+            )
+            self.global_fusion_mlp = nn.Sequential(
+                nn.Linear(2 * hidden_dim, hidden_dim),
+                nn.ReLU(),
+                nn.Linear(hidden_dim, hidden_dim),
+            )
 
         # 3. Learnable Queries (One unique query per class)
         self.class_queries = nn.Parameter(torch.randn(num_classes, 1, hidden_dim))
@@ -97,7 +115,12 @@ class AttentionSetEncoder(nn.Module):
 
     def train(self, mode: bool = True):
         super().train(mode)
-        self._enforce_backbone_module_modes()
+        if mode:
+            self._enforce_backbone_module_modes()
+        else:
+            self.backbone.eval()
+            if self.force_conv_bn_eval:
+                self._set_conv_block_batchnorm_eval()
         return self
 
     def forward(self, x_support: torch.Tensor, y_support: torch.Tensor) -> torch.Tensor:
@@ -152,5 +175,15 @@ class AttentionSetEncoder(nn.Module):
 
         # Concatenate all representations: (B, num_classes * hidden_dim)
         c_subject = torch.cat(class_representations, dim=-1)
+        if self.include_global_context:
+            z_global = z.mean(dim=1)
+            raw = x_support.squeeze(2)
+            raw_mean = raw.mean(dim=(1, 2))
+            raw_std = raw.std(dim=(1, 2), unbiased=False)
+            raw_context = self.raw_stats_mlp(torch.cat([raw_mean, raw_std], dim=-1))
+            global_context = self.global_fusion_mlp(
+                torch.cat([z_global, raw_context], dim=-1)
+            )
+            c_subject = torch.cat([c_subject, global_context], dim=-1)
 
         return c_subject

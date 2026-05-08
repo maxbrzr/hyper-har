@@ -106,6 +106,16 @@ def _infer_steps_per_epoch_from_variant_name(variant_name: str) -> int | None:
     return int(match.group(1))
 
 
+def _infer_steps_per_epoch(meta_variant_dir: Path) -> int | None:
+    run_config_path = meta_variant_dir / "run_config.json"
+    if run_config_path.exists():
+        run_config = _load_json(run_config_path)
+        steps = _optional_int(run_config.get("train_episodes_per_epoch"))
+        if steps is not None:
+            return steps
+    return _infer_steps_per_epoch_from_variant_name(meta_variant_dir.name)
+
+
 def _optional_float(value: Any) -> float | None:
     if value is None:
         return None
@@ -124,7 +134,9 @@ def _optional_int(value: Any) -> int | None:
         return None
 
 
-def _collect_subject_rows(loso_dir: Path, meta_variant_dir: Path) -> list[dict[str, Any]]:
+def _collect_subject_rows(
+    loso_dir: Path, meta_variant_dir: Path, require_episodic_base: bool = True
+) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
 
     for subject_dir in sorted(meta_variant_dir.iterdir(), key=lambda p: p.name):
@@ -145,24 +157,41 @@ def _collect_subject_rows(loso_dir: Path, meta_variant_dir: Path) -> list[dict[s
         if subject_id is None:
             continue
 
-        loso_metrics_path = loso_dir / f"subject_{subject_id}" / "metrics.json"
-        if not loso_metrics_path.exists():
+        meta_f1 = float(meta_metrics["test_macro_f1"])
+        episodic_base_f1 = _optional_float(meta_metrics.get("test_base_macro_f1"))
+        episodic_improvement = _optional_float(
+            meta_metrics.get("test_macro_f1_improvement")
+        )
+        if require_episodic_base and (
+            episodic_base_f1 is None or episodic_improvement is None
+        ):
             continue
 
-        loso_metrics = _load_json(loso_metrics_path)
+        loso_f1 = None
+        loso_improvement = None
+        loso_metrics_path = loso_dir / f"subject_{subject_id}" / "metrics.json"
+        if loso_metrics_path.exists():
+            loso_metrics = _load_json(loso_metrics_path)
+            loso_f1 = float(loso_metrics["test_macro_f1"])
+            loso_improvement = meta_f1 - loso_f1
 
-        loso_f1 = float(loso_metrics["test_macro_f1"])
-        meta_f1 = float(meta_metrics["test_macro_f1"])
         best_epoch = int(meta_metrics["best_epoch"])
-        improvement = meta_f1 - loso_f1
+        primary_improvement = (
+            episodic_improvement
+            if episodic_improvement is not None
+            else loso_improvement
+        )
 
         rows.append(
             {
                 "subject_id": subject_id,
                 "meta_subject_dir": str(subject_dir),
                 "loso_test_macro_f1": loso_f1,
+                "loso_protocol_improvement": loso_improvement,
+                "episodic_base_macro_f1": episodic_base_f1,
                 "meta_test_macro_f1": meta_f1,
-                "improvement": improvement,
+                "improvement": primary_improvement,
+                "episodic_improvement": episodic_improvement,
                 "best_epoch": best_epoch,
                 "best_val_loss": _optional_float(meta_metrics.get("best_val_loss")),
                 "best_val_macro_f1": _optional_float(
@@ -313,8 +342,8 @@ def _plot_improvement_bars(rows: list[dict[str, Any]], output_path: Path) -> Non
     bars = ax.bar(all_x, all_y, color=colors, alpha=0.9)
     ax.axhline(0.0, color="black", linewidth=1.0)
     ax.set_xlabel("Subject ID")
-    ax.set_ylabel("Improvement in Test Macro F1 (Meta LOSO - LOSO)")
-    ax.set_title("Per-Subject Test Macro F1 Improvement After Meta Adaptation")
+    ax.set_ylabel("Same-Query Test Macro F1 Improvement (Adapted - Base)")
+    ax.set_title("Per-Subject Episodic Test Improvement After Meta Adaptation")
     ax.grid(axis="y", alpha=0.25)
     ax.set_xticks(all_x)
     ax.set_xticklabels([str(s) for s in subject_ids] + ["mean"])
@@ -326,7 +355,8 @@ def _plot_improvement_bars(rows: list[dict[str, Any]], output_path: Path) -> Non
 
     for bar, row in zip(bars[:-1], rows):
         improvement = float(row["improvement"])
-        loso_f1 = float(row["loso_test_macro_f1"])
+        base_f1 = row.get("episodic_base_macro_f1")
+        base_f1 = float(base_f1) if base_f1 is not None else float("nan")
         meta_f1 = float(row["meta_test_macro_f1"])
         best_epoch = int(row["best_epoch"])
         x = bar.get_x() + bar.get_width() / 2.0
@@ -334,7 +364,7 @@ def _plot_improvement_bars(rows: list[dict[str, Any]], output_path: Path) -> Non
 
         annotation = (
             f"{improvement:+.4f}\n"
-            f"{loso_f1:.4f} -> {meta_f1:.4f}\n"
+            f"{base_f1:.4f} -> {meta_f1:.4f}\n"
             f"best ep {best_epoch}"
         )
         if improvement >= 0:
@@ -392,8 +422,11 @@ def _write_summary_csv(rows: list[dict[str, Any]], output_path: Path) -> None:
     fieldnames = [
         "subject_id",
         "loso_test_macro_f1",
+        "loso_protocol_improvement",
+        "episodic_base_macro_f1",
         "meta_test_macro_f1",
         "improvement",
+        "episodic_improvement",
         "best_epoch",
         "best_val_loss",
         "best_val_macro_f1",
@@ -410,7 +443,8 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Create plots for meta-training artifacts: "
-            "lineplots of meta train/validation curves and barplot of LOSO-to-meta F1 improvement."
+            "lineplots of meta train/validation curves and same-query episodic "
+            "base-to-adapted F1 improvement."
         )
     )
     parser.add_argument(
@@ -468,6 +502,15 @@ def _parse_args() -> argparse.Namespace:
             "Default: <resolved-meta-variant>/plots"
         ),
     )
+    parser.add_argument(
+        "--allow-legacy-loso-comparison",
+        action="store_true",
+        help=(
+            "Allow plotting older meta artifacts that do not contain same-query "
+            "episodic base metrics. This falls back to LOSO test F1 and mixes "
+            "evaluation protocols, so use it only for legacy inspection."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -490,22 +533,28 @@ def main() -> None:
     )
     steps_per_epoch = args.steps_per_epoch
     if steps_per_epoch is None:
-        steps_per_epoch = _infer_steps_per_epoch_from_variant_name(meta_variant_dir.name)
+        steps_per_epoch = _infer_steps_per_epoch(meta_variant_dir)
 
     output_dir = args.output_dir or (meta_variant_dir / "plots")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    rows = _collect_subject_rows(loso_dir, meta_variant_dir)
+    rows = _collect_subject_rows(
+        loso_dir,
+        meta_variant_dir,
+        require_episodic_base=not args.allow_legacy_loso_comparison,
+    )
     if not rows:
         raise RuntimeError(
-            "No overlapping LOSO and meta subject metrics found. "
-            "Check artifact directories and variant selection."
+            "No plottable subject metrics found. New plots require meta_metrics.json "
+            "with test_base_macro_f1 and test_macro_f1_improvement. Rerun "
+            "scripts/meta-script.py for this variant, or pass "
+            "--allow-legacy-loso-comparison to inspect old mixed-protocol artifacts."
         )
 
     lineplot_path = output_dir / "meta_train_loss_lineplot.png"
     val_loss_path = output_dir / "val_loss_lineplot.png"
     val_macro_f1_path = output_dir / "val_macro_f1_lineplot.png"
-    barplot_path = output_dir / "macro_f1_improvement_barplot.png"
+    barplot_path = output_dir / "episodic_macro_f1_improvement_barplot.png"
     summary_csv_path = output_dir / "subject_improvement_summary.csv"
 
     _plot_meta_train_loss(
@@ -531,9 +580,27 @@ def main() -> None:
     _write_summary_csv(rows=rows, output_path=summary_csv_path)
 
     mean_improvement = sum(float(r["improvement"]) for r in rows) / len(rows)
+    episodic_improvements = [
+        float(r["episodic_improvement"])
+        for r in rows
+        if r.get("episodic_improvement") is not None
+    ]
     print(f"Meta variant: {meta_variant_dir}")
     print(f"Subjects plotted: {len(rows)}")
-    print(f"Mean improvement (macro F1): {mean_improvement:+.4f}")
+    if args.allow_legacy_loso_comparison and not episodic_improvements:
+        print(
+            "WARNING: using legacy LOSO comparison. This mixes full-test LOSO F1 "
+            "with episodic adapted F1 and should not be used as the primary result."
+        )
+    print(f"Mean plotted improvement (macro F1): {mean_improvement:+.4f}")
+    if episodic_improvements:
+        mean_episodic_improvement = sum(episodic_improvements) / len(
+            episodic_improvements
+        )
+        print(
+            "Mean episodic improvement over same-query base: "
+            f"{mean_episodic_improvement:+.4f}"
+        )
     if steps_per_epoch is not None:
         print(f"Using steps_per_epoch={steps_per_epoch} for loss aggregation.")
     else:

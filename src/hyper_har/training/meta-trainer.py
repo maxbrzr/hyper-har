@@ -16,8 +16,10 @@ from whar_datasets import Loader
 class MetaTrainerConfig:
     learning_rate: float = 1e-4
     weight_decay: float = 0.0
+    adapter_delta_l2: float = 0.0
     batch_subjects: int = 4
     support_per_class: int = 4
+    support_per_class_choices: Sequence[int] | None = None
     query_per_class: int = 8
     use_vmap: bool = True
     seed: int | None = None
@@ -33,7 +35,12 @@ class MetaTrainerConfig:
 @dataclass
 class MetaTrainerState:
     history: Dict[str, list[float]] = field(
-        default_factory=lambda: {"meta_train_loss": [], "meta_train_macro_f1": []}
+        default_factory=lambda: {
+            "meta_train_loss": [],
+            "meta_train_ce_loss": [],
+            "meta_train_adapter_delta_l2": [],
+            "meta_train_macro_f1": [],
+        }
     )
     steps: int = 0
 
@@ -157,7 +164,17 @@ class SetToLoRAMetaTrainer:
         }
 
     def _build_eligible_subject_ids(self) -> list[int]:
-        support_plus_query = self.config.support_per_class + self.config.query_per_class
+        max_support_per_class = self.config.support_per_class
+        if self.config.support_per_class_choices is not None:
+            cleaned_choices = [
+                int(k) for k in self.config.support_per_class_choices if int(k) > 0
+            ]
+            if not cleaned_choices:
+                raise ValueError(
+                    "support_per_class_choices must contain positive integers."
+                )
+            max_support_per_class = max(cleaned_choices)
+        support_plus_query = max_support_per_class + self.config.query_per_class
         subject_ids = sorted(
             {subject_id for subject_id, _ in self._indices_by_subject_activity.keys()}
         )
@@ -176,6 +193,15 @@ class SetToLoRAMetaTrainer:
                 eligible.append(subject_id)
         return eligible
 
+    def _sample_support_per_class(self) -> int:
+        choices = self.config.support_per_class_choices
+        if choices is None:
+            return int(self.config.support_per_class)
+        cleaned = [int(k) for k in choices if int(k) > 0]
+        if not cleaned:
+            raise ValueError("support_per_class_choices must contain positive integers.")
+        return int(self.rng.choice(np.asarray(cleaned, dtype=np.int64)))
+
     def _sample_window_array(self, index: int) -> np.ndarray:
         sample = self.loader.get_sample(index)
         if not sample:
@@ -191,9 +217,10 @@ class SetToLoRAMetaTrainer:
 
     def _sample_episode(
         self,
+        support_per_class: int | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, list[int]]:
         B = self.config.batch_subjects
-        K = self.config.support_per_class
+        K = int(support_per_class) if support_per_class is not None else self._sample_support_per_class()
         Q = self.config.query_per_class
 
         sampled_subjects = self.rng.choice(
@@ -282,6 +309,21 @@ class SetToLoRAMetaTrainer:
 
         return batched_params
 
+    def _adapter_delta_l2_penalty(
+        self, lora_weights: Mapping[str, tuple[torch.Tensor, torch.Tensor]]
+    ) -> torch.Tensor:
+        penalties: list[torch.Tensor] = []
+        params = dict(self.base_model.named_parameters())
+        for adapter_name, param_name in self.target_param_names.items():
+            A, B = lora_weights[adapter_name]
+            delta = self._compute_lora_delta(A, B) * self.lora_scale
+            base_norm = params[param_name].detach().norm().clamp_min(1e-12)
+            rel_norm = delta.flatten(1).norm(dim=1) / base_norm
+            penalties.append(rel_norm.pow(2).mean())
+        if not penalties:
+            return torch.zeros((), device=self.device)
+        return torch.stack(penalties).mean()
+
     def _forward_with_subject_params(
         self, subject_params: Mapping[str, torch.Tensor], x_subject_query: torch.Tensor
     ) -> torch.Tensor:
@@ -344,7 +386,9 @@ class SetToLoRAMetaTrainer:
 
         logits_flat = logits.reshape(-1, logits.size(-1))
         y_query_flat = y_query.reshape(-1)
-        loss = F.cross_entropy(logits_flat, y_query_flat, weight=self.class_weights)
+        ce_loss = F.cross_entropy(logits_flat, y_query_flat, weight=self.class_weights)
+        adapter_delta_l2 = self._adapter_delta_l2_penalty(lora_weights)
+        loss = ce_loss + (float(self.config.adapter_delta_l2) * adapter_delta_l2)
         loss.backward()
         self.optimizer.step()
 
@@ -359,12 +403,19 @@ class SetToLoRAMetaTrainer:
 
         self.state.steps += 1
         self.state.history["meta_train_loss"].append(float(loss.item()))
+        self.state.history["meta_train_ce_loss"].append(float(ce_loss.item()))
+        self.state.history["meta_train_adapter_delta_l2"].append(
+            float(adapter_delta_l2.item())
+        )
         self.state.history["meta_train_macro_f1"].append(float(macro_f1))
 
         return {
             "loss": float(loss.item()),
+            "ce_loss": float(ce_loss.item()),
+            "adapter_delta_l2": float(adapter_delta_l2.item()),
             "macro_f1": float(macro_f1),
             "subjects": subjects,
+            "support_per_class": int(x_support.size(1) // max(1, len(self.activity_ids))),
             "support_shape": tuple(x_support.shape),
             "query_shape": tuple(x_query.shape),
             "use_vmap": used_vmap,
