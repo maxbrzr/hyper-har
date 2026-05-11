@@ -30,14 +30,6 @@ from whar_datasets import (
     WHARDatasetID,
 )
 
-from hyper_har.backbone.film_tinierhar import FiLMTinierHAR
-from hyper_har.backbone.tinierhar import TinierHAR
-from hyper_har.config import DEFAULT_CONFIG
-from hyper_har.training.conditioned_meta_trainer import (
-    ConditionedMetaTrainerConfig,
-    SubjectConditionedMetaTrainer,
-)
-
 THIS_DIR = Path(__file__).resolve().parent
 if str(THIS_DIR) not in sys.path:
     sys.path.insert(0, str(THIS_DIR))
@@ -45,6 +37,14 @@ if str(THIS_DIR) not in sys.path:
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
+
+from hyper_har.backbone.film_tinierhar import FiLMTinierHAR
+from hyper_har.backbone.tinierhar import TinierHAR
+from hyper_har.config import DEFAULT_CONFIG
+from hyper_har.training.conditioned_meta_trainer import (
+    ConditionedMetaTrainerConfig,
+    SubjectConditionedMetaTrainer,
+)
 
 
 def _load_module_from_path(name: str, path: Path) -> Any:
@@ -77,7 +77,11 @@ class Config:
     force_conv_bn_eval: bool = True
 
     film_hidden_dim: int = 128
-    film_dropout: float = 0.0
+    film_dropout: float = 0.1  # 0.0
+    film_use_explosion_guard: bool = True  # False
+    film_gamma_bound: float = 0.5
+    film_beta_bound: float = 1.0
+    film_stage_name: str | None = None
 
     train_subjects_per_episode: int = 4
     train_min_k_per_class: int = DEFAULT_TRAIN_MIN_K_PER_CLASS
@@ -104,6 +108,34 @@ class Config:
 RUN_CONFIG = Config()
 
 
+def _path_float(value: float) -> str:
+    text = f"{float(value):g}"
+    return text.replace("-", "m").replace(".", "p")
+
+
+def _resolve_stage_name(config: Config) -> str:
+    if config.film_stage_name is not None:
+        return str(config.film_stage_name)
+
+    stage_name = (
+        "03_film_meta_guarded" if config.film_use_explosion_guard else "03_film_meta"
+    )
+    suffix_parts: list[str] = []
+    if int(config.film_hidden_dim) != 128:
+        suffix_parts.append(f"hidden-{int(config.film_hidden_dim)}")
+    if not np.isclose(float(config.film_dropout), 0.0):
+        suffix_parts.append(f"dropout-{_path_float(float(config.film_dropout))}")
+    if config.film_use_explosion_guard:
+        if not np.isclose(float(config.film_gamma_bound), 0.5):
+            suffix_parts.append(f"gamma-{_path_float(float(config.film_gamma_bound))}")
+        if not np.isclose(float(config.film_beta_bound), 1.0):
+            suffix_parts.append(f"beta-{_path_float(float(config.film_beta_bound))}")
+
+    if suffix_parts:
+        stage_name = f"{stage_name}__{'__'.join(suffix_parts)}"
+    return stage_name
+
+
 def _load_base_model(
     ckpt_path: Path,
     num_channels: int,
@@ -127,7 +159,8 @@ def _load_base_model(
 def run(config: Config) -> dict[str, Any]:
     set_seed(config.seed)
     output_root = Path(config.output_root)
-    stage_dir = output_root / "03_film_meta"
+    stage_name = _resolve_stage_name(config)
+    stage_dir = output_root / stage_name
     stage_dir.mkdir(parents=True, exist_ok=True)
 
     dataset_id = WHARDatasetID(config.dataset_id)
@@ -176,6 +209,7 @@ def run(config: Config) -> dict[str, Any]:
         fold_fp = config_fingerprint(
             {
                 "stage": "03_film_meta",
+                "stage_dir": stage_name,
                 "config": asdict(config),
                 "shared_cfg": asdict(shared_cfg),
                 "fold": asdict(fold),
@@ -243,6 +277,9 @@ def run(config: Config) -> dict[str, Any]:
             subject_embedding_dim=subject_embedding_dim,
             film_hidden_dim=config.film_hidden_dim,
             film_dropout=config.film_dropout,
+            film_use_explosion_guard=config.film_use_explosion_guard,
+            film_gamma_bound=config.film_gamma_bound,
+            film_beta_bound=config.film_beta_bound,
         )
         trainable_params = [
             param for param in film_model.parameters() if param.requires_grad

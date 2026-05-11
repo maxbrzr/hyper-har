@@ -15,6 +15,9 @@ class FiLMModule(nn.Module):
         feature_dim: int,
         hidden_dim: int = 128,
         dropout: float = 0.0,
+        use_explosion_guard: bool = False,
+        gamma_bound: float = 0.5,
+        beta_bound: float = 1.0,
     ) -> None:
         super().__init__()
         if subject_embedding_dim <= 0:
@@ -23,10 +26,17 @@ class FiLMModule(nn.Module):
             raise ValueError("feature_dim must be positive.")
         if hidden_dim <= 0:
             raise ValueError("hidden_dim must be positive.")
+        if gamma_bound <= 0:
+            raise ValueError("gamma_bound must be positive.")
+        if beta_bound <= 0:
+            raise ValueError("beta_bound must be positive.")
 
         self.subject_embedding_dim = int(subject_embedding_dim)
         self.feature_dim = int(feature_dim)
         self.hidden_dim = int(hidden_dim)
+        self.use_explosion_guard = bool(use_explosion_guard)
+        self.gamma_bound = float(gamma_bound)
+        self.beta_bound = float(beta_bound)
         self.subject_norm = nn.LayerNorm(
             self.subject_embedding_dim,
             elementwise_affine=False,
@@ -75,6 +85,9 @@ class FiLMModule(nn.Module):
 
         params = self.generator(self.subject_norm(c_subject))
         gamma, beta = params.chunk(2, dim=-1)
+        if self.use_explosion_guard:
+            gamma = torch.tanh(gamma) * self.gamma_bound
+            beta = torch.tanh(beta) * self.beta_bound
         gamma = gamma.unsqueeze(1)
         beta = beta.unsqueeze(1)
         return (1.0 + gamma) * x + beta
@@ -89,6 +102,9 @@ class FiLMTinierHAR(nn.Module):
         subject_embedding_dim: int,
         film_hidden_dim: int = 128,
         film_dropout: float = 0.0,
+        film_use_explosion_guard: bool = False,
+        film_gamma_bound: float = 0.5,
+        film_beta_bound: float = 1.0,
     ) -> None:
         super().__init__()
         self.base_model = base_model
@@ -111,6 +127,9 @@ class FiLMTinierHAR(nn.Module):
             feature_dim=self.conv_sequence_dim,
             hidden_dim=film_hidden_dim,
             dropout=film_dropout,
+            use_explosion_guard=film_use_explosion_guard,
+            gamma_bound=film_gamma_bound,
+            beta_bound=film_beta_bound,
         )
         self.freeze_base_model()
 
