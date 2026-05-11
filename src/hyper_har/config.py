@@ -23,9 +23,12 @@ class SetEncoderConfig:
 class HyperNetConfig:
     lora_rank: int = 8
     lora_alpha: float = 1.0
+    lora_scale_multiplier: float = 1.0
     enable_conv1_adapter: bool = True
     enable_conv_last_adapter: bool = True
     dropout: float = 0.05
+    module_embed_dim: int = 128
+    output_bias_std: float = 1e-5
 
 
 @dataclass(frozen=True)

@@ -40,20 +40,20 @@ class HyperNetBackbone(nn.Module):
     """Shared feature extraction backbone processing all target modules simultaneously."""
 
     def __init__(
-        self, c_subject_dim: int, num_target_modules: int, dropout: float = 0.05
+        self,
+        c_subject_dim: int,
+        num_target_modules: int,
+        dropout: float = 0.05,
+        module_embed_dim: int = 128,
     ) -> None:
         super().__init__()
         self.num_target_modules = num_target_modules
+        self.input_norm = nn.LayerNorm(c_subject_dim, eps=1e-5)
 
         # 1. Dynamic Bottleneck Calculation
         # Halve the input, but keep it between 128 (floor) and 512 (ceiling)
         subj_proj_dim = max(128, min(512, c_subject_dim // 2))
-        module_embed_dim = 32
-
-        self.subject_encoder = nn.Sequential(
-            nn.Linear(c_subject_dim, subj_proj_dim),
-            nn.LayerNorm(subj_proj_dim, eps=1e-5),
-        )
+        self.subject_encoder = nn.Linear(c_subject_dim, subj_proj_dim)
 
         self.module_encoder = nn.Sequential(
             nn.Embedding(num_target_modules, module_embed_dim),
@@ -77,6 +77,7 @@ class HyperNetBackbone(nn.Module):
 
     def forward(self, c_subject: torch.Tensor) -> torch.Tensor:
         # Input c_subject: (batch, c_subject_dim)
+        c_subject = self.input_norm(c_subject)
         batch_size = c_subject.size(0)
         device = c_subject.device
 
@@ -153,7 +154,10 @@ class HyperNet(nn.Module):
         dropout = dropout if dropout is not None else hypernet_cfg.dropout
         self.lora_rank = lora_rank
         self.lora_alpha = float(lora_alpha)
-        self.lora_scale = float(self.lora_alpha / max(1, self.lora_rank))
+        self.lora_scale_multiplier = float(hypernet_cfg.lora_scale_multiplier)
+        self.lora_scale = float(
+            (self.lora_alpha / max(1, self.lora_rank)) * self.lora_scale_multiplier
+        )
         self.enable_conv1_adapter = bool(enable_conv1_adapter)
         self.enable_conv_last_adapter = bool(enable_conv_last_adapter)
 
@@ -201,7 +205,12 @@ class HyperNet(nn.Module):
         self.module_names = list(self.target_shapes.keys())
 
         # 2. Shared Backbone
-        self.backbone = HyperNetBackbone(c_subject_dim, len(self.module_names), dropout)
+        self.backbone = HyperNetBackbone(
+            c_subject_dim,
+            len(self.module_names),
+            dropout=dropout,
+            module_embed_dim=int(hypernet_cfg.module_embed_dim),
+        )
 
         self.mlp2 = MLPResidualBlock(dim=128, hidden_dim=512, dropout=dropout)
         self.mlp3 = nn.Sequential(
@@ -219,9 +228,11 @@ class HyperNet(nn.Module):
             # Initialization:
             # Use microscopic non-zero weights to avoid zero-gradient trap into
             # the set encoder on the first optimization steps.
+            # Keep heads near-zero to preserve base-model behavior at startup,
+            # but avoid exact zeros so gradients can flow immediately.
             nn.init.normal_(head.weight, std=1e-4)
-            nn.init.uniform_(head.bias[:size_A], -1e-3, 1e-3)
-            nn.init.zeros_(head.bias[size_A:])
+            nn.init.normal_(head.bias[:size_A], std=float(hypernet_cfg.output_bias_std))
+            nn.init.normal_(head.bias[size_A:], std=float(hypernet_cfg.output_bias_std))
 
             self.heads[name] = head
 

@@ -1,0 +1,170 @@
+from __future__ import annotations
+
+import torch
+import torch.nn as nn
+
+from hyper_har.backbone.tinierhar import TinierHAR
+
+
+class FiLMModule(nn.Module):
+    """Generate feature-wise scale and shift parameters from a subject embedding."""
+
+    def __init__(
+        self,
+        subject_embedding_dim: int,
+        feature_dim: int,
+        hidden_dim: int = 128,
+        dropout: float = 0.0,
+    ) -> None:
+        super().__init__()
+        if subject_embedding_dim <= 0:
+            raise ValueError("subject_embedding_dim must be positive.")
+        if feature_dim <= 0:
+            raise ValueError("feature_dim must be positive.")
+        if hidden_dim <= 0:
+            raise ValueError("hidden_dim must be positive.")
+
+        self.subject_embedding_dim = int(subject_embedding_dim)
+        self.feature_dim = int(feature_dim)
+        self.hidden_dim = int(hidden_dim)
+        self.subject_norm = nn.LayerNorm(
+            self.subject_embedding_dim,
+            elementwise_affine=False,
+        )
+        self.generator = nn.Sequential(
+            nn.Linear(self.subject_embedding_dim, self.hidden_dim),
+            nn.SiLU(),
+            nn.Dropout(float(dropout)),
+            nn.Linear(self.hidden_dim, 2 * self.feature_dim),
+        )
+        self.reset_to_identity()
+
+    def reset_to_identity(self) -> None:
+        final = self.generator[-1]
+        if not isinstance(final, nn.Linear):
+            raise TypeError("Expected final FiLM generator layer to be nn.Linear.")
+        nn.init.zeros_(final.weight)
+        nn.init.zeros_(final.bias)
+
+    def forward(self, x: torch.Tensor, c_subject: torch.Tensor) -> torch.Tensor:
+        if x.dim() != 3:
+            raise ValueError(
+                "Expected activations with shape (batch, time, feature_dim), "
+                f"got {tuple(x.shape)}."
+            )
+        if c_subject.dim() != 2:
+            raise ValueError(
+                "Expected subject embedding with shape (batch, dim), "
+                f"got {tuple(c_subject.shape)}."
+            )
+        if x.size(0) != c_subject.size(0):
+            raise ValueError(
+                "Batch mismatch between activations and subject embeddings: "
+                f"{x.size(0)} != {c_subject.size(0)}."
+            )
+        if x.size(-1) != self.feature_dim:
+            raise ValueError(
+                f"Activation feature dim mismatch: expected {self.feature_dim}, "
+                f"got {x.size(-1)}."
+            )
+        if c_subject.size(-1) != self.subject_embedding_dim:
+            raise ValueError(
+                "Subject embedding dim mismatch: "
+                f"expected {self.subject_embedding_dim}, got {c_subject.size(-1)}."
+            )
+
+        params = self.generator(self.subject_norm(c_subject))
+        gamma, beta = params.chunk(2, dim=-1)
+        gamma = gamma.unsqueeze(1)
+        beta = beta.unsqueeze(1)
+        return (1.0 + gamma) * x + beta
+
+
+class FiLMTinierHAR(nn.Module):
+    """Frozen TinierHAR with trainable post-conv FiLM modulation."""
+
+    def __init__(
+        self,
+        base_model: TinierHAR,
+        subject_embedding_dim: int,
+        film_hidden_dim: int = 128,
+        film_dropout: float = 0.0,
+    ) -> None:
+        super().__init__()
+        self.base_model = base_model
+        self.input_channels = base_model.input_channels
+        self.seq_length = base_model.seq_length
+        self.nb_classes = base_model.nb_classes
+        self.nb_conv_blocks = base_model.nb_conv_blocks
+        self.nb_units_gru = base_model.nb_units_gru
+        self.nb_filters = base_model.nb_filters
+        self.drop_prob = base_model.drop_prob
+
+        with torch.no_grad():
+            dummy = torch.randn(1, 1, self.seq_length, self.input_channels)
+            out = self.base_model.conv_blocks(dummy)
+            self.conv_sequence_dim = int(out.size(1) * out.size(3))
+            self.conv_time_steps = int(out.size(2))
+
+        self.film = FiLMModule(
+            subject_embedding_dim=subject_embedding_dim,
+            feature_dim=self.conv_sequence_dim,
+            hidden_dim=film_hidden_dim,
+            dropout=film_dropout,
+        )
+        self.freeze_base_model()
+
+    def freeze_base_model(self) -> None:
+        for param in self.base_model.parameters():
+            param.requires_grad = False
+        self.base_model.eval()
+        self._set_base_batchnorm_eval()
+
+    def _set_base_batchnorm_eval(self) -> None:
+        for module in self.base_model.conv_blocks.modules():
+            if isinstance(module, nn.modules.batchnorm._BatchNorm):
+                module.eval()
+
+    def train(self, mode: bool = True):
+        super().train(mode)
+        self.base_model.eval()
+        self._set_base_batchnorm_eval()
+        return self
+
+    def number_of_parameters(self) -> int:
+        return sum(p.numel() for p in self.parameters() if p.requires_grad)
+
+    def extract_conv_sequence(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.base_model.conv_blocks(x)
+        bsz, _, tlen, _ = x.shape
+        x = x.permute(0, 2, 1, 3).reshape(bsz, tlen, -1)
+        return self.base_model.dropout(x)
+
+    def encode(self, x: torch.Tensor, c_subject: torch.Tensor) -> torch.Tensor:
+        x_seq = self.extract_conv_sequence(x)
+        x_seq = self.film(x_seq, c_subject)
+        x_seq, _ = self.base_model.gru(x_seq)
+        attn_weights = torch.softmax(self.base_model.attention(x_seq), dim=1)
+        return torch.sum(attn_weights * x_seq, dim=1)
+
+    def forward(self, x: torch.Tensor, c_subject: torch.Tensor) -> torch.Tensor:
+        return self.base_model.classifier(self.encode(x, c_subject))
+
+    def forward_episode(
+        self, x_query: torch.Tensor, c_subject: torch.Tensor
+    ) -> torch.Tensor:
+        if x_query.dim() != 5:
+            raise ValueError(
+                "Expected query tensor with shape (subjects, query, 1, time, sensors), "
+                f"got {tuple(x_query.shape)}."
+            )
+        bsz, n_query = x_query.shape[:2]
+        c_expanded = (
+            c_subject.unsqueeze(1)
+            .expand(-1, n_query, -1)
+            .reshape(bsz * n_query, -1)
+        )
+        logits = self.forward(
+            x_query.reshape(bsz * n_query, *x_query.shape[2:]), c_expanded
+        )
+        return logits.view(bsz, n_query, -1)

@@ -25,6 +25,7 @@ class TrainerConfig:
         else "cpu"
     )
     checkpoint_path: str | None = "checkpoints/best_tinierhar.pt"
+    early_stopping_metric: str = "val_loss"
 
 
 @dataclass
@@ -38,6 +39,7 @@ class TrainerState:
         }
     )
     best_val_loss: float = float("inf")
+    best_val_macro_f1: float = float("-inf")
     best_epoch: int = -1
 
 
@@ -184,9 +186,13 @@ class TinierHARTrainer:
             self.state.history["val_loss"].append(val_loss)
             self.state.history["val_macro_f1"].append(val_macro_f1)
 
-            improved = val_loss < (self.state.best_val_loss - self.config.min_delta)
+            if self.config.early_stopping_metric == "val_macro_f1":
+                improved = val_macro_f1 > (self.state.best_val_macro_f1 + self.config.min_delta)
+            else:
+                improved = val_loss < (self.state.best_val_loss - self.config.min_delta)
             if improved:
                 self.state.best_val_loss = val_loss
+                self.state.best_val_macro_f1 = val_macro_f1
                 self.state.best_epoch = epoch
                 patience_counter = 0
                 self._save_checkpoint()
@@ -197,7 +203,9 @@ class TinierHARTrainer:
                 f"[Epoch {epoch:03d}] "
                 f"train_loss={train_loss:.4f} train_macro_f1={train_macro_f1:.4f} "
                 f"val_loss={val_loss:.4f} val_macro_f1={val_macro_f1:.4f} "
-                f"best_val_loss={self.state.best_val_loss:.4f} patience={patience_counter}/{self.config.patience}"
+                f"best_val_loss={self.state.best_val_loss:.4f} "
+                f"best_val_macro_f1={self.state.best_val_macro_f1:.4f} "
+                f"patience={patience_counter}/{self.config.patience}"
             )
 
             if patience_counter >= self.config.patience:
