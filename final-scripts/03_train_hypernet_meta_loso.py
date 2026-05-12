@@ -5,7 +5,7 @@ import json
 import sys
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
 
 import numpy as np
 import torch
@@ -79,7 +79,7 @@ class Config:
     dataset_id: str = WHARDatasetID.WEAR.value
     datasets_dir: str = str(ROOT / "datasets")
     selected_activities: list[str] | None = None
-    window_overlap: float = 0.0
+    window_overlap: float = 0.5
     subjects_per_group: int = 6
     seed: int = 0
 
@@ -91,8 +91,6 @@ class Config:
     train_min_k_per_class: int = DEFAULT_TRAIN_MIN_K_PER_CLASS
     train_max_k_per_class: int = DEFAULT_TRAIN_MAX_K_PER_CLASS
     query_per_class: int = 8
-    eval_min_k_per_class: int = DEFAULT_TRAIN_MIN_K_PER_CLASS
-    eval_max_k_per_class: int = DEFAULT_TRAIN_MAX_K_PER_CLASS
     eval_query_per_class: int = 16
     train_episodes_per_epoch: int = 64
     eval_episodes: int = 64
@@ -297,6 +295,60 @@ def _build_episode_bank(
     return out
 
 
+def _build_episode_bank_by_k(
+    trainer: Any,
+    episodes_per_k: int,
+    support_per_class_choices: Sequence[int],
+) -> dict[str, list[tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, list[int]]]]:
+    banks: dict[str, list[tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, list[int]]]] = {}
+    if episodes_per_k <= 0:
+        return {str(int(k)): [] for k in support_per_class_choices}
+    for k in support_per_class_choices:
+        banks[str(int(k))] = [
+            trainer._sample_episode(support_per_class=int(k))
+            for _ in range(int(episodes_per_k))
+        ]
+    return banks
+
+
+def _mean_eval_metrics(metrics_by_k: Mapping[str, dict[str, Any]]) -> dict[str, Any]:
+    if not metrics_by_k:
+        return {
+            "loss": 0.0,
+            "macro_f1": 0.0,
+            "base_loss": 0.0,
+            "base_macro_f1": 0.0,
+            "macro_f1_improvement": 0.0,
+        }
+    keys = ["loss", "macro_f1", "base_loss", "base_macro_f1", "macro_f1_improvement"]
+    return {
+        key: float(np.mean([float(metrics[key]) for metrics in metrics_by_k.values()]))
+        for key in keys
+    }
+
+
+def _run_meta_eval_by_k(
+    trainer: Any,
+    episodes_per_k: int,
+    use_vmap: bool,
+    episode_banks_by_k: Mapping[
+        str,
+        Sequence[
+            tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, list[int]]
+        ],
+    ],
+) -> tuple[dict[str, Any], dict[str, dict[str, Any]]]:
+    metrics_by_k: dict[str, dict[str, Any]] = {}
+    for k_str, bank in episode_banks_by_k.items():
+        metrics_by_k[str(k_str)] = _run_meta_eval(
+            trainer,
+            episodes=episodes_per_k,
+            use_vmap=use_vmap,
+            episode_bank=bank,
+        )
+    return _mean_eval_metrics(metrics_by_k), metrics_by_k
+
+
 def run(config: Config) -> dict[str, Any]:
     set_seed(config.seed)
     output_root = Path(config.output_root)
@@ -442,9 +494,7 @@ def run(config: Config) -> dict[str, Any]:
         train_support_choices = k_choices_from_range(
             config.train_min_k_per_class, config.train_max_k_per_class
         )
-        eval_support_choices = k_choices_from_range(
-            config.eval_min_k_per_class, config.eval_max_k_per_class
-        )
+        eval_support_choices = train_support_choices
         train_needed = max(train_support_choices) + config.query_per_class
         eval_needed = max(eval_support_choices) + config.eval_query_per_class
         train_activity_ids = _choose_activity_ids(
@@ -557,10 +607,10 @@ def run(config: Config) -> dict[str, Any]:
             activity_ids=test_activity_ids,
         )
 
-        val_episode_bank = _build_episode_bank(
+        val_episode_banks_by_k = _build_episode_bank_by_k(
             val_trainer, config.eval_episodes, eval_support_choices
         )
-        test_episode_bank = _build_episode_bank(
+        test_episode_banks_by_k = _build_episode_bank_by_k(
             test_trainer, config.eval_episodes, eval_support_choices
         )
 
@@ -608,11 +658,11 @@ def run(config: Config) -> dict[str, Any]:
                 scheduler.step()
                 global_step += 1
 
-            val_metrics = _run_meta_eval(
+            val_metrics, val_metrics_by_k = _run_meta_eval_by_k(
                 val_trainer,
-                episodes=config.eval_episodes,
                 use_vmap=config.use_vmap,
-                episode_bank=val_episode_bank,
+                episodes_per_k=config.eval_episodes,
+                episode_banks_by_k=val_episode_banks_by_k,
             )
             row = {
                 "epoch": epoch,
@@ -622,6 +672,10 @@ def run(config: Config) -> dict[str, Any]:
                 "val_macro_f1": float(val_metrics["macro_f1"]),
                 "val_base_macro_f1": float(val_metrics["base_macro_f1"]),
                 "val_macro_f1_improvement": float(val_metrics["macro_f1_improvement"]),
+                "val_macro_f1_improvement_by_k": {
+                    k: float(metrics["macro_f1_improvement"])
+                    for k, metrics in val_metrics_by_k.items()
+                },
                 "set_encoder_trainable": int(not set_encoder_frozen),
                 "lr": float(optimizer.param_groups[0]["lr"]),
                 "global_step": int(global_step),
@@ -671,17 +725,17 @@ def run(config: Config) -> dict[str, Any]:
         if "set_encoder" in best_payload:
             set_encoder.load_state_dict(best_payload["set_encoder"])
 
-        val_final = _run_meta_eval(
+        val_final, val_final_by_k = _run_meta_eval_by_k(
             val_trainer,
-            episodes=config.eval_episodes,
             use_vmap=config.use_vmap,
-            episode_bank=val_episode_bank,
+            episodes_per_k=config.eval_episodes,
+            episode_banks_by_k=val_episode_banks_by_k,
         )
-        test_final = _run_meta_eval(
+        test_final, test_final_by_k = _run_meta_eval_by_k(
             test_trainer,
-            episodes=config.eval_episodes,
             use_vmap=config.use_vmap,
-            episode_bank=test_episode_bank,
+            episodes_per_k=config.eval_episodes,
+            episode_banks_by_k=test_episode_banks_by_k,
         )
         fold_result = {
             "config_fingerprint": fold_fp,
@@ -700,6 +754,10 @@ def run(config: Config) -> dict[str, Any]:
             "test_macro_f1": float(test_final["macro_f1"]),
             "test_base_macro_f1": float(test_final["base_macro_f1"]),
             "test_macro_f1_improvement": float(test_final["macro_f1_improvement"]),
+            "eval_k_values": [int(k) for k in eval_support_choices],
+            "eval_episodes_per_k": int(config.eval_episodes),
+            "val_by_k": val_final_by_k,
+            "test_by_k": test_final_by_k,
         }
         (split_dir / "metrics.json").write_text(
             json.dumps(fold_result, indent=2), encoding="utf-8"

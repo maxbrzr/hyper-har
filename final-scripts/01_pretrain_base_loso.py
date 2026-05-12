@@ -38,7 +38,7 @@ class Config:
     dataset_id: str = WHARDatasetID.WEAR.value
     datasets_dir: str = str(ROOT / "datasets")
     selected_activities: list[str] | None = None
-    window_overlap: float = 0.0
+    window_overlap: float = 0.5
     subjects_per_group: int = 6
     seed: int = 0
 

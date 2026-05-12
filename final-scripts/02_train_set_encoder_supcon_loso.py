@@ -12,12 +12,17 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from sklearn.metrics import f1_score
 from sklearn.manifold import TSNE
+from sklearn.metrics import f1_score
 from sklearn.neighbors import KNeighborsClassifier
 from torch.utils.data import DataLoader, Dataset, Sampler
 from tqdm.auto import tqdm
-from whar_datasets import Loader, PostProcessingPipeline, PreProcessingPipeline, WHARDatasetID
+from whar_datasets import (
+    Loader,
+    PostProcessingPipeline,
+    PreProcessingPipeline,
+    WHARDatasetID,
+)
 
 from hyper_har.backbone.tinierhar import TinierHAR
 from hyper_har.config import DEFAULT_CONFIG
@@ -27,13 +32,13 @@ if str(THIS_DIR) not in sys.path:
     sys.path.insert(0, str(THIS_DIR))
 
 from common import (
-    DEFAULT_EVAL_K_PER_CLASS,
     DEFAULT_TRAIN_MAX_K_PER_CLASS,
     DEFAULT_TRAIN_MIN_K_PER_CLASS,
     ROOT,
     SharedConfig,
     build_or_load_loso_folds,
     config_fingerprint,
+    k_choices_from_range,
     prepare_cfg,
     set_seed,
     split_indices_for_fold,
@@ -71,7 +76,7 @@ class Config:
     dataset_id: str = WHARDatasetID.WEAR.value
     datasets_dir: str = str(ROOT / "datasets")
     selected_activities: list[str] | None = None
-    window_overlap: float = 0.0
+    window_overlap: float = 0.5
     subjects_per_group: int = 6
     seed: int = 0
 
@@ -80,20 +85,20 @@ class Config:
     projection_dim: int = 64
     train_min_k_per_class: int = DEFAULT_TRAIN_MIN_K_PER_CLASS
     train_max_k_per_class: int = DEFAULT_TRAIN_MAX_K_PER_CLASS
-    eval_k_per_class: int = DEFAULT_EVAL_K_PER_CLASS
     n_subjects_per_batch: int = 10
     m_sets_per_subject: int = 2
     val_m_sets_per_subject: int = 1
     train_batches_per_epoch: int = 128
     val_batches_per_epoch: int = 32
     eval_sets_per_subject: int = 24
+    tsne_k_values: tuple[int, ...] = (1, 4, 8, 16, 32)
     val_support_sets_per_subject: int = 5
     val_max_query_sets_per_subject: int | None = 64
     knn_neighbors: int = 1
     supcon_temperature: float = 0.1
     learning_rate: float = 1e-4
     weight_decay: float = 1e-4
-    epochs: int = 50
+    epochs: int = 10
     patience: int = 10
     tsne_every_n_epochs: int = 5
     device: str = (
@@ -139,7 +144,9 @@ class SupConLoss(nn.Module):
 
 
 class ContrastiveSetEncoder(nn.Module):
-    def __init__(self, set_encoder: nn.Module, projection_hidden_dim: int, projection_dim: int):
+    def __init__(
+        self, set_encoder: nn.Module, projection_hidden_dim: int, projection_dim: int
+    ):
         super().__init__()
         self.set_encoder = set_encoder
         c_subject_dim = int(getattr(set_encoder, "output_dim"))
@@ -149,7 +156,9 @@ class ContrastiveSetEncoder(nn.Module):
             nn.Linear(projection_hidden_dim, projection_dim),
         )
 
-    def encode_subject(self, x_support: torch.Tensor, y_support: torch.Tensor) -> torch.Tensor:
+    def encode_subject(
+        self, x_support: torch.Tensor, y_support: torch.Tensor
+    ) -> torch.Tensor:
         return self.set_encoder(x_support, y_support)
 
     def forward(self, x_support: torch.Tensor, y_support: torch.Tensor) -> torch.Tensor:
@@ -196,7 +205,10 @@ class NMSetsBatchSampler(Sampler[list[SubjectSetIndices]]):
             needed = self.m_sets_per_subject * k
             eligible: list[int] = []
             for sid, per_activity in self.indices_by_subject_activity.items():
-                if all(len(per_activity.get(aid, np.empty(0, dtype=np.int64))) >= needed for aid in self.activity_ids):
+                if all(
+                    len(per_activity.get(aid, np.empty(0, dtype=np.int64))) >= needed
+                    for aid in self.activity_ids
+                ):
                     eligible.append(int(sid))
             if len(eligible) >= self.n_subjects:
                 self.eligible_subject_ids_by_k[k] = eligible
@@ -301,10 +313,28 @@ class NMSetsDataset(Dataset[dict[str, torch.Tensor | int]]):
         }
 
 
-def nm_collate(samples: Sequence[dict[str, torch.Tensor | int]]) -> dict[str, torch.Tensor]:
-    x = torch.stack([sample["x_set"] for sample in samples if isinstance(sample["x_set"], torch.Tensor)], dim=0)
-    y_support = torch.stack([sample["y_set"] for sample in samples if isinstance(sample["y_set"], torch.Tensor)], dim=0)
-    y = torch.tensor([int(sample["subject_id"]) for sample in samples], dtype=torch.long)
+def nm_collate(
+    samples: Sequence[dict[str, torch.Tensor | int]],
+) -> dict[str, torch.Tensor]:
+    x = torch.stack(
+        [
+            sample["x_set"]
+            for sample in samples
+            if isinstance(sample["x_set"], torch.Tensor)
+        ],
+        dim=0,
+    )
+    y_support = torch.stack(
+        [
+            sample["y_set"]
+            for sample in samples
+            if isinstance(sample["y_set"], torch.Tensor)
+        ],
+        dim=0,
+    )
+    y = torch.tensor(
+        [int(sample["subject_id"]) for sample in samples], dtype=torch.long
+    )
     return {"x": x, "y_support": y_support, "subject_id": y}
 
 
@@ -314,9 +344,13 @@ def _build_subject_activity_index(
 ) -> tuple[dict[int, dict[int, np.ndarray]], list[int]]:
     meta = loader.window_df.loc[list(indices), ["session_id"]].copy()
     meta["window_index"] = meta.index.astype(int)
-    session_meta = loader.session_df[["session_id", "subject_id", "activity_id"]].drop_duplicates("session_id")
+    session_meta = loader.session_df[
+        ["session_id", "subject_id", "activity_id"]
+    ].drop_duplicates("session_id")
     merged = meta.merge(session_meta, on="session_id", how="left")
-    activity_ids = sorted(int(x) for x in merged["activity_id"].dropna().unique().tolist())
+    activity_ids = sorted(
+        int(x) for x in merged["activity_id"].dropna().unique().tolist()
+    )
     grouped = merged.groupby(["subject_id", "activity_id"])["window_index"]
     nested: dict[int, dict[int, np.ndarray]] = {}
     for (sid, aid), vals in grouped:
@@ -324,7 +358,9 @@ def _build_subject_activity_index(
     return nested, activity_ids
 
 
-def _build_model(cfg: Config, num_channels: int, num_classes: int, window_size: int) -> Any:
+def _build_model(
+    cfg: Config, num_channels: int, num_classes: int, window_size: int
+) -> Any:
     backbone = TinierHAR(
         num_channels=num_channels,
         num_classes=num_classes,
@@ -376,7 +412,10 @@ def _extract_subject_embeddings_stratified(
 
     k = int(k_per_class)
     for subject_id, per_activity in sorted(subject_activity_index.items()):
-        if not all(len(per_activity.get(int(aid), np.empty(0, dtype=np.int64))) >= k for aid in activity_ids):
+        if not all(
+            len(per_activity.get(int(aid), np.empty(0, dtype=np.int64))) >= k
+            for aid in activity_ids
+        ):
             continue
         for _ in range(int(sets_per_subject)):
             set_indices_parts: list[np.ndarray] = []
@@ -505,10 +544,41 @@ def _plot_split_tsne_stratified(
     return _save_tsne_plot(
         embeddings=embeddings,
         labels=labels,
-        output_path=output_dir / f"tsne_{split_name}.png",
+        output_path=output_dir / f"tsne_{split_name}_k{k_per_class}.png",
         title=f"Raw c_subject t-SNE ({split_name}, K/class={k_per_class})",
         seed=seed,
     )
+
+
+def _plot_split_tsne_stratified_by_k(
+    model: ContrastiveSetEncoder,
+    loader: Loader,
+    subject_activity_index: Mapping[int, Mapping[int, np.ndarray]],
+    activity_ids: Sequence[int],
+    split_name: str,
+    output_dir: Path,
+    k_values: Sequence[int],
+    sets_per_subject: int,
+    batch_size: int,
+    device: torch.device,
+    seed: int,
+) -> dict[str, str | None]:
+    paths: dict[str, str | None] = {}
+    for k in k_values:
+        paths[str(int(k))] = _plot_split_tsne_stratified(
+            model=model,
+            loader=loader,
+            subject_activity_index=subject_activity_index,
+            activity_ids=activity_ids,
+            split_name=split_name,
+            output_dir=output_dir,
+            k_per_class=int(k),
+            sets_per_subject=sets_per_subject,
+            batch_size=batch_size,
+            device=device,
+            seed=seed + int(k),
+        )
+    return paths
 
 
 @torch.no_grad()
@@ -534,7 +604,10 @@ def _evaluate_val_knn_macro_f1(
     query_y: list[int] = []
 
     for subject_id, per_activity in sorted(subject_activity_index.items()):
-        if not all(len(per_activity.get(int(aid), np.empty(0, dtype=np.int64))) >= k for aid in activity_ids):
+        if not all(
+            len(per_activity.get(int(aid), np.empty(0, dtype=np.int64))) >= k
+            for aid in activity_ids
+        ):
             continue
 
         max_sets = min(len(per_activity[int(aid)]) // k for aid in activity_ids)
@@ -551,7 +624,9 @@ def _evaluate_val_knn_macro_f1(
         activity_chunks: dict[int, np.ndarray] = {}
         for aid in activity_ids:
             needed = (support_n + query_n) * k
-            activity_chunks[int(aid)] = rng.choice(per_activity[int(aid)], size=needed, replace=False)
+            activity_chunks[int(aid)] = rng.choice(
+                per_activity[int(aid)], size=needed, replace=False
+            )
 
         def build_set(set_idx: int) -> tuple[np.ndarray, np.ndarray]:
             idx_parts: list[np.ndarray] = []
@@ -597,7 +672,11 @@ def _evaluate_val_knn_macro_f1(
         for start in range(0, len(all_sets), int(batch_size)):
             batch_x = np.stack(all_sets[start : start + int(batch_size)], axis=0)
             x_support = torch.from_numpy(batch_x).float().unsqueeze(2).to(device)
-            y_support = torch.zeros((x_support.shape[0], x_support.shape[1]), dtype=torch.long, device=device)
+            y_support = torch.zeros(
+                (x_support.shape[0], x_support.shape[1]),
+                dtype=torch.long,
+                device=device,
+            )
             emb = model.encode_subject(x_support, y_support)
             chunks.append(emb.detach().cpu().numpy())
         return np.concatenate(chunks, axis=0)
@@ -612,6 +691,44 @@ def _evaluate_val_knn_macro_f1(
     knn.fit(support_emb, support_labels)
     pred = knn.predict(query_emb)
     return float(f1_score(query_labels, pred, average="macro"))
+
+
+@torch.no_grad()
+def _evaluate_knn_macro_f1_by_k(
+    model: ContrastiveSetEncoder,
+    loader: Loader,
+    subject_activity_index: Mapping[int, Mapping[int, np.ndarray]],
+    activity_ids: Sequence[int],
+    k_values: Sequence[int],
+    support_sets_per_subject: int,
+    max_query_sets_per_subject: int | None,
+    knn_neighbors: int,
+    batch_size: int,
+    seed: int,
+    device: torch.device,
+) -> dict[str, float]:
+    metrics: dict[str, float] = {}
+    for k in k_values:
+        metrics[str(int(k))] = _evaluate_val_knn_macro_f1(
+            model=model,
+            loader=loader,
+            subject_activity_index=subject_activity_index,
+            activity_ids=activity_ids,
+            k_per_class=int(k),
+            support_sets_per_subject=support_sets_per_subject,
+            max_query_sets_per_subject=max_query_sets_per_subject,
+            knn_neighbors=knn_neighbors,
+            batch_size=batch_size,
+            seed=seed + int(k),
+            device=device,
+        )
+    return metrics
+
+
+def _mean_metric(metrics: Mapping[str, float]) -> float:
+    if not metrics:
+        return 0.0
+    return float(np.mean([float(v) for v in metrics.values()]))
 
 
 def run(config: Config) -> dict[str, Any]:
@@ -648,11 +765,15 @@ def run(config: Config) -> dict[str, Any]:
         split = split_indices_for_fold(
             session_df,
             window_df,
-            type("Tmp", (), {
-                "train_subject_ids": fold.meta_train_subject_ids,
-                "val_subject_ids": fold.val_subject_ids,
-                "test_subject_ids": fold.test_subject_ids,
-            })(),
+            type(
+                "Tmp",
+                (),
+                {
+                    "train_subject_ids": fold.meta_train_subject_ids,
+                    "val_subject_ids": fold.val_subject_ids,
+                    "test_subject_ids": fold.test_subject_ids,
+                },
+            )(),
         )
         split_dir = stage_dir / fold.fold_id
         split_dir.mkdir(parents=True, exist_ok=True)
@@ -670,7 +791,9 @@ def run(config: Config) -> dict[str, Any]:
             try:
                 existing = json.loads(metrics_path.read_text(encoding="utf-8"))
                 if existing.get("config_fingerprint") == fold_fp:
-                    print(f"[{fold.fold_id}] skipping (already complete with same settings)")
+                    print(
+                        f"[{fold.fold_id}] skipping (already complete with same settings)"
+                    )
                     summary_rows.append(existing)
                     skipped_folds.append(fold.fold_id)
                     continue
@@ -681,17 +804,25 @@ def run(config: Config) -> dict[str, Any]:
         samples = post.run()
         loader = Loader(session_df, window_df, post.samples_dir, samples)
 
-        subject_train, activity_ids = _build_subject_activity_index(loader, split.train_indices)
+        subject_train, activity_ids = _build_subject_activity_index(
+            loader, split.train_indices
+        )
         subject_val, _ = _build_subject_activity_index(loader, split.val_indices)
         subject_test, _ = _build_subject_activity_index(loader, split.test_indices)
-        window_size = int(np.asarray(loader.get_sample(split.train_indices[0])[0]).shape[0])
+        window_size = int(
+            np.asarray(loader.get_sample(split.train_indices[0])[0]).shape[0]
+        )
         model = _build_model(
             config,
             cfg.num_of_channels,
             cfg.num_of_activities,
             window_size,
         ).to(torch.device(config.device))
-        optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate, weight_decay=config.weight_decay)
+        optimizer = torch.optim.Adam(
+            model.parameters(),
+            lr=config.learning_rate,
+            weight_decay=config.weight_decay,
+        )
         criterion = SupConLoss(config.supcon_temperature)
 
         train_sampler, used_n_subjects, used_k_max = _build_feasible_train_sampler(
@@ -708,14 +839,20 @@ def run(config: Config) -> dict[str, Any]:
                 f"n_subjects {config.n_subjects_per_batch}->{used_n_subjects}, "
                 f"k_max {config.train_max_k_per_class}->{used_k_max}"
             )
+        eval_k_values = k_choices_from_range(config.train_min_k_per_class, used_k_max)
+        final_tsne_k_values = tuple(
+            int(k)
+            for k in config.tsne_k_values
+            if int(k) >= int(config.train_min_k_per_class) and int(k) <= int(used_k_max)
+        )
         val_n_subjects = max(1, min(config.n_subjects_per_batch, len(subject_val)))
         val_sampler: NMSetsBatchSampler | None = None
         try:
             val_sampler = NMSetsBatchSampler(
                 indices_by_subject_activity=subject_val,
                 activity_ids=activity_ids,
-                min_k_per_class=config.eval_k_per_class,
-                max_k_per_class=config.eval_k_per_class,
+                min_k_per_class=config.train_min_k_per_class,
+                max_k_per_class=used_k_max,
                 n_subjects=val_n_subjects,
                 m_sets_per_subject=config.val_m_sets_per_subject,
                 batches_per_epoch=config.val_batches_per_epoch,
@@ -749,7 +886,11 @@ def run(config: Config) -> dict[str, Any]:
         for epoch in range(1, config.epochs + 1):
             model.train()
             train_losses: list[float] = []
-            for batch in tqdm(train_loader, desc=f"{fold.fold_id} SupCon train {epoch}/{config.epochs}", leave=False):
+            for batch in tqdm(
+                train_loader,
+                desc=f"{fold.fold_id} SupCon train {epoch}/{config.epochs}",
+                leave=False,
+            ):
                 x = batch["x"].to(torch.device(config.device))
                 y_support = batch["y_support"].to(torch.device(config.device))
                 labels = batch["subject_id"].to(torch.device(config.device))
@@ -762,23 +903,25 @@ def run(config: Config) -> dict[str, Any]:
 
             model.eval()
             train_loss = float(np.mean(train_losses)) if train_losses else float("inf")
-            val_macro_f1 = _evaluate_val_knn_macro_f1(
+            val_by_k = _evaluate_knn_macro_f1_by_k(
                 model=model,
                 loader=loader,
                 subject_activity_index=subject_val,
                 activity_ids=activity_ids,
-                k_per_class=config.eval_k_per_class,
+                k_values=eval_k_values,
                 support_sets_per_subject=config.val_support_sets_per_subject,
                 max_query_sets_per_subject=config.val_max_query_sets_per_subject,
                 knn_neighbors=config.knn_neighbors,
                 batch_size=used_n_subjects * config.m_sets_per_subject,
-                seed=config.seed + 30_000 + epoch,
+                seed=config.seed + 30_000,
                 device=torch.device(config.device),
             )
+            val_macro_f1 = _mean_metric(val_by_k)
             row = {
                 "epoch": epoch,
                 "train_supcon_loss": train_loss,
                 "val_knn_macro_f1": val_macro_f1,
+                "val_knn_macro_f1_by_k": val_by_k,
             }
             history.append(row)
             print(
@@ -807,70 +950,101 @@ def run(config: Config) -> dict[str, Any]:
             if patience >= config.patience:
                 break
 
-            if config.tsne_every_n_epochs > 0 and epoch % config.tsne_every_n_epochs == 0:
-                _plot_split_tsne_stratified(
+            if (
+                config.tsne_every_n_epochs > 0
+                and epoch % config.tsne_every_n_epochs == 0
+            ):
+                _plot_split_tsne_stratified_by_k(
                     model=model,
                     loader=loader,
                     subject_activity_index=subject_train,
                     activity_ids=activity_ids,
                     split_name=f"train_epoch_{epoch:03d}",
                     output_dir=split_dir,
-                    k_per_class=config.eval_k_per_class,
+                    k_values=final_tsne_k_values,
                     sets_per_subject=config.eval_sets_per_subject,
                     batch_size=used_n_subjects * config.m_sets_per_subject,
                     device=torch.device(config.device),
                     seed=config.seed + epoch,
                 )
-                _plot_split_tsne_stratified(
+                _plot_split_tsne_stratified_by_k(
                     model=model,
                     loader=loader,
                     subject_activity_index=subject_val,
                     activity_ids=activity_ids,
                     split_name=f"val_epoch_{epoch:03d}",
                     output_dir=split_dir,
-                    k_per_class=config.eval_k_per_class,
+                    k_values=final_tsne_k_values,
                     sets_per_subject=config.eval_sets_per_subject,
                     batch_size=used_n_subjects * config.m_sets_per_subject,
                     device=torch.device(config.device),
                     seed=config.seed + 10_000 + epoch,
                 )
 
-        checkpoint = torch.load(ckpt_path, map_location=config.device, weights_only=False)
+        checkpoint = torch.load(
+            ckpt_path, map_location=config.device, weights_only=False
+        )
         model.load_state_dict(checkpoint["contrastive_model"])
-        train_tsne = _plot_split_tsne_stratified(
+        val_knn_by_k = _evaluate_knn_macro_f1_by_k(
+            model=model,
+            loader=loader,
+            subject_activity_index=subject_val,
+            activity_ids=activity_ids,
+            k_values=eval_k_values,
+            support_sets_per_subject=config.val_support_sets_per_subject,
+            max_query_sets_per_subject=config.val_max_query_sets_per_subject,
+            knn_neighbors=config.knn_neighbors,
+            batch_size=used_n_subjects * config.m_sets_per_subject,
+            seed=config.seed + 30_000,
+            device=torch.device(config.device),
+        )
+        test_knn_by_k = _evaluate_knn_macro_f1_by_k(
+            model=model,
+            loader=loader,
+            subject_activity_index=subject_test,
+            activity_ids=activity_ids,
+            k_values=eval_k_values,
+            support_sets_per_subject=config.val_support_sets_per_subject,
+            max_query_sets_per_subject=config.val_max_query_sets_per_subject,
+            knn_neighbors=config.knn_neighbors,
+            batch_size=used_n_subjects * config.m_sets_per_subject,
+            seed=config.seed + 40_000,
+            device=torch.device(config.device),
+        )
+        train_tsne = _plot_split_tsne_stratified_by_k(
             model=model,
             loader=loader,
             subject_activity_index=subject_train,
             activity_ids=activity_ids,
             split_name="train",
             output_dir=split_dir,
-            k_per_class=config.eval_k_per_class,
+            k_values=final_tsne_k_values,
             sets_per_subject=config.eval_sets_per_subject,
             batch_size=used_n_subjects * config.m_sets_per_subject,
             device=torch.device(config.device),
             seed=config.seed + 1,
         )
-        val_tsne = _plot_split_tsne_stratified(
+        val_tsne = _plot_split_tsne_stratified_by_k(
             model=model,
             loader=loader,
             subject_activity_index=subject_val,
             activity_ids=activity_ids,
             split_name="val",
             output_dir=split_dir,
-            k_per_class=config.eval_k_per_class,
+            k_values=final_tsne_k_values,
             sets_per_subject=config.eval_sets_per_subject,
             batch_size=used_n_subjects * config.m_sets_per_subject,
             device=torch.device(config.device),
             seed=config.seed + 2,
         )
-        test_tsne = _plot_split_tsne_stratified(
+        test_tsne = _plot_split_tsne_stratified_by_k(
             model=model,
             loader=loader,
             subject_activity_index=subject_test,
             activity_ids=activity_ids,
             split_name="test",
             output_dir=split_dir,
-            k_per_class=config.eval_k_per_class,
+            k_values=final_tsne_k_values,
             sets_per_subject=config.eval_sets_per_subject,
             batch_size=used_n_subjects * config.m_sets_per_subject,
             device=torch.device(config.device),
@@ -886,13 +1060,22 @@ def run(config: Config) -> dict[str, Any]:
             "best_epoch": int(best_epoch),
             "used_n_subjects_per_batch": int(used_n_subjects),
             "used_train_max_k_per_class": int(used_k_max),
+            "eval_k_values": [int(k) for k in eval_k_values],
+            "tsne_k_values": [int(k) for k in final_tsne_k_values],
             "best_val_knn_macro_f1": float(best_val_macro_f1),
+            "val_knn_macro_f1_by_k": val_knn_by_k,
+            "test_knn_macro_f1_by_k": test_knn_by_k,
+            "test_knn_macro_f1_mean": _mean_metric(test_knn_by_k),
             "tsne_train_path": train_tsne,
             "tsne_val_path": val_tsne,
             "tsne_test_path": test_tsne,
         }
-        (split_dir / "metrics.json").write_text(json.dumps(fold_result, indent=2), encoding="utf-8")
-        (split_dir / "history.json").write_text(json.dumps(history, indent=2), encoding="utf-8")
+        (split_dir / "metrics.json").write_text(
+            json.dumps(fold_result, indent=2), encoding="utf-8"
+        )
+        (split_dir / "history.json").write_text(
+            json.dumps(history, indent=2), encoding="utf-8"
+        )
         summary_rows.append(fold_result)
 
     summary = {
@@ -901,11 +1084,14 @@ def run(config: Config) -> dict[str, Any]:
         "num_folds": len(summary_rows),
         "skipped_folds": skipped_folds,
         "mean_best_val_knn_macro_f1": float(
-            sum(r["best_val_knn_macro_f1"] for r in summary_rows) / max(1, len(summary_rows))
+            sum(r["best_val_knn_macro_f1"] for r in summary_rows)
+            / max(1, len(summary_rows))
         ),
         "folds": summary_rows,
     }
-    (stage_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    (stage_dir / "summary.json").write_text(
+        json.dumps(summary, indent=2), encoding="utf-8"
+    )
     return summary
 
 

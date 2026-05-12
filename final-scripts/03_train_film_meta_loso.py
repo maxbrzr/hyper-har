@@ -30,14 +30,6 @@ from whar_datasets import (
     WHARDatasetID,
 )
 
-THIS_DIR = Path(__file__).resolve().parent
-if str(THIS_DIR) not in sys.path:
-    sys.path.insert(0, str(THIS_DIR))
-
-SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
-
 from hyper_har.backbone.film_tinierhar import FiLMTinierHAR
 from hyper_har.backbone.tinierhar import TinierHAR
 from hyper_har.config import DEFAULT_CONFIG
@@ -45,6 +37,14 @@ from hyper_har.training.conditioned_meta_trainer import (
     ConditionedMetaTrainerConfig,
     SubjectConditionedMetaTrainer,
 )
+
+THIS_DIR = Path(__file__).resolve().parent
+if str(THIS_DIR) not in sys.path:
+    sys.path.insert(0, str(THIS_DIR))
+
+SRC = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
 
 
 def _load_module_from_path(name: str, path: Path) -> Any:
@@ -68,7 +68,7 @@ class Config:
     dataset_id: str = WHARDatasetID.WEAR.value
     datasets_dir: str = str(ROOT / "datasets")
     selected_activities: list[str] | None = None
-    window_overlap: float = 0.0
+    window_overlap: float = 0.5
     subjects_per_group: int = 6
     seed: int = 0
 
@@ -77,29 +77,29 @@ class Config:
     force_conv_bn_eval: bool = True
 
     film_hidden_dim: int = 128
-    film_dropout: float = 0.1  # 0.0
-    film_use_explosion_guard: bool = True  # False
+    film_dropout: float = 0.0  # 0.1  # 0.0
+    film_use_explosion_guard: bool = True  # False  # False
     film_gamma_bound: float = 0.5
     film_beta_bound: float = 1.0
+    film_enable_conv1: bool = False  # True  # False
+    film_modulation_mode: str = "dynamic_time"  # "static"
     film_stage_name: str | None = None
 
     train_subjects_per_episode: int = 4
     train_min_k_per_class: int = DEFAULT_TRAIN_MIN_K_PER_CLASS
     train_max_k_per_class: int = DEFAULT_TRAIN_MAX_K_PER_CLASS
     query_per_class: int = 8
-    eval_min_k_per_class: int = DEFAULT_TRAIN_MIN_K_PER_CLASS
-    eval_max_k_per_class: int = DEFAULT_TRAIN_MAX_K_PER_CLASS
     eval_query_per_class: int = 16
     train_episodes_per_epoch: int = 64
-    eval_episodes: int = 64
+    eval_episodes: int = 32
 
     meta_learning_rate: float = 1e-4
     min_learning_rate: float = 1e-6
     warmup_ratio: float = 0.05
     weight_decay: float = 0.0
     epochs: int = 100
-    patience: int = 10
-    device: str = "cpu"
+    patience: int = 5  # 10
+    device: str = "mps"  # "cpu"
     output_root: str = str(ROOT / "artifacts" / "final_pipeline")
     max_folds: int | None = None
     force_rerun: bool = False
@@ -123,6 +123,12 @@ def _resolve_stage_name(config: Config) -> str:
     suffix_parts: list[str] = []
     if int(config.film_hidden_dim) != 128:
         suffix_parts.append(f"hidden-{int(config.film_hidden_dim)}")
+    if config.film_modulation_mode.strip().lower() != "static":
+        suffix_parts.append(
+            config.film_modulation_mode.strip().lower().replace("_", "-")
+        )
+    if config.film_enable_conv1:
+        suffix_parts.append("conv1")
     if not np.isclose(float(config.film_dropout), 0.0):
         suffix_parts.append(f"dropout-{_path_float(float(config.film_dropout))}")
     if config.film_use_explosion_guard:
@@ -280,6 +286,8 @@ def run(config: Config) -> dict[str, Any]:
             film_use_explosion_guard=config.film_use_explosion_guard,
             film_gamma_bound=config.film_gamma_bound,
             film_beta_bound=config.film_beta_bound,
+            film_enable_conv1=config.film_enable_conv1,
+            film_modulation_mode=config.film_modulation_mode,
         )
         trainable_params = [
             param for param in film_model.parameters() if param.requires_grad
@@ -313,9 +321,8 @@ def run(config: Config) -> dict[str, Any]:
         train_support_choices = k_choices_from_range(
             config.train_min_k_per_class, config.train_max_k_per_class
         )
-        eval_support_choices = k_choices_from_range(
-            config.eval_min_k_per_class, config.eval_max_k_per_class
-        )
+        eval_support_choices = train_support_choices
+        train_time_eval_support_choices = (max(train_support_choices),)
         train_needed = max(train_support_choices) + config.query_per_class
         eval_needed = max(eval_support_choices) + config.eval_query_per_class
         train_activity_ids = CONDITIONED_HELPERS._choose_activity_ids(
@@ -399,10 +406,15 @@ def run(config: Config) -> dict[str, Any]:
             freeze_set_encoder=True,
         )
 
-        val_episode_bank = CONDITIONED_HELPERS._build_episode_bank(
+        train_time_val_episode_banks_by_k = (
+            CONDITIONED_HELPERS._build_episode_bank_by_k(
+                val_trainer, config.eval_episodes, train_time_eval_support_choices
+            )
+        )
+        final_val_episode_banks_by_k = CONDITIONED_HELPERS._build_episode_bank_by_k(
             val_trainer, config.eval_episodes, eval_support_choices
         )
-        test_episode_bank = CONDITIONED_HELPERS._build_episode_bank(
+        final_test_episode_banks_by_k = CONDITIONED_HELPERS._build_episode_bank_by_k(
             test_trainer, config.eval_episodes, eval_support_choices
         )
 
@@ -427,10 +439,10 @@ def run(config: Config) -> dict[str, Any]:
                 scheduler.step()
                 global_step += 1
 
-            val_metrics = CONDITIONED_HELPERS._run_meta_eval(
+            val_metrics, val_metrics_by_k = CONDITIONED_HELPERS._run_meta_eval_by_k(
                 val_trainer,
-                episodes=config.eval_episodes,
-                episode_bank=val_episode_bank,
+                episodes_per_k=config.eval_episodes,
+                episode_banks_by_k=train_time_val_episode_banks_by_k,
             )
             row = {
                 "epoch": epoch,
@@ -440,6 +452,10 @@ def run(config: Config) -> dict[str, Any]:
                 "val_macro_f1": float(val_metrics["macro_f1"]),
                 "val_base_macro_f1": float(val_metrics["base_macro_f1"]),
                 "val_macro_f1_improvement": float(val_metrics["macro_f1_improvement"]),
+                "val_macro_f1_improvement_by_k": {
+                    k: float(metrics["macro_f1_improvement"])
+                    for k, metrics in val_metrics_by_k.items()
+                },
                 "lr": float(optimizer.param_groups[0]["lr"]),
                 "global_step": int(global_step),
             }
@@ -491,15 +507,15 @@ def run(config: Config) -> dict[str, Any]:
         if "set_encoder" in best_payload:
             set_encoder.load_state_dict(best_payload["set_encoder"])
 
-        val_final = CONDITIONED_HELPERS._run_meta_eval(
+        val_final, val_final_by_k = CONDITIONED_HELPERS._run_meta_eval_by_k(
             val_trainer,
-            episodes=config.eval_episodes,
-            episode_bank=val_episode_bank,
+            episodes_per_k=config.eval_episodes,
+            episode_banks_by_k=final_val_episode_banks_by_k,
         )
-        test_final = CONDITIONED_HELPERS._run_meta_eval(
+        test_final, test_final_by_k = CONDITIONED_HELPERS._run_meta_eval_by_k(
             test_trainer,
-            episodes=config.eval_episodes,
-            episode_bank=test_episode_bank,
+            episodes_per_k=config.eval_episodes,
+            episode_banks_by_k=final_test_episode_banks_by_k,
         )
         fold_result = {
             "config_fingerprint": fold_fp,
@@ -518,6 +534,13 @@ def run(config: Config) -> dict[str, Any]:
             "test_macro_f1": float(test_final["macro_f1"]),
             "test_base_macro_f1": float(test_final["base_macro_f1"]),
             "test_macro_f1_improvement": float(test_final["macro_f1_improvement"]),
+            "eval_k_values": [int(k) for k in eval_support_choices],
+            "train_time_eval_k_values": [
+                int(k) for k in train_time_eval_support_choices
+            ],
+            "eval_episodes_per_k": int(config.eval_episodes),
+            "val_by_k": val_final_by_k,
+            "test_by_k": test_final_by_k,
         }
         (split_dir / "metrics.json").write_text(
             json.dumps(fold_result, indent=2), encoding="utf-8"

@@ -20,9 +20,8 @@ from whar_datasets import (
 
 ROOT = Path(__file__).resolve().parents[1]
 
-DEFAULT_TRAIN_MIN_K_PER_CLASS = 1
-DEFAULT_TRAIN_MAX_K_PER_CLASS = 8
-DEFAULT_EVAL_K_PER_CLASS = 1
+DEFAULT_TRAIN_MIN_K_PER_CLASS = 32  # 1
+DEFAULT_TRAIN_MAX_K_PER_CLASS = 32  # 16
 
 
 @dataclass(frozen=True)
@@ -66,7 +65,9 @@ def prepare_cfg(
     window_overlap: float,
 ) -> Any:
     cfg = get_dataset_cfg(dataset_id, datasets_dir=str(datasets_dir))
-    cfg = cfg.model_copy(deep=True) if hasattr(cfg, "model_copy") else cfg.copy(deep=True)
+    cfg = (
+        cfg.model_copy(deep=True) if hasattr(cfg, "model_copy") else cfg.copy(deep=True)
+    )
     if selected_activities is not None:
         cfg.selected_activities = list(selected_activities)
         cfg.num_of_activities = len(cfg.selected_activities)
@@ -171,12 +172,16 @@ def split_indices_for_fold(
     if train_subject_ids is None:
         train_subject_ids = getattr(fold, "meta_train_subject_ids", None)
     if train_subject_ids is None:
-        raise ValueError("Fold object must define train_subject_ids or meta_train_subject_ids.")
+        raise ValueError(
+            "Fold object must define train_subject_ids or meta_train_subject_ids."
+        )
 
     val_subject_ids = getattr(fold, "val_subject_ids", None)
     test_subject_ids = getattr(fold, "test_subject_ids", None)
     if val_subject_ids is None or test_subject_ids is None:
-        raise ValueError("Fold object must define val_subject_ids and test_subject_ids.")
+        raise ValueError(
+            "Fold object must define val_subject_ids and test_subject_ids."
+        )
 
     train_indices = gather(train_subject_ids)
     val_indices = gather(val_subject_ids)
@@ -188,9 +193,7 @@ def split_indices_for_fold(
     )
 
 
-def subject_ids_for_indices(
-    loader: Loader, indices: Sequence[int]
-) -> list[int]:
+def subject_ids_for_indices(loader: Loader, indices: Sequence[int]) -> list[int]:
     if not indices:
         return []
     subset = loader.window_df.loc[list(indices), ["session_id"]].copy()

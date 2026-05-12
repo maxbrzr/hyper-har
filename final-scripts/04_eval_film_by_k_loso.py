@@ -549,8 +549,14 @@ def main() -> None:
     if k_values is None:
         k_values = list(
             k_choices_from_range(
-                _as_int(train_config.get("eval_min_k_per_class"), DEFAULT_TRAIN_MIN_K_PER_CLASS),
-                _as_int(train_config.get("eval_max_k_per_class"), DEFAULT_TRAIN_MAX_K_PER_CLASS),
+                _as_int(
+                    train_config.get("train_min_k_per_class"),
+                    DEFAULT_TRAIN_MIN_K_PER_CLASS,
+                ),
+                _as_int(
+                    train_config.get("train_max_k_per_class"),
+                    DEFAULT_TRAIN_MAX_K_PER_CLASS,
+                ),
             )
         )
     query_per_class = (
@@ -566,7 +572,7 @@ def main() -> None:
         dataset_id=dataset_id,
         datasets_dir=Path(str(train_config.get("datasets_dir", ROOT / "datasets"))),
         selected_activities=train_config.get("selected_activities"),
-        window_overlap=_as_float(train_config.get("window_overlap"), 0.0),
+        window_overlap=_as_float(train_config.get("window_overlap"), 0.5),
     )
     pre = PreProcessingPipeline(cfg)
     _raw_df, session_df, window_df = pre.run()
@@ -574,7 +580,7 @@ def main() -> None:
         dataset_id=str(train_config.get("dataset_id", WHARDatasetID.WEAR.value)),
         datasets_dir=str(train_config.get("datasets_dir", ROOT / "datasets")),
         selected_activities=train_config.get("selected_activities"),
-        window_overlap=_as_float(train_config.get("window_overlap"), 0.0),
+        window_overlap=_as_float(train_config.get("window_overlap"), 0.5),
         subjects_per_group=_as_int(train_config.get("subjects_per_group"), 6),
         seed=_as_int(train_config.get("seed"), 0),
     )
@@ -594,6 +600,8 @@ def main() -> None:
     )
     film_gamma_bound = _as_float(train_config.get("film_gamma_bound"), 0.5)
     film_beta_bound = _as_float(train_config.get("film_beta_bound"), 1.0)
+    film_enable_conv1 = _as_bool(train_config.get("film_enable_conv1"), False)
+    film_modulation_mode = str(train_config.get("film_modulation_mode", "static"))
 
     pretrain_root = args.output_root / "01_pretrain_base"
     set_encoder_root = args.output_root / "02_set_encoder_supcon"
@@ -665,6 +673,8 @@ def main() -> None:
                 film_use_explosion_guard=film_use_explosion_guard,
                 film_gamma_bound=film_gamma_bound,
                 film_beta_bound=film_beta_bound,
+                film_enable_conv1=film_enable_conv1,
+                film_modulation_mode=film_modulation_mode,
             )
             film_payload = torch.load(fold_ckpt, map_location=device, weights_only=False)
             film_model.load_state_dict(film_payload["film_model"])
