@@ -6,22 +6,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-from whar_datasets import (
-    Loader,
-    PostProcessingPipeline,
-    PreProcessingPipeline,
-    TorchAdapter,
-    WHARDatasetID,
-)
-
-from hyper_har.backbone.tinierhar import TinierHAR
-from hyper_har.config import DEFAULT_CONFIG
-from hyper_har.training.trainer import TinierHARTrainer, TrainerConfig
-
-THIS_DIR = Path(__file__).resolve().parent
-if str(THIS_DIR) not in sys.path:
-    sys.path.insert(0, str(THIS_DIR))
-
+import torch
 from common import (
     ROOT,
     SharedConfig,
@@ -31,6 +16,22 @@ from common import (
     set_seed,
     split_indices_for_fold,
 )
+from whar_datasets import (
+    Loader,
+    PostProcessingPipeline,
+    PreProcessingPipeline,
+    TorchAdapter,
+    WHARDatasetID,
+)
+from whar_datasets.splitting.split import Split
+
+from hyper_har.backbone.tinierhar import TinierHAR
+from hyper_har.config import DEFAULT_CONFIG
+from hyper_har.training.trainer import TinierHARTrainer, TrainerConfig
+
+THIS_DIR = Path(__file__).resolve().parent
+if str(THIS_DIR) not in sys.path:
+    sys.path.insert(0, str(THIS_DIR))
 
 
 @dataclass(frozen=True)
@@ -50,9 +51,9 @@ class Config:
     min_delta: float = 0.0
     device: str = (
         "mps"
-        if __import__("torch").backends.mps.is_available()
+        if torch.backends.mps.is_available()
         else "cuda"
-        if __import__("torch").cuda.is_available()
+        if torch.cuda.is_available()
         else "cpu"
     )
     output_root: str = str(ROOT / "artifacts" / "final_pipeline")
@@ -133,11 +134,15 @@ def run(config: Config) -> dict[str, Any]:
         base_split = split_indices_for_fold(
             session_df,
             window_df,
-            type("Tmp", (), {
-                "train_subject_ids": fold.base_train_subject_ids,
-                "val_subject_ids": fold.val_subject_ids,
-                "test_subject_ids": fold.test_subject_ids,
-            })(),
+            type(
+                "Tmp",
+                (),
+                {
+                    "train_subject_ids": fold.base_train_subject_ids,
+                    "val_subject_ids": fold.val_subject_ids,
+                    "test_subject_ids": fold.test_subject_ids,
+                },
+            )(),
         )
         split_dir = stage_dir / fold.fold_id
         split_dir.mkdir(parents=True, exist_ok=True)
@@ -155,14 +160,16 @@ def run(config: Config) -> dict[str, Any]:
             try:
                 existing = json.loads(metrics_path.read_text(encoding="utf-8"))
                 if existing.get("config_fingerprint") == fold_fp:
-                    print(f"[{fold.fold_id}] skipping (already complete with same settings)")
+                    print(
+                        f"[{fold.fold_id}] skipping (already complete with same settings)"
+                    )
                     summary_rows.append(existing)
                     skipped_folds.append(fold.fold_id)
                     continue
             except Exception:
                 pass
 
-        adapter_split = AdapterSplit(
+        adapter_split = Split(
             identifier=fold.fold_id,
             train_indices=base_split.train_indices,
             val_indices=base_split.val_indices,
@@ -201,7 +208,9 @@ def run(config: Config) -> dict[str, Any]:
             config=trainer_cfg,
         )
         history = trainer.fit(train_loader, val_loader)
-        test_metrics = trainer.evaluate(test_loader, desc=f"Pretrain Test {fold.fold_id}")
+        test_metrics = trainer.evaluate(
+            test_loader, desc=f"Pretrain Test {fold.fold_id}"
+        )
         result = {
             "config_fingerprint": fold_fp,
             "fold_id": fold.fold_id,
@@ -215,8 +224,12 @@ def run(config: Config) -> dict[str, Any]:
             "best_val_macro_f1": float(trainer.state.best_val_macro_f1),
             "best_epoch": int(trainer.state.best_epoch),
         }
-        (split_dir / "metrics.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
-        (split_dir / "history.json").write_text(json.dumps(history, indent=2), encoding="utf-8")
+        (split_dir / "metrics.json").write_text(
+            json.dumps(result, indent=2), encoding="utf-8"
+        )
+        (split_dir / "history.json").write_text(
+            json.dumps(history, indent=2), encoding="utf-8"
+        )
         summary_rows.append(result)
         print(
             f"[{fold.fold_id}] pretrain test_macro_f1={result['test_macro_f1']:.4f} "
@@ -238,11 +251,17 @@ def run(config: Config) -> dict[str, Any]:
             }
             for r in summary_rows
         ],
-        "mean_test_macro_f1": float(sum(r["test_macro_f1"] for r in summary_rows) / max(1, len(summary_rows))),
-        "mean_test_loss": float(sum(r["test_loss"] for r in summary_rows) / max(1, len(summary_rows))),
+        "mean_test_macro_f1": float(
+            sum(r["test_macro_f1"] for r in summary_rows) / max(1, len(summary_rows))
+        ),
+        "mean_test_loss": float(
+            sum(r["test_loss"] for r in summary_rows) / max(1, len(summary_rows))
+        ),
         "folds": summary_rows,
     }
-    (stage_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    (stage_dir / "summary.json").write_text(
+        json.dumps(summary, indent=2), encoding="utf-8"
+    )
     return summary
 
 

@@ -602,6 +602,9 @@ def main() -> None:
     film_beta_bound = _as_float(train_config.get("film_beta_bound"), 1.0)
     film_enable_conv1 = _as_bool(train_config.get("film_enable_conv1"), False)
     film_modulation_mode = str(train_config.get("film_modulation_mode", "static"))
+    film_condition_gru_h0 = _as_bool(
+        train_config.get("film_condition_gru_h0"), False
+    )
 
     pretrain_root = args.output_root / "01_pretrain_base"
     set_encoder_root = args.output_root / "02_set_encoder_supcon"
@@ -675,6 +678,7 @@ def main() -> None:
                 film_beta_bound=film_beta_bound,
                 film_enable_conv1=film_enable_conv1,
                 film_modulation_mode=film_modulation_mode,
+                film_condition_gru_h0=film_condition_gru_h0,
             )
             film_payload = torch.load(fold_ckpt, map_location=device, weights_only=False)
             film_model.load_state_dict(film_payload["film_model"])

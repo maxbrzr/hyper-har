@@ -12,6 +12,19 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from common import (
+    DEFAULT_TRAIN_MAX_K_PER_CLASS,
+    DEFAULT_TRAIN_MIN_K_PER_CLASS,
+    ROOT,
+    SharedConfig,
+    build_or_load_loso_folds,
+    config_fingerprint,
+    k_choices_from_range,
+    prepare_cfg,
+    set_seed,
+    split_indices_for_fold,
+)
+from matplotlib.lines import Line2D
 from sklearn.manifold import TSNE
 from sklearn.metrics import f1_score
 from sklearn.neighbors import KNeighborsClassifier
@@ -31,18 +44,6 @@ THIS_DIR = Path(__file__).resolve().parent
 if str(THIS_DIR) not in sys.path:
     sys.path.insert(0, str(THIS_DIR))
 
-from common import (
-    DEFAULT_TRAIN_MAX_K_PER_CLASS,
-    DEFAULT_TRAIN_MIN_K_PER_CLASS,
-    ROOT,
-    SharedConfig,
-    build_or_load_loso_folds,
-    config_fingerprint,
-    k_choices_from_range,
-    prepare_cfg,
-    set_seed,
-    split_indices_for_fold,
-)
 
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
@@ -297,7 +298,7 @@ class NMSetsDataset(Dataset[dict[str, torch.Tensor | int]]):
     def __len__(self) -> int:
         return len(self.loader.window_df)
 
-    def __getitem__(self, item: SubjectSetIndices) -> dict[str, torch.Tensor | int]:
+    def __getitem__(self, item: SubjectSetIndices) -> dict[str, torch.Tensor | int]:  # type: ignore
         windows = []
         labels = []
         for idx in item.set_indices.tolist():
@@ -495,7 +496,7 @@ def _save_tsne_plot(
     ax.set_xlabel("t-SNE-1")
     ax.set_ylabel("t-SNE-2")
     handles = [
-        plt.Line2D(
+        Line2D(
             [0],
             [0],
             marker="o",
@@ -880,7 +881,7 @@ def run(config: Config) -> dict[str, Any]:
         best_val_macro_f1 = -1.0
         best_epoch = -1
         patience = 0
-        history: list[dict[str, float | int | str]] = []
+        history: list[dict] = []
         ckpt_path = split_dir / "best_set_encoder_supcon.pt"
 
         for epoch in range(1, config.epochs + 1):

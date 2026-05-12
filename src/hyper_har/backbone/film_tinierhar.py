@@ -307,7 +307,7 @@ class DynamicTimeVariantFiLM(nn.Module):
 
 
 class FiLMTinierHAR(nn.Module):
-    """Frozen TinierHAR with trainable post-conv FiLM modulation."""
+    """Frozen TinierHAR with trainable subject-conditioned FiLM modulation."""
 
     def __init__(
         self,
@@ -320,6 +320,7 @@ class FiLMTinierHAR(nn.Module):
         film_beta_bound: float = 1.0,
         film_enable_conv1: bool = False,
         film_modulation_mode: str = "static",
+        film_condition_gru_h0: bool = False,
     ) -> None:
         super().__init__()
         film_modulation_mode = film_modulation_mode.strip().lower()
@@ -333,9 +334,16 @@ class FiLMTinierHAR(nn.Module):
                 "film_enable_conv1=True is not supported with "
                 "film_modulation_mode='dynamic_time'."
             )
+        if film_condition_gru_h0 and film_modulation_mode != "dynamic_time":
+            raise ValueError(
+                "film_condition_gru_h0=True is only supported with "
+                "film_modulation_mode='dynamic_time'."
+            )
         self.base_model = base_model
         self.film_enable_conv1 = bool(film_enable_conv1)
         self.film_modulation_mode = film_modulation_mode
+        self.film_condition_gru_h0 = bool(film_condition_gru_h0)
+        self.subject_embedding_dim = int(subject_embedding_dim)
         self.input_channels = base_model.input_channels
         self.seq_length = base_model.seq_length
         self.nb_classes = base_model.nb_classes
@@ -386,6 +394,26 @@ class FiLMTinierHAR(nn.Module):
                 gamma_bound=film_gamma_bound,
                 beta_bound=film_beta_bound,
             )
+        self.hidden_state_projector: nn.Module | None = None
+        if self.film_condition_gru_h0:
+            self.gru_num_layers = int(self.base_model.gru.num_layers)
+            self.gru_num_directions = 2 if self.base_model.gru.bidirectional else 1
+            self.gru_hidden_size = int(self.base_model.gru.hidden_size)
+            self.hidden_state_projector = nn.Sequential(
+                nn.LayerNorm(self.subject_embedding_dim, elementwise_affine=False),
+                nn.Linear(
+                    self.subject_embedding_dim,
+                    self.gru_num_layers
+                    * self.gru_num_directions
+                    * self.gru_hidden_size,
+                ),
+                nn.Tanh(),
+            )
+            projector = self.hidden_state_projector[1]
+            if not isinstance(projector, nn.Linear):
+                raise TypeError("Expected GRU h0 projector layer to be nn.Linear.")
+            nn.init.zeros_(projector.weight)
+            nn.init.zeros_(projector.bias)
         self.freeze_base_model()
 
     def freeze_base_model(self) -> None:
@@ -418,6 +446,28 @@ class FiLMTinierHAR(nn.Module):
         x = x.permute(0, 2, 1, 3).reshape(bsz, tlen, -1)
         return self.base_model.dropout(x)
 
+    def _conditioned_gru_h0(self, c_subject: torch.Tensor) -> torch.Tensor | None:
+        if not self.film_condition_gru_h0:
+            return None
+        if self.hidden_state_projector is None:
+            raise RuntimeError("GRU h0 conditioning is enabled without a projector.")
+        if c_subject.dim() != 2:
+            raise ValueError(
+                "Expected subject embedding with shape (batch, dim), "
+                f"got {tuple(c_subject.shape)}."
+            )
+        if c_subject.size(-1) != self.subject_embedding_dim:
+            raise ValueError(
+                "Subject embedding dim mismatch: "
+                f"expected {self.subject_embedding_dim}, got {c_subject.size(-1)}."
+            )
+        h0 = self.hidden_state_projector(c_subject)
+        return h0.view(
+            c_subject.size(0),
+            self.gru_num_layers * self.gru_num_directions,
+            self.gru_hidden_size,
+        ).transpose(0, 1).contiguous()
+
     def encode(self, x: torch.Tensor, c_subject: torch.Tensor) -> torch.Tensor:
         if self.film_enable_conv1:
             if not isinstance(self.film, HierarchicalFiLM):
@@ -434,7 +484,7 @@ class FiLMTinierHAR(nn.Module):
         else:
             x_seq = self.extract_conv_sequence(x)
             x_seq = self.film(x_seq, c_subject)
-        x_seq, _ = self.base_model.gru(x_seq)
+        x_seq, _ = self.base_model.gru(x_seq, self._conditioned_gru_h0(c_subject))
         attn_weights = torch.softmax(self.base_model.attention(x_seq), dim=1)
         return torch.sum(attn_weights * x_seq, dim=1)
 

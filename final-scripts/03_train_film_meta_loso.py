@@ -83,6 +83,7 @@ class Config:
     film_beta_bound: float = 1.0
     film_enable_conv1: bool = False  # True  # False
     film_modulation_mode: str = "dynamic_time"  # "static"
+    film_condition_gru_h0: bool = True  # False
     film_stage_name: str | None = None
 
     train_subjects_per_episode: int = 4
@@ -93,13 +94,19 @@ class Config:
     train_episodes_per_epoch: int = 64
     eval_episodes: int = 32
 
-    meta_learning_rate: float = 1e-4
+    meta_learning_rate: float = 1e-5
     min_learning_rate: float = 1e-6
     warmup_ratio: float = 0.05
     weight_decay: float = 0.0
     epochs: int = 100
-    patience: int = 5  # 10
-    device: str = "mps"  # "cpu"
+    patience: int = 20  # 10  # 10
+    device: str = (
+        "mps"
+        if torch.backends.mps.is_available()
+        else "cuda"
+        if torch.cuda.is_available()
+        else "cpu"
+    )
     output_root: str = str(ROOT / "artifacts" / "final_pipeline")
     max_folds: int | None = None
     force_rerun: bool = False
@@ -129,6 +136,8 @@ def _resolve_stage_name(config: Config) -> str:
         )
     if config.film_enable_conv1:
         suffix_parts.append("conv1")
+    if config.film_condition_gru_h0:
+        suffix_parts.append("gru-h0")
     if not np.isclose(float(config.film_dropout), 0.0):
         suffix_parts.append(f"dropout-{_path_float(float(config.film_dropout))}")
     if config.film_use_explosion_guard:
@@ -288,6 +297,7 @@ def run(config: Config) -> dict[str, Any]:
             film_beta_bound=config.film_beta_bound,
             film_enable_conv1=config.film_enable_conv1,
             film_modulation_mode=config.film_modulation_mode,
+            film_condition_gru_h0=config.film_condition_gru_h0,
         )
         trainable_params = [
             param for param in film_model.parameters() if param.requires_grad
@@ -422,7 +432,7 @@ def run(config: Config) -> dict[str, Any]:
         best_val_loss = float("inf")
         best_epoch = -1
         patience_counter = 0
-        history_rows: list[dict[str, float | int]] = []
+        history_rows: list[dict] = []
         global_step = 0
 
         for epoch in range(1, config.epochs + 1):
