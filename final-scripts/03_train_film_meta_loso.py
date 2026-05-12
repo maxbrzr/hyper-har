@@ -3,12 +3,13 @@ from __future__ import annotations
 import importlib.util
 import json
 import sys
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping, Sequence
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 from common import (
     DEFAULT_TRAIN_MAX_K_PER_CLASS,
     DEFAULT_TRAIN_MIN_K_PER_CLASS,
@@ -21,6 +22,7 @@ from common import (
     set_seed,
     split_indices_for_fold,
 )
+from sklearn.metrics import f1_score
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
 from tqdm.auto import tqdm
 from whar_datasets import (
@@ -57,10 +59,16 @@ def _load_module_from_path(name: str, path: Path) -> Any:
     return module
 
 
-CONDITIONED_HELPERS = _load_module_from_path(
-    "final_phase3_conditioned_helpers",
-    THIS_DIR / "03_train_conditioned_meta_loso.py",
+SET_ENCODER_ATTENTION_MODULE = _load_module_from_path(
+    "final_phase3_film_attention_set_encoder",
+    SRC / "hyper_har" / "set-encoder" / "attention.py",
 )
+SET_ENCODER_SIMPLE_MODULE = _load_module_from_path(
+    "final_phase3_film_simple_set_encoder",
+    SRC / "hyper_har" / "set-encoder" / "simple.py",
+)
+AttentionSetEncoder = SET_ENCODER_ATTENTION_MODULE.AttentionSetEncoder
+PrototypicalSetEncoder = SET_ENCODER_SIMPLE_MODULE.PrototypicalSetEncoder
 
 
 @dataclass(frozen=True)
@@ -171,6 +179,202 @@ def _load_base_model(
     return model
 
 
+def _build_set_encoder(
+    cfg: Config,
+    base_backbone: TinierHAR,
+    num_classes: int,
+) -> torch.nn.Module:
+    se_cfg = replace(DEFAULT_CONFIG.set_encoder, include_global_context=False)
+    if cfg.encoder == "attention":
+        return AttentionSetEncoder(
+            backbone=base_backbone,
+            num_classes=num_classes,
+            backbone_train_mode=cfg.set_encoder_backbone_train_mode,
+            force_conv_bn_eval=cfg.force_conv_bn_eval,
+            set_encoder_config=se_cfg,
+        )
+    return PrototypicalSetEncoder(
+        backbone=base_backbone,
+        num_classes=num_classes,
+        backbone_train_mode=cfg.set_encoder_backbone_train_mode,
+        force_conv_bn_eval=cfg.force_conv_bn_eval,
+        set_encoder_config=se_cfg,
+    )
+
+
+def _choose_activity_ids(
+    loader: Loader,
+    indices: Sequence[int],
+    needed_per_subject_activity: int,
+    min_subjects: int,
+) -> list[int]:
+    subset = loader.window_df.loc[list(indices), ["session_id"]].copy()
+    subset["window_index"] = subset.index.astype(int)
+    session_meta = loader.session_df[
+        ["session_id", "subject_id", "activity_id"]
+    ].drop_duplicates("session_id")
+    merged = subset.merge(session_meta, on="session_id", how="left")
+    grouped = (
+        merged.groupby(["subject_id", "activity_id"])["window_index"]
+        .count()
+        .reset_index(name="count")
+    )
+    support: dict[int, dict[int, int]] = {}
+    for row in grouped.itertuples(index=False):
+        support.setdefault(int(row.subject_id), {})[int(row.activity_id)] = int(
+            row.count
+        )
+    activities = sorted(set(int(x) for x in merged["activity_id"].dropna().tolist()))
+
+    selected: list[int] = []
+    for aid in activities:
+        eligible_subjects = [
+            sid
+            for sid, per_act in support.items()
+            if per_act.get(aid, 0) >= needed_per_subject_activity
+        ]
+        if len(eligible_subjects) >= min_subjects:
+            selected.append(int(aid))
+    if not selected:
+        raise ValueError(
+            "No activity ids satisfy episodic requirements: "
+            f"needed_per_subject_activity={needed_per_subject_activity}, "
+            f"min_subjects={min_subjects}"
+        )
+    return selected
+
+
+@torch.no_grad()
+def _run_meta_eval(
+    trainer: SubjectConditionedMetaTrainer,
+    episodes: int,
+    episode_bank: Sequence[
+        tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, list[int]]
+    ]
+    | None = None,
+) -> dict[str, Any]:
+    trainer.baseline_model.eval()
+    trainer.set_encoder.eval()
+    trainer.conditioned_model.eval()
+
+    losses: list[float] = []
+    base_losses: list[float] = []
+    all_preds: list[torch.Tensor] = []
+    all_targets: list[torch.Tensor] = []
+    base_preds_all: list[torch.Tensor] = []
+
+    iterator = (
+        episode_bank
+        if episode_bank is not None
+        else (trainer._sample_episode() for _ in range(episodes))
+    )
+    for x_support, y_support, x_query, y_query, _ in iterator:
+        x_support = x_support.to(trainer.device)
+        y_support = y_support.to(trainer.device)
+        x_query = x_query.to(trainer.device)
+        y_query = y_query.to(trainer.device)
+
+        targets_flat = y_query.reshape(-1)
+        base_logits = trainer.baseline_model(
+            x_query.reshape(-1, *x_query.shape[2:])
+        ).reshape(x_query.size(0), x_query.size(1), -1)
+        base_logits_flat = base_logits.reshape(-1, base_logits.size(-1))
+        base_loss = F.cross_entropy(
+            base_logits_flat, targets_flat, weight=trainer.class_weights
+        )
+        base_losses.append(float(base_loss.item()))
+        base_preds_all.append(base_logits.argmax(dim=-1).reshape(-1).cpu())
+
+        c_subject = trainer.set_encoder(x_support, y_support)
+        logits = trainer.conditioned_model.forward_episode(x_query, c_subject)
+        logits_flat = logits.reshape(-1, logits.size(-1))
+        loss = F.cross_entropy(logits_flat, targets_flat, weight=trainer.class_weights)
+        losses.append(float(loss.item()))
+        all_preds.append(logits.argmax(dim=-1).reshape(-1).cpu())
+        all_targets.append(targets_flat.cpu())
+
+    preds_t = torch.cat(all_preds) if all_preds else torch.empty((0,), dtype=torch.long)
+    targets_t = (
+        torch.cat(all_targets) if all_targets else torch.empty((0,), dtype=torch.long)
+    )
+    macro_f1 = (
+        f1_score(targets_t.numpy(), preds_t.numpy(), average="macro", zero_division=0)
+        if preds_t.numel() > 0
+        else 0.0
+    )
+    base_preds_t = (
+        torch.cat(base_preds_all)
+        if base_preds_all
+        else torch.empty((0,), dtype=torch.long)
+    )
+    base_macro_f1 = (
+        f1_score(
+            targets_t.numpy(), base_preds_t.numpy(), average="macro", zero_division=0
+        )
+        if base_preds_t.numel() > 0
+        else 0.0
+    )
+    return {
+        "loss": sum(losses) / max(1, len(losses)),
+        "macro_f1": float(macro_f1),
+        "base_loss": sum(base_losses) / max(1, len(base_losses)),
+        "base_macro_f1": float(base_macro_f1),
+        "macro_f1_improvement": float(macro_f1 - base_macro_f1),
+    }
+
+
+def _build_episode_bank_by_k(
+    trainer: SubjectConditionedMetaTrainer,
+    episodes_per_k: int,
+    support_per_class_choices: Sequence[int],
+) -> dict[str, list[tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, list[int]]]]:
+    banks: dict[str, list[tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, list[int]]]] = {}
+    if episodes_per_k <= 0:
+        return {str(int(k)): [] for k in support_per_class_choices}
+    for k in support_per_class_choices:
+        banks[str(int(k))] = [
+            trainer._sample_episode(support_per_class=int(k))
+            for _ in range(int(episodes_per_k))
+        ]
+    return banks
+
+
+def _mean_eval_metrics(metrics_by_k: Mapping[str, dict[str, Any]]) -> dict[str, Any]:
+    if not metrics_by_k:
+        return {
+            "loss": 0.0,
+            "macro_f1": 0.0,
+            "base_loss": 0.0,
+            "base_macro_f1": 0.0,
+            "macro_f1_improvement": 0.0,
+        }
+    keys = ["loss", "macro_f1", "base_loss", "base_macro_f1", "macro_f1_improvement"]
+    return {
+        key: float(np.mean([float(metrics[key]) for metrics in metrics_by_k.values()]))
+        for key in keys
+    }
+
+
+def _run_meta_eval_by_k(
+    trainer: SubjectConditionedMetaTrainer,
+    episodes_per_k: int,
+    episode_banks_by_k: Mapping[
+        str,
+        Sequence[
+            tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, list[int]]
+        ],
+    ],
+) -> tuple[dict[str, Any], dict[str, dict[str, Any]]]:
+    metrics_by_k: dict[str, dict[str, Any]] = {}
+    for k_str, bank in episode_banks_by_k.items():
+        metrics_by_k[str(k_str)] = _run_meta_eval(
+            trainer,
+            episodes=episodes_per_k,
+            episode_bank=bank,
+        )
+    return _mean_eval_metrics(metrics_by_k), metrics_by_k
+
+
 def run(config: Config) -> dict[str, Any]:
     set_seed(config.seed)
     output_root = Path(config.output_root)
@@ -275,7 +479,7 @@ def run(config: Config) -> dict[str, Any]:
             window_size=window_size,
             backbone_config=DEFAULT_CONFIG.backbone,
         )
-        set_encoder = CONDITIONED_HELPERS._build_set_encoder(
+        set_encoder = _build_set_encoder(
             config, se_backbone, num_classes
         )
         se_payload = torch.load(
@@ -335,13 +539,13 @@ def run(config: Config) -> dict[str, Any]:
         train_time_eval_support_choices = (max(train_support_choices),)
         train_needed = max(train_support_choices) + config.query_per_class
         eval_needed = max(eval_support_choices) + config.eval_query_per_class
-        train_activity_ids = CONDITIONED_HELPERS._choose_activity_ids(
+        train_activity_ids = _choose_activity_ids(
             loader, split.train_indices, train_needed, config.train_subjects_per_episode
         )
-        val_activity_ids = CONDITIONED_HELPERS._choose_activity_ids(
+        val_activity_ids = _choose_activity_ids(
             loader, split.val_indices, eval_needed, 1
         )
-        test_activity_ids = CONDITIONED_HELPERS._choose_activity_ids(
+        test_activity_ids = _choose_activity_ids(
             loader, split.test_indices, eval_needed, 1
         )
 
@@ -417,14 +621,14 @@ def run(config: Config) -> dict[str, Any]:
         )
 
         train_time_val_episode_banks_by_k = (
-            CONDITIONED_HELPERS._build_episode_bank_by_k(
+            _build_episode_bank_by_k(
                 val_trainer, config.eval_episodes, train_time_eval_support_choices
             )
         )
-        final_val_episode_banks_by_k = CONDITIONED_HELPERS._build_episode_bank_by_k(
+        final_val_episode_banks_by_k = _build_episode_bank_by_k(
             val_trainer, config.eval_episodes, eval_support_choices
         )
-        final_test_episode_banks_by_k = CONDITIONED_HELPERS._build_episode_bank_by_k(
+        final_test_episode_banks_by_k = _build_episode_bank_by_k(
             test_trainer, config.eval_episodes, eval_support_choices
         )
 
@@ -449,7 +653,7 @@ def run(config: Config) -> dict[str, Any]:
                 scheduler.step()
                 global_step += 1
 
-            val_metrics, val_metrics_by_k = CONDITIONED_HELPERS._run_meta_eval_by_k(
+            val_metrics, val_metrics_by_k = _run_meta_eval_by_k(
                 val_trainer,
                 episodes_per_k=config.eval_episodes,
                 episode_banks_by_k=train_time_val_episode_banks_by_k,
@@ -517,12 +721,12 @@ def run(config: Config) -> dict[str, Any]:
         if "set_encoder" in best_payload:
             set_encoder.load_state_dict(best_payload["set_encoder"])
 
-        val_final, val_final_by_k = CONDITIONED_HELPERS._run_meta_eval_by_k(
+        val_final, val_final_by_k = _run_meta_eval_by_k(
             val_trainer,
             episodes_per_k=config.eval_episodes,
             episode_banks_by_k=final_val_episode_banks_by_k,
         )
-        test_final, test_final_by_k = CONDITIONED_HELPERS._run_meta_eval_by_k(
+        test_final, test_final_by_k = _run_meta_eval_by_k(
             test_trainer,
             episodes_per_k=config.eval_episodes,
             episode_banks_by_k=final_test_episode_banks_by_k,
