@@ -79,6 +79,10 @@ class Config:
     selected_activities: list[str] | None = None
     window_overlap: float = 0.5
     subjects_per_group: int = 6
+    base_train_subjects: int = 14
+    meta_train_subjects: int = 6
+    val_subjects: int = 3
+    test_subjects: int = 1
     seed: int = 0
 
     encoder: str = "attention"
@@ -99,7 +103,7 @@ class Config:
     supcon_temperature: float = 0.1
     learning_rate: float = 1e-4
     weight_decay: float = 1e-4
-    epochs: int = 10
+    epochs: int = 5  # 10
     patience: int = 10
     tsne_every_n_epochs: int = 5
     device: str = (
@@ -515,6 +519,109 @@ def _save_tsne_plot(
     return str(output_path)
 
 
+def _save_tsne_split_plot(
+    embeddings: np.ndarray,
+    subject_labels: np.ndarray,
+    split_labels: np.ndarray,
+    output_path: Path,
+    title: str,
+    seed: int,
+) -> str | None:
+    if embeddings.shape[0] < 3:
+        return None
+    perplexity = min(30.0, max(2.0, float(embeddings.shape[0] - 1) / 3.0))
+    reducer = TSNE(
+        n_components=2,
+        perplexity=perplexity,
+        learning_rate="auto",
+        init="pca",
+        metric="cosine",
+        random_state=seed,
+    )
+    coords = reducer.fit_transform(embeddings)
+    unique_subjects = sorted(int(x) for x in np.unique(subject_labels).tolist())
+    subject_to_idx = {label: idx for idx, label in enumerate(unique_subjects)}
+    subject_encoded = np.asarray(
+        [subject_to_idx[int(x)] for x in subject_labels], dtype=np.int64
+    )
+    n_subjects = max(1, len(unique_subjects))
+    cmap = plt.get_cmap("tab20", n_subjects)
+    split_markers = {
+        "train": "o",
+        "val": "^",
+        "test": "X",
+    }
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig, ax = plt.subplots(figsize=(9.5, 7.2), dpi=160)
+    for split_name in sorted(set(str(x) for x in split_labels.tolist())):
+        mask = split_labels == split_name
+        marker = split_markers.get(split_name, "s")
+        ax.scatter(
+            coords[mask, 0],
+            coords[mask, 1],
+            c=subject_encoded[mask],
+            cmap=cmap,
+            vmin=0,
+            vmax=max(0, n_subjects - 1),
+            s=42 if split_name != "train" else 34,
+            alpha=0.86,
+            marker=marker,
+            linewidths=0.45 if split_name != "train" else 0.0,
+            edgecolors="black" if split_name != "train" else "none",
+            label=split_name,
+        )
+    ax.set_title(title)
+    ax.set_xlabel("t-SNE-1")
+    ax.set_ylabel("t-SNE-2")
+
+    subject_handles = [
+        Line2D(
+            [0],
+            [0],
+            marker="o",
+            linestyle="",
+            markerfacecolor=cmap(idx),
+            markeredgecolor="none",
+            markersize=6,
+            label=str(label),
+        )
+        for idx, label in enumerate(unique_subjects)
+    ]
+    split_handles = [
+        Line2D(
+            [0],
+            [0],
+            marker=split_markers.get(split_name, "s"),
+            linestyle="",
+            markerfacecolor="white",
+            markeredgecolor="black",
+            markersize=7,
+            label=split_name,
+        )
+        for split_name in sorted(set(str(x) for x in split_labels.tolist()))
+    ]
+    subject_legend = ax.legend(
+        handles=subject_handles,
+        title="Subject",
+        loc="upper left",
+        bbox_to_anchor=(1.01, 1.0),
+        fontsize=7,
+    )
+    ax.add_artist(subject_legend)
+    ax.legend(
+        handles=split_handles,
+        title="Split",
+        loc="lower left",
+        bbox_to_anchor=(1.01, 0.0),
+        fontsize=8,
+    )
+    fig.tight_layout()
+    fig.savefig(output_path, bbox_inches="tight")
+    plt.close(fig)
+    return str(output_path)
+
+
 def _plot_split_tsne_stratified(
     model: ContrastiveSetEncoder,
     loader: Loader,
@@ -582,6 +689,92 @@ def _plot_split_tsne_stratified_by_k(
     return paths
 
 
+def _plot_combined_tsne_stratified(
+    model: ContrastiveSetEncoder,
+    loader: Loader,
+    split_subject_activity_indices: Mapping[
+        str, Mapping[int, Mapping[int, np.ndarray]]
+    ],
+    activity_ids: Sequence[int],
+    output_dir: Path,
+    output_name: str,
+    title_name: str,
+    k_per_class: int,
+    sets_per_subject: int,
+    batch_size: int,
+    device: torch.device,
+    seed: int,
+) -> str | None:
+    embeddings_parts: list[np.ndarray] = []
+    subject_parts: list[np.ndarray] = []
+    split_parts: list[np.ndarray] = []
+    for split_offset, (split_name, subject_activity_index) in enumerate(
+        split_subject_activity_indices.items()
+    ):
+        try:
+            embeddings, subjects = _extract_subject_embeddings_stratified(
+                model=model,
+                loader=loader,
+                subject_activity_index=subject_activity_index,
+                activity_ids=activity_ids,
+                k_per_class=k_per_class,
+                sets_per_subject=sets_per_subject,
+                batch_size=batch_size,
+                seed=seed + split_offset * 10_000,
+                device=device,
+            )
+        except ValueError:
+            continue
+        embeddings_parts.append(embeddings)
+        subject_parts.append(subjects)
+        split_parts.append(np.full(subjects.shape[0], str(split_name), dtype=object))
+    if len(embeddings_parts) < 2:
+        return None
+    return _save_tsne_split_plot(
+        embeddings=np.concatenate(embeddings_parts, axis=0),
+        subject_labels=np.concatenate(subject_parts, axis=0),
+        split_labels=np.concatenate(split_parts, axis=0),
+        output_path=output_dir / f"tsne_{output_name}_k{k_per_class}.png",
+        title=f"Raw c_subject t-SNE ({title_name}, K/class={k_per_class})",
+        seed=seed,
+    )
+
+
+def _plot_combined_tsne_stratified_by_k(
+    model: ContrastiveSetEncoder,
+    loader: Loader,
+    split_subject_activity_indices: Mapping[
+        str, Mapping[int, Mapping[int, np.ndarray]]
+    ],
+    activity_ids: Sequence[int],
+    output_dir: Path,
+    output_name: str,
+    title_name: str,
+    k_values: Sequence[int],
+    sets_per_subject: int,
+    batch_size: int,
+    device: torch.device,
+    seed: int,
+) -> dict[str, str | None]:
+    paths: dict[str, str | None] = {}
+    for k in k_values:
+        paths[str(int(k))] = _plot_combined_tsne_stratified(
+            model=model,
+            loader=loader,
+            split_subject_activity_indices=split_subject_activity_indices,
+            activity_ids=activity_ids,
+            output_dir=output_dir,
+            output_name=output_name,
+            title_name=title_name,
+            k_per_class=int(k),
+            sets_per_subject=sets_per_subject,
+            batch_size=batch_size,
+            device=device,
+            seed=seed + int(k),
+        )
+    return paths
+
+
 @torch.no_grad()
 def _evaluate_val_knn_macro_f1(
     model: ContrastiveSetEncoder,
@@ -600,8 +793,10 @@ def _evaluate_val_knn_macro_f1(
     k = int(k_per_class)
     c = len(activity_ids)
     support_x: list[np.ndarray] = []
+    support_set_labels: list[np.ndarray] = []
     support_y: list[int] = []
     query_x: list[np.ndarray] = []
+    query_set_labels: list[np.ndarray] = []
     query_y: list[int] = []
 
     for subject_id, per_activity in sorted(subject_activity_index.items()):
@@ -644,7 +839,7 @@ def _evaluate_val_knn_macro_f1(
             return set_indices[perm], set_labels[perm]
 
         for s_idx in range(support_n):
-            set_indices, _set_labels = build_set(s_idx)
+            set_indices, set_labels = build_set(s_idx)
             x_windows = []
             for idx in set_indices.tolist():
                 x_np = np.asarray(loader.get_sample(int(idx))[0])
@@ -652,10 +847,11 @@ def _evaluate_val_knn_macro_f1(
                     x_np = x_np[0]
                 x_windows.append(x_np)
             support_x.append(np.stack(x_windows, axis=0))
+            support_set_labels.append(set_labels)
             support_y.append(int(subject_id))
 
         for q_idx in range(support_n, support_n + query_n):
-            set_indices, _set_labels = build_set(q_idx)
+            set_indices, set_labels = build_set(q_idx)
             x_windows = []
             for idx in set_indices.tolist():
                 x_np = np.asarray(loader.get_sample(int(idx))[0])
@@ -663,27 +859,31 @@ def _evaluate_val_knn_macro_f1(
                     x_np = x_np[0]
                 x_windows.append(x_np)
             query_x.append(np.stack(x_windows, axis=0))
+            query_set_labels.append(set_labels)
             query_y.append(int(subject_id))
 
     if not support_x or not query_x:
         return 0.0
 
-    def encode_sets(all_sets: list[np.ndarray]) -> np.ndarray:
+    def encode_sets(
+        all_sets: list[np.ndarray],
+        all_set_labels: list[np.ndarray],
+    ) -> np.ndarray:
         chunks: list[np.ndarray] = []
         for start in range(0, len(all_sets), int(batch_size)):
             batch_x = np.stack(all_sets[start : start + int(batch_size)], axis=0)
-            x_support = torch.from_numpy(batch_x).float().unsqueeze(2).to(device)
-            y_support = torch.zeros(
-                (x_support.shape[0], x_support.shape[1]),
-                dtype=torch.long,
-                device=device,
+            batch_y = np.stack(
+                all_set_labels[start : start + int(batch_size)],
+                axis=0,
             )
+            x_support = torch.from_numpy(batch_x).float().unsqueeze(2).to(device)
+            y_support = torch.from_numpy(batch_y).long().to(device)
             emb = model.encode_subject(x_support, y_support)
             chunks.append(emb.detach().cpu().numpy())
         return np.concatenate(chunks, axis=0)
 
-    support_emb = encode_sets(support_x)
-    query_emb = encode_sets(query_x)
+    support_emb = encode_sets(support_x, support_set_labels)
+    query_emb = encode_sets(query_x, query_set_labels)
     support_labels = np.asarray(support_y, dtype=np.int64)
     query_labels = np.asarray(query_y, dtype=np.int64)
 
@@ -753,9 +953,13 @@ def run(config: Config) -> dict[str, Any]:
         selected_activities=config.selected_activities,
         window_overlap=config.window_overlap,
         subjects_per_group=config.subjects_per_group,
+        base_train_subjects=config.base_train_subjects,
+        meta_train_subjects=config.meta_train_subjects,
+        val_subjects=config.val_subjects,
+        test_subjects=config.test_subjects,
         seed=config.seed,
     )
-    manifest_path = output_root / "shared_splits" / "group4_subject_folds.json"
+    manifest_path = output_root / "shared_splits" / "loso_subject_folds.json"
     folds = build_or_load_loso_folds(session_df, window_df, shared_cfg, manifest_path)
     if config.max_folds is not None:
         folds = folds[: int(config.max_folds)]
@@ -770,7 +974,7 @@ def run(config: Config) -> dict[str, Any]:
                 "Tmp",
                 (),
                 {
-                    "train_subject_ids": fold.meta_train_subject_ids,
+                    "train_subject_ids": fold.base_train_subject_ids,
                     "val_subject_ids": fold.val_subject_ids,
                     "test_subject_ids": fold.test_subject_ids,
                 },
@@ -981,6 +1185,23 @@ def run(config: Config) -> dict[str, Any]:
                     device=torch.device(config.device),
                     seed=config.seed + 10_000 + epoch,
                 )
+                _plot_combined_tsne_stratified_by_k(
+                    model=model,
+                    loader=loader,
+                    split_subject_activity_indices={
+                        "train": subject_train,
+                        "val": subject_val,
+                    },
+                    activity_ids=activity_ids,
+                    output_dir=split_dir,
+                    output_name=f"train_val_epoch_{epoch:03d}",
+                    title_name=f"train+val, epoch {epoch:03d}",
+                    k_values=final_tsne_k_values,
+                    sets_per_subject=config.eval_sets_per_subject,
+                    batch_size=used_n_subjects * config.m_sets_per_subject,
+                    device=torch.device(config.device),
+                    seed=config.seed + 20_000 + epoch,
+                )
 
         checkpoint = torch.load(
             ckpt_path, map_location=config.device, weights_only=False
@@ -1051,6 +1272,41 @@ def run(config: Config) -> dict[str, Any]:
             device=torch.device(config.device),
             seed=config.seed + 3,
         )
+        train_val_tsne = _plot_combined_tsne_stratified_by_k(
+            model=model,
+            loader=loader,
+            split_subject_activity_indices={
+                "train": subject_train,
+                "val": subject_val,
+            },
+            activity_ids=activity_ids,
+            output_dir=split_dir,
+            output_name="train_val",
+            title_name="train+val",
+            k_values=final_tsne_k_values,
+            sets_per_subject=config.eval_sets_per_subject,
+            batch_size=used_n_subjects * config.m_sets_per_subject,
+            device=torch.device(config.device),
+            seed=config.seed + 4,
+        )
+        train_val_test_tsne = _plot_combined_tsne_stratified_by_k(
+            model=model,
+            loader=loader,
+            split_subject_activity_indices={
+                "train": subject_train,
+                "val": subject_val,
+                "test": subject_test,
+            },
+            activity_ids=activity_ids,
+            output_dir=split_dir,
+            output_name="train_val_test",
+            title_name="train+val+test",
+            k_values=final_tsne_k_values,
+            sets_per_subject=config.eval_sets_per_subject,
+            batch_size=used_n_subjects * config.m_sets_per_subject,
+            device=torch.device(config.device),
+            seed=config.seed + 5,
+        )
         fold_result = {
             "config_fingerprint": fold_fp,
             "fold_id": fold.fold_id,
@@ -1070,6 +1326,8 @@ def run(config: Config) -> dict[str, Any]:
             "tsne_train_path": train_tsne,
             "tsne_val_path": val_tsne,
             "tsne_test_path": test_tsne,
+            "tsne_train_val_path": train_val_tsne,
+            "tsne_train_val_test_path": train_val_test_tsne,
         }
         (split_dir / "metrics.json").write_text(
             json.dumps(fold_result, indent=2), encoding="utf-8"

@@ -32,6 +32,7 @@ from whar_datasets import (
     WHARDatasetID,
 )
 
+from hyper_har.backbone.cbn_attention_tinierhar import PointwiseCBNAttentionTinierHAR
 from hyper_har.backbone.film_tinierhar import FiLMTinierHAR
 from hyper_har.backbone.tinierhar import TinierHAR
 from hyper_har.config import DEFAULT_CONFIG
@@ -70,6 +71,8 @@ SET_ENCODER_SIMPLE_MODULE = _load_module_from_path(
 AttentionSetEncoder = SET_ENCODER_ATTENTION_MODULE.AttentionSetEncoder
 PrototypicalSetEncoder = SET_ENCODER_SIMPLE_MODULE.PrototypicalSetEncoder
 
+MODULATOR_TYPES = {"film", "pointwise_cbn_attention"}
+
 
 @dataclass(frozen=True)
 class Config:
@@ -78,20 +81,30 @@ class Config:
     selected_activities: list[str] | None = None
     window_overlap: float = 0.5
     subjects_per_group: int = 6
+    base_train_subjects: int = 14
+    meta_train_subjects: int = 6
+    val_subjects: int = 3
+    test_subjects: int = 1
     seed: int = 0
 
     encoder: str = "attention"
     set_encoder_backbone_train_mode: str = "freeze_all"
     force_conv_bn_eval: bool = True
 
+    modulator_type: str = "pointwise_cbn_attention"
     film_hidden_dim: int = 128
     film_dropout: float = 0.0  # 0.1  # 0.0
     film_use_explosion_guard: bool = True  # False  # False
-    film_gamma_bound: float = 0.5
-    film_beta_bound: float = 1.0
+    film_gamma_bound: float = 0.2
+    film_beta_bound: float = 0.5
     film_enable_conv1: bool = False  # True  # False
-    film_modulation_mode: str = "dynamic_time"  # "static"
-    film_condition_gru_h0: bool = True  # False
+    film_modulation_mode: str = "static"  # "dynamic_time"
+    film_condition_gru_h0: bool = False
+    modulator_enable_pointwise_bn: bool = True
+    modulator_enable_attention_query: bool = True
+    modulator_pointwise_block_start: int = 2
+    modulator_attention_adapter_type: str = "score_delta"
+    modulator_attention_score_bound: float = 0.5
     film_stage_name: str | None = None
 
     train_subjects_per_episode: int = 4
@@ -132,20 +145,59 @@ def _resolve_stage_name(config: Config) -> str:
     if config.film_stage_name is not None:
         return str(config.film_stage_name)
 
-    stage_name = (
-        "03_film_meta_guarded" if config.film_use_explosion_guard else "03_film_meta"
-    )
+    modulator_type = config.modulator_type.strip().lower()
+    if modulator_type not in MODULATOR_TYPES:
+        raise ValueError(
+            f"modulator_type must be one of {sorted(MODULATOR_TYPES)}, "
+            f"got {modulator_type!r}."
+        )
+    if modulator_type == "film":
+        stage_name = (
+            "03_film_meta_guarded"
+            if config.film_use_explosion_guard
+            else "03_film_meta"
+        )
+    else:
+        stage_name = (
+            "03_pointwise_cbn_attention_meta_guarded"
+            if config.film_use_explosion_guard
+            else "03_pointwise_cbn_attention_meta"
+        )
     suffix_parts: list[str] = []
     if int(config.film_hidden_dim) != 128:
         suffix_parts.append(f"hidden-{int(config.film_hidden_dim)}")
-    if config.film_modulation_mode.strip().lower() != "static":
+    if (
+        modulator_type == "film"
+        and config.film_modulation_mode.strip().lower() != "static"
+    ):
         suffix_parts.append(
             config.film_modulation_mode.strip().lower().replace("_", "-")
         )
-    if config.film_enable_conv1:
+    if modulator_type == "film" and config.film_enable_conv1:
         suffix_parts.append("conv1")
-    if config.film_condition_gru_h0:
+    if modulator_type == "film" and config.film_condition_gru_h0:
         suffix_parts.append("gru-h0")
+    if modulator_type == "pointwise_cbn_attention":
+        if int(config.modulator_pointwise_block_start) != 0:
+            suffix_parts.append(
+                f"block-start-{int(config.modulator_pointwise_block_start)}"
+            )
+        if not config.modulator_enable_pointwise_bn:
+            suffix_parts.append("no-pointwise-cbn")
+        if not config.modulator_enable_attention_query:
+            suffix_parts.append("no-attn-query")
+        if config.modulator_attention_adapter_type.strip().lower() != "feature_film":
+            suffix_parts.append(
+                "attn-"
+                + config.modulator_attention_adapter_type.strip()
+                .lower()
+                .replace("_", "-")
+            )
+        if not np.isclose(float(config.modulator_attention_score_bound), 1.0):
+            suffix_parts.append(
+                "attn-bound-"
+                + _path_float(float(config.modulator_attention_score_bound))
+            )
     if not np.isclose(float(config.film_dropout), 0.0):
         suffix_parts.append(f"dropout-{_path_float(float(config.film_dropout))}")
     if config.film_use_explosion_guard:
@@ -157,6 +209,46 @@ def _resolve_stage_name(config: Config) -> str:
     if suffix_parts:
         stage_name = f"{stage_name}__{'__'.join(suffix_parts)}"
     return stage_name
+
+
+def _build_conditioned_model(
+    config: Config,
+    base_model: TinierHAR,
+    subject_embedding_dim: int,
+) -> torch.nn.Module:
+    modulator_type = config.modulator_type.strip().lower()
+    if modulator_type == "film":
+        return FiLMTinierHAR(
+            base_model=base_model,
+            subject_embedding_dim=subject_embedding_dim,
+            film_hidden_dim=config.film_hidden_dim,
+            film_dropout=config.film_dropout,
+            film_use_explosion_guard=config.film_use_explosion_guard,
+            film_gamma_bound=config.film_gamma_bound,
+            film_beta_bound=config.film_beta_bound,
+            film_enable_conv1=config.film_enable_conv1,
+            film_modulation_mode=config.film_modulation_mode,
+            film_condition_gru_h0=config.film_condition_gru_h0,
+        )
+    if modulator_type == "pointwise_cbn_attention":
+        return PointwiseCBNAttentionTinierHAR(
+            base_model=base_model,
+            subject_embedding_dim=subject_embedding_dim,
+            modulator_hidden_dim=config.film_hidden_dim,
+            modulator_dropout=config.film_dropout,
+            use_tanh_gating=config.film_use_explosion_guard,
+            gamma_bound=config.film_gamma_bound,
+            beta_bound=config.film_beta_bound,
+            enable_pointwise_bn=config.modulator_enable_pointwise_bn,
+            enable_attention_query=config.modulator_enable_attention_query,
+            pointwise_block_start=config.modulator_pointwise_block_start,
+            attention_adapter_type=config.modulator_attention_adapter_type,
+            attention_score_bound=config.modulator_attention_score_bound,
+        )
+    raise ValueError(
+        f"modulator_type must be one of {sorted(MODULATOR_TYPES)}, "
+        f"got {modulator_type!r}."
+    )
 
 
 def _load_base_model(
@@ -397,9 +489,13 @@ def run(config: Config) -> dict[str, Any]:
         selected_activities=config.selected_activities,
         window_overlap=config.window_overlap,
         subjects_per_group=config.subjects_per_group,
+        base_train_subjects=config.base_train_subjects,
+        meta_train_subjects=config.meta_train_subjects,
+        val_subjects=config.val_subjects,
+        test_subjects=config.test_subjects,
         seed=config.seed,
     )
-    manifest_path = output_root / "shared_splits" / "group4_subject_folds.json"
+    manifest_path = output_root / "shared_splits" / "loso_subject_folds.json"
     folds = build_or_load_loso_folds(session_df, window_df, shared_cfg, manifest_path)
     if config.max_folds is not None:
         folds = folds[: int(config.max_folds)]
@@ -427,7 +523,7 @@ def run(config: Config) -> dict[str, Any]:
         split_dir.mkdir(parents=True, exist_ok=True)
         fold_fp = config_fingerprint(
             {
-                "stage": "03_film_meta",
+                "stage": f"03_{config.modulator_type.strip().lower()}_meta",
                 "stage_dir": stage_name,
                 "config": asdict(config),
                 "shared_cfg": asdict(shared_cfg),
@@ -491,17 +587,10 @@ def run(config: Config) -> dict[str, Any]:
         set_encoder.eval()
 
         subject_embedding_dim = int(getattr(set_encoder, "output_dim"))
-        film_model = FiLMTinierHAR(
+        film_model = _build_conditioned_model(
+            config=config,
             base_model=film_base_model,
             subject_embedding_dim=subject_embedding_dim,
-            film_hidden_dim=config.film_hidden_dim,
-            film_dropout=config.film_dropout,
-            film_use_explosion_guard=config.film_use_explosion_guard,
-            film_gamma_bound=config.film_gamma_bound,
-            film_beta_bound=config.film_beta_bound,
-            film_enable_conv1=config.film_enable_conv1,
-            film_modulation_mode=config.film_modulation_mode,
-            film_condition_gru_h0=config.film_condition_gru_h0,
         )
         trainable_params = [
             param for param in film_model.parameters() if param.requires_grad
@@ -644,7 +733,7 @@ def run(config: Config) -> dict[str, Any]:
             step_f1: list[float] = []
             for _ in tqdm(
                 range(config.train_episodes_per_epoch),
-                desc=f"{fold.fold_id} FiLM meta {epoch}/{config.epochs}",
+                desc=f"{fold.fold_id} modulator meta {epoch}/{config.epochs}",
                 leave=False,
             ):
                 metrics = train_trainer.train_step()

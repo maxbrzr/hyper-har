@@ -41,6 +41,10 @@ class Config:
     selected_activities: list[str] | None = None
     window_overlap: float = 0.5
     subjects_per_group: int = 6
+    base_train_subjects: int = 14
+    meta_train_subjects: int = 6
+    val_subjects: int = 3
+    test_subjects: int = 1
     seed: int = 0
 
     batch_size: int = 64
@@ -121,9 +125,13 @@ def run(config: Config) -> dict[str, Any]:
         selected_activities=config.selected_activities,
         window_overlap=config.window_overlap,
         subjects_per_group=config.subjects_per_group,
+        base_train_subjects=config.base_train_subjects,
+        meta_train_subjects=config.meta_train_subjects,
+        val_subjects=config.val_subjects,
+        test_subjects=config.test_subjects,
         seed=config.seed,
     )
-    manifest_path = output_root / "shared_splits" / "group4_subject_folds.json"
+    manifest_path = output_root / "shared_splits" / "loso_subject_folds.json"
     folds = build_or_load_loso_folds(session_df, window_df, shared_cfg, manifest_path)
     if config.max_folds is not None:
         folds = folds[: int(config.max_folds)]

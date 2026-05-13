@@ -20,7 +20,7 @@ from whar_datasets import (
 
 ROOT = Path(__file__).resolve().parents[1]
 
-DEFAULT_TRAIN_MIN_K_PER_CLASS = 32  # 1
+DEFAULT_TRAIN_MIN_K_PER_CLASS = 1  # 1
 DEFAULT_TRAIN_MAX_K_PER_CLASS = 32  # 16
 
 
@@ -48,6 +48,10 @@ class SharedConfig:
     window_overlap: float
     subjects_per_group: int
     seed: int
+    base_train_subjects: int = 14
+    meta_train_subjects: int = 6
+    val_subjects: int = 3
+    test_subjects: int = 1
 
 
 def set_seed(seed: int) -> None:
@@ -108,41 +112,39 @@ def build_or_load_loso_folds(
 
     subject_to_indices = _subject_index_map(session_df, window_df)
     subject_ids = sorted(subject_to_indices.keys())
-    n_groups = 4
-    expected_total = int(shared_cfg.subjects_per_group) * n_groups
+    base_n = int(shared_cfg.base_train_subjects)
+    meta_n = int(shared_cfg.meta_train_subjects)
+    val_n = int(shared_cfg.val_subjects)
+    test_n = int(shared_cfg.test_subjects)
+    expected_total = base_n + meta_n + val_n + test_n
+    if test_n != 1:
+        raise ValueError(f"True LOSO requires test_subjects=1, got {test_n}.")
     if len(subject_ids) != expected_total:
         raise ValueError(
-            f"Expected exactly {expected_total} subjects for 4-fold grouped CV, "
+            f"Expected exactly {expected_total} subjects for LOSO "
+            f"({base_n}-{meta_n}-{val_n}-{test_n}), "
             f"but found {len(subject_ids)} subjects: {subject_ids}"
         )
 
-    groups: dict[str, list[int]] = {}
-    labels = ["A", "B", "C", "D"]
-    for i, label in enumerate(labels):
-        start = i * int(shared_cfg.subjects_per_group)
-        end = (i + 1) * int(shared_cfg.subjects_per_group)
-        groups[label] = [int(x) for x in subject_ids[start:end]]
-
-    # Rotation protocol:
-    # Fold 1: Base(A), Meta(B), Val(C), Test(D)
-    # Fold 2: Base(D), Meta(A), Val(B), Test(C)
-    # Fold 3: Base(C), Meta(D), Val(A), Test(B)
-    # Fold 4: Base(B), Meta(C), Val(D), Test(A)
-    rotations = [
-        ("A", "B", "C", "D"),
-        ("D", "A", "B", "C"),
-        ("C", "D", "A", "B"),
-        ("B", "C", "D", "A"),
-    ]
     folds: list[SubjectFold] = []
-    for idx, (base_g, meta_g, val_g, test_g) in enumerate(rotations, start=1):
+    for idx, test_subject_id in enumerate(subject_ids, start=1):
+        remaining = [
+            int(sid) for sid in subject_ids if int(sid) != int(test_subject_id)
+        ]
+        rng = np.random.default_rng(int(shared_cfg.seed) + 10_000 * idx)
+        shuffled = rng.permutation(np.asarray(remaining, dtype=np.int64)).tolist()
+        base_subjects = sorted(int(x) for x in shuffled[:base_n])
+        meta_subjects = sorted(int(x) for x in shuffled[base_n : base_n + meta_n])
+        val_subjects = sorted(
+            int(x) for x in shuffled[base_n + meta_n : base_n + meta_n + val_n]
+        )
         folds.append(
             SubjectFold(
-                fold_id=f"fold_{idx}",
-                base_train_subject_ids=sorted(groups[base_g]),
-                meta_train_subject_ids=sorted(groups[meta_g]),
-                val_subject_ids=sorted(groups[val_g]),
-                test_subject_ids=sorted(groups[test_g]),
+                fold_id=f"loso_subject_{int(test_subject_id)}",
+                base_train_subject_ids=base_subjects,
+                meta_train_subject_ids=meta_subjects,
+                val_subject_ids=val_subjects,
+                test_subject_ids=[int(test_subject_id)],
             )
         )
 
