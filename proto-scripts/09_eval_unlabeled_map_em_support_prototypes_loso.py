@@ -67,6 +67,7 @@ class Config:
     em_likelihood_variance: float | None = None
     em_min_soft_count: float = 1e-6
     em_uniform_class_prior: bool = True
+    center_train_support_query: bool = False  # True  # False
     skip_missing_folds: bool = False
     device: str = (
         "mps"
@@ -441,6 +442,8 @@ def _map_em_episode_predict(
     em_likelihood_variance: float,
     em_min_soft_count: float,
     uniform_class_prior: bool,
+    train_center: torch.Tensor | None,
+    center_train_support_query: bool,
 ) -> tuple[np.ndarray, dict[str, float]]:
     support_emb = torch.stack(
         [embeddings_by_window[int(idx)] for idx in support_indices], dim=0
@@ -448,6 +451,15 @@ def _map_em_episode_predict(
     query_emb = torch.stack(
         [embeddings_by_window[int(idx)] for idx in query_indices], dim=0
     )
+    center_shift_norm = 0.0
+    if center_train_support_query:
+        support_center = support_emb.mean(dim=0)
+        support_emb = support_emb - support_center
+        query_emb = query_emb - support_center
+        if train_center is not None:
+            center_shift_norm = float((support_center - train_center).norm(p=2).item())
+        else:
+            center_shift_norm = float(support_center.norm(p=2).item())
     adapted_proto, diagnostics = _map_em_update_prototypes(
         prior_means,
         prior_variances,
@@ -460,6 +472,7 @@ def _map_em_episode_predict(
         em_min_soft_count,
         uniform_class_prior,
     )
+    diagnostics["center_shift_norm"] = center_shift_norm
     logits = prototype_logits(query_emb, adapted_proto, query_temperature, "euclidean")
     local_pred = logits.argmax(dim=1).numpy()
     activity_np = np.asarray([int(x) for x in activity_ids], dtype=np.int64)
@@ -528,6 +541,8 @@ def run(config: Config) -> dict[str, Any]:
         eval_stage_parts.append(
             "l2norm" if effective_normalize_embeddings else "rawstats"
         )
+    if config.center_train_support_query:
+        eval_stage_parts.append("centered")
     eval_stage_name = "_".join(eval_stage_parts)
     eval_dir = output_root / eval_stage_name
     eval_dir.mkdir(parents=True, exist_ok=True)
@@ -622,8 +637,12 @@ def run(config: Config) -> dict[str, Any]:
                 "Active embedding transform changed unexpectedly: "
                 f"{active_embedding_transform} -> {train_embedding_transform}."
             )
+        train_center = train_emb.mean(dim=0)
+        train_emb_for_prior = (
+            train_emb - train_center if config.center_train_support_query else train_emb
+        )
         prior_means, prior_variances = _class_diagonal_gaussian_stats(
-            train_emb,
+            train_emb_for_prior,
             train_y,
             num_classes=int(cfg.num_of_activities),
             variance_floor=config.prior_variance_floor,
@@ -779,6 +798,7 @@ def run(config: Config) -> dict[str, Any]:
                         "responsibility_confidence_mean": 0.0,
                         "prototype_shift_mean": 0.0,
                         "em_likelihood_variance": float(em_likelihood_variance),
+                        "center_shift_norm": 0.0,
                     }
                     pred = (
                         prototype_logits(
@@ -818,6 +838,8 @@ def run(config: Config) -> dict[str, Any]:
                         em_likelihood_variance,
                         config.em_min_soft_count,
                         config.em_uniform_class_prior,
+                        train_center,
+                        config.center_train_support_query,
                     )
                 else:
                     support_idx, query_idx, support_y, query_y = _sample_episode(
@@ -840,6 +862,8 @@ def run(config: Config) -> dict[str, Any]:
                         em_likelihood_variance,
                         config.em_min_soft_count,
                         config.em_uniform_class_prior,
+                        train_center,
+                        config.center_train_support_query,
                     )
                 macro_f1 = float(
                     f1_score(
@@ -912,6 +936,9 @@ def run(config: Config) -> dict[str, Any]:
                     "em_likelihood_variance": float(em_likelihood_variance),
                     "em_min_soft_count": float(config.em_min_soft_count),
                     "em_uniform_class_prior": bool(config.em_uniform_class_prior),
+                    "center_train_support_query": bool(
+                        config.center_train_support_query
+                    ),
                     "posterior_euclidean_norm_mean": float(
                         em_diagnostics["posterior_euclidean_norm_mean"]
                     ),
@@ -929,6 +956,7 @@ def run(config: Config) -> dict[str, Any]:
                     "prototype_shift_mean": float(
                         em_diagnostics["prototype_shift_mean"]
                     ),
+                    "center_shift_norm": float(em_diagnostics["center_shift_norm"]),
                     "support_query_session_disjoint": bool(
                         config.support_query_session_disjoint
                     ),
@@ -960,6 +988,9 @@ def run(config: Config) -> dict[str, Any]:
                     "active_embedding_transform": active_embedding_transform,
                     "normalize_embeddings": config.normalize_embeddings,
                     "effective_normalize_embeddings": effective_normalize_embeddings,
+                    "center_train_support_query": bool(
+                        config.center_train_support_query
+                    ),
                     "support_query_session_disjoint": bool(
                         config.support_query_session_disjoint
                     ),
@@ -992,6 +1023,9 @@ def run(config: Config) -> dict[str, Any]:
                     "active_embedding_transform": active_embedding_transform,
                     "normalize_embeddings": config.normalize_embeddings,
                     "effective_normalize_embeddings": effective_normalize_embeddings,
+                    "center_train_support_query": bool(
+                        config.center_train_support_query
+                    ),
                     "support_query_session_disjoint": bool(
                         config.support_query_session_disjoint
                     ),
@@ -1054,6 +1088,9 @@ def run(config: Config) -> dict[str, Any]:
                     "em_likelihood_variance": float(em_likelihood_variance),
                     "em_min_soft_count": float(config.em_min_soft_count),
                     "em_uniform_class_prior": bool(config.em_uniform_class_prior),
+                    "center_train_support_query": bool(
+                        config.center_train_support_query
+                    ),
                     "support_query_session_disjoint": bool(
                         config.support_query_session_disjoint
                     ),
@@ -1154,6 +1191,7 @@ def run(config: Config) -> dict[str, Any]:
         "em_likelihood_variance": float(em_likelihood_variance),
         "em_min_soft_count": float(config.em_min_soft_count),
         "em_uniform_class_prior": bool(config.em_uniform_class_prior),
+        "center_train_support_query": bool(config.center_train_support_query),
         "skipped_folds": skipped_folds,
         "trial_results_csv": str(trial_csv),
         "subject_by_k_results_csv": str(subject_csv),
