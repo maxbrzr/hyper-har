@@ -14,6 +14,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 from common import (
     ROOT,
+    DEFAULT_DATASET_ID,
+    DEFAULT_DATASETS_DIR,
+    DEFAULT_SELECTED_ACTIVITIES,
+    DEFAULT_SEED,
+    DEFAULT_TEST_SUBJECTS,
+    DEFAULT_VAL_SUBJECTS,
+    DEFAULT_WINDOW_OVERLAP,
     SharedConfig,
     WindowDataset,
     build_loader,
@@ -27,6 +34,7 @@ from common import (
     make_class_prototypes,
     prepare_cfg,
     prepare_inputs,
+    resolve_output_root,
     set_seed,
     split_indices_for_fold,
 )
@@ -42,13 +50,13 @@ from hyper_har.backbone.tinierhar import TinierHAR
 
 @dataclass(frozen=True)
 class Config:
-    dataset_id: str = WHARDatasetID.WEAR.value
-    datasets_dir: str = str("datasets")
-    selected_activities: list[str] | None = None
-    window_overlap: float = 0.5
-    val_subjects: int = 3
-    test_subjects: int = 1
-    seed: int = 0
+    dataset_id: str = DEFAULT_DATASET_ID
+    datasets_dir: str = DEFAULT_DATASETS_DIR
+    selected_activities: list[str] | None = DEFAULT_SELECTED_ACTIVITIES
+    window_overlap: float = DEFAULT_WINDOW_OVERLAP
+    val_subjects: int = DEFAULT_VAL_SUBJECTS
+    test_subjects: int = DEFAULT_TEST_SUBJECTS
+    seed: int = DEFAULT_SEED
 
     projection_hidden_dim: int = 128
     projection_dim: int | None = None
@@ -90,7 +98,7 @@ class Config:
     tsne_point_size: float = 24.0
     tsne_point_alpha: float = 0.78
 
-    output_root: str = str(ROOT / "artifacts" / "proto_pipeline")
+    output_root: str | None = None
     stage_name: str = "02_tinierhar_supcon_loso"
     max_folds: int | None = None
     force_rerun: bool = False
@@ -610,7 +618,7 @@ def _evaluate_projected_proto(
 def run(config: Config) -> dict[str, Any]:
     set_seed(config.seed)
     device = torch.device(config.device)
-    output_root = Path(config.output_root)
+    output_root = resolve_output_root(config.output_root, config.dataset_id)
     stage_dir = output_root / config.stage_name
     stage_dir.mkdir(parents=True, exist_ok=True)
 

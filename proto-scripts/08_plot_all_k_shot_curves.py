@@ -15,6 +15,7 @@ os.environ.setdefault("XDG_CACHE_HOME", str(FONT_CACHE_DIR))
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from common import DEFAULT_DATASET_ID, resolve_output_root
 
 
 @dataclass(frozen=True)
@@ -31,7 +32,8 @@ class FixedBaselineSpec:
 
 @dataclass(frozen=True)
 class Config:
-    output_root: str = str(ROOT / "artifacts" / "proto_pipeline")
+    dataset_id: str = DEFAULT_DATASET_ID
+    output_root: str | None = None
     comparison_stage_name: str = "08_k_shot_curve_comparison"
 
     # Leave empty to auto-discover every overall_by_k_results.csv under output_root.
@@ -129,7 +131,7 @@ def _load_summary(stage_dir: Path) -> dict[str, Any] | None:
 
 
 def _discover_curve_specs(config: Config) -> list[CurveSpec]:
-    output_root = Path(config.output_root)
+    output_root = resolve_output_root(config.output_root, config.dataset_id)
     specs: list[CurveSpec] = []
     for csv_path in sorted(output_root.glob("*/overall_by_k_results.csv")):
         stage_name = csv_path.parent.name
@@ -144,7 +146,7 @@ def _discover_curve_specs(config: Config) -> list[CurveSpec]:
 
 
 def _discover_fixed_baseline_specs(config: Config) -> list[FixedBaselineSpec]:
-    output_root = Path(config.output_root)
+    output_root = resolve_output_root(config.output_root, config.dataset_id)
     specs: list[FixedBaselineSpec] = []
     for summary_path in sorted(output_root.glob("*/summary.json")):
         stage_name = summary_path.parent.name
@@ -313,7 +315,7 @@ def _plot_metric(
 
 
 def run(config: Config) -> dict[str, Any]:
-    output_root = Path(config.output_root)
+    output_root = resolve_output_root(config.output_root, config.dataset_id)
     comparison_dir = output_root / config.comparison_stage_name
     comparison_dir.mkdir(parents=True, exist_ok=True)
 

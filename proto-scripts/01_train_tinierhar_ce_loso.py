@@ -5,6 +5,13 @@ from typing import Any
 
 import torch
 from common import (
+    DEFAULT_DATASET_ID,
+    DEFAULT_DATASETS_DIR,
+    DEFAULT_SEED,
+    DEFAULT_SELECTED_ACTIVITIES,
+    DEFAULT_TEST_SUBJECTS,
+    DEFAULT_VAL_SUBJECTS,
+    DEFAULT_WINDOW_OVERLAP,
     ROOT,
     SharedConfig,
     WindowDataset,
@@ -15,6 +22,7 @@ from common import (
     config_fingerprint,
     infer_window_size,
     prepare_cfg,
+    resolve_output_root,
     set_seed,
     split_indices_for_fold,
 )
@@ -26,13 +34,13 @@ from hyper_har.training.trainer import TinierHARTrainer, TrainerConfig
 
 @dataclass(frozen=True)
 class Config:
-    dataset_id: str = WHARDatasetID.WEAR.value
-    datasets_dir: str = str("datasets")
-    selected_activities: list[str] | None = None
+    dataset_id: str = DEFAULT_DATASET_ID
+    datasets_dir: str = DEFAULT_DATASETS_DIR
+    selected_activities: list[str] | None = DEFAULT_SELECTED_ACTIVITIES
     window_overlap: float = 0.5
-    val_subjects: int = 3
-    test_subjects: int = 1
-    seed: int = 0
+    val_subjects: int = DEFAULT_VAL_SUBJECTS
+    test_subjects: int = DEFAULT_TEST_SUBJECTS
+    seed: int = DEFAULT_SEED
 
     batch_size: int = 64
     num_workers: int = 0
@@ -50,7 +58,7 @@ class Config:
         else "cpu"
     )
 
-    output_root: str = str(ROOT / "artifacts" / "proto_pipeline")
+    output_root: str | None = None
     stage_name: str = "01_tinierhar_ce_loso"
     max_folds: int | None = None
     force_rerun: bool = False
@@ -73,7 +81,7 @@ class TrainerWindowDataset(Dataset[tuple[torch.Tensor, torch.Tensor]]):
 
 def run(config: Config) -> dict[str, Any]:
     set_seed(config.seed)
-    output_root = Path(config.output_root)
+    output_root = resolve_output_root(config.output_root, config.dataset_id)
     stage_dir = output_root / config.stage_name
     stage_dir.mkdir(parents=True, exist_ok=True)
 

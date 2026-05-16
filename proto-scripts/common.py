@@ -35,6 +35,21 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+DEFAULT_DATASET_ID = WHARDatasetID.MHEALTH.value
+DEFAULT_DATASETS_DIR = "datasets"
+DEFAULT_SELECTED_ACTIVITIES: list[str] | None = None
+DEFAULT_WINDOW_OVERLAP = 0.0
+DEFAULT_VAL_SUBJECTS = 3
+DEFAULT_TEST_SUBJECTS = 1
+DEFAULT_SEED = 0
+
+
+def resolve_output_root(output_root: str | None, dataset_id: str) -> Path:
+    if output_root:
+        return Path(output_root)
+    dataset_part = str(dataset_id).replace("/", "_").replace(" ", "_")
+    return ROOT / "artifacts" / "proto_pipeline" / dataset_part
+
 
 @dataclass(frozen=True)
 class LOSOFold:
