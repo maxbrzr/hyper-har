@@ -37,7 +37,7 @@ class Config:
     # Leave empty to auto-discover every overall_by_k_results.csv under output_root.
     curve_specs: tuple[CurveSpec, ...] = ()
     fixed_baseline_specs: tuple[FixedBaselineSpec, ...] = ()
-    include_stage_prefixes: tuple[str, ...] = ("05_", "07_")
+    include_stage_prefixes: tuple[str, ...] = ("05_", "07_", "09_")
     include_fixed_baseline_prefixes: tuple[str, ...] = ("04_",)
     exclude_stage_names: tuple[str, ...] = ("08_k_shot_curve_comparison",)
     include_fixed_baselines: bool = True
@@ -82,6 +82,8 @@ def _humanize_stage_name(stage_name: str, summary: dict[str, Any] | None) -> str
     method = "Support"
     if name.startswith("04_") or "fixed" in name:
         method = "Fixed"
+    elif "map_em" in name or "unlabeled" in name:
+        method = "MAP-EM"
     elif "bayesian" in name:
         method = "Bayesian"
     elif "support" in name:
