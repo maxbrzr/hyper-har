@@ -24,14 +24,23 @@ class CurveSpec:
 
 
 @dataclass(frozen=True)
+class FixedBaselineSpec:
+    stage_dir_name: str
+    label: str | None = None
+
+
+@dataclass(frozen=True)
 class Config:
     output_root: str = str(ROOT / "artifacts" / "proto_pipeline")
     comparison_stage_name: str = "08_k_shot_curve_comparison"
 
     # Leave empty to auto-discover every overall_by_k_results.csv under output_root.
     curve_specs: tuple[CurveSpec, ...] = ()
+    fixed_baseline_specs: tuple[FixedBaselineSpec, ...] = ()
     include_stage_prefixes: tuple[str, ...] = ("05_", "07_")
+    include_fixed_baseline_prefixes: tuple[str, ...] = ("04_",)
     exclude_stage_names: tuple[str, ...] = ("08_k_shot_curve_comparison",)
+    include_fixed_baselines: bool = True
 
     metrics: tuple[str, ...] = ("macro_f1", "accuracy")
     aggregation: str = "subject"  # "subject" or "trial"
@@ -54,28 +63,56 @@ def _humanize_stage_name(stage_name: str, summary: dict[str, Any] | None) -> str
         config = dict(summary.get("config", {}))
         backbone_source = summary.get("backbone_source", config.get("backbone_source"))
         embedding_space = config.get("embedding_space")
+        active_transform = summary.get("active_embedding_transform")
+        normalize_embeddings = summary.get(
+            "effective_normalize_embeddings", summary.get("normalize_embeddings")
+        )
+        effective_distance = summary.get("effective_distance_metric")
+        folds = summary.get("folds", [])
+        first_fold = folds[0] if folds else {}
     else:
         backbone_source = None
         embedding_space = None
+        active_transform = None
+        normalize_embeddings = None
+        effective_distance = None
+        first_fold = {}
 
     name = stage_name
     method = "Support"
-    if "bayesian" in name:
+    if name.startswith("04_") or "fixed" in name:
+        method = "Fixed"
+    elif "bayesian" in name:
         method = "Bayesian"
     elif "support" in name:
         method = "Support"
 
+    if backbone_source is None and first_fold:
+        backbone_source = first_fold.get("backbone_source")
+    if embedding_space is None and first_fold:
+        embedding_space = first_fold.get("effective_embedding_space") or first_fold.get(
+            "embedding_space"
+        )
+    if effective_distance is None and first_fold:
+        effective_distance = first_fold.get("effective_distance_metric")
     if backbone_source is None:
         if "_ce_backbone" in name:
             backbone_source = "ce"
         elif "_supcon_backbone" in name or "supcon" in name:
             backbone_source = "supcon"
+    if effective_distance is None and backbone_source in {"supcon", "ce"}:
+        effective_distance = "cosine" if backbone_source == "supcon" else "euclidean"
 
     label_parts = [method]
     if backbone_source:
         label_parts.append(f"{str(backbone_source).upper()} backbone")
     if embedding_space and str(backbone_source) == "supcon":
         label_parts.append(str(embedding_space))
+    if effective_distance:
+        label_parts.append(str(effective_distance))
+    if active_transform and active_transform != "none":
+        label_parts.append(str(active_transform))
+        label_parts.append("L2" if normalize_embeddings else "raw stats")
     return " - ".join(label_parts)
 
 
@@ -104,6 +141,22 @@ def _discover_curve_specs(config: Config) -> list[CurveSpec]:
     return specs
 
 
+def _discover_fixed_baseline_specs(config: Config) -> list[FixedBaselineSpec]:
+    output_root = Path(config.output_root)
+    specs: list[FixedBaselineSpec] = []
+    for summary_path in sorted(output_root.glob("*/summary.json")):
+        stage_name = summary_path.parent.name
+        if stage_name in set(config.exclude_stage_names):
+            continue
+        if config.include_fixed_baseline_prefixes and not any(
+            stage_name.startswith(prefix)
+            for prefix in config.include_fixed_baseline_prefixes
+        ):
+            continue
+        specs.append(FixedBaselineSpec(stage_dir_name=stage_name, label=None))
+    return specs
+
+
 def _metric_columns(metric: str, aggregation: str, error_band: str) -> tuple[str, str | None]:
     if aggregation == "subject":
         mean_col = f"{metric}_mean"
@@ -121,8 +174,35 @@ def _metric_columns(metric: str, aggregation: str, error_band: str) -> tuple[str
     return mean_col, std_col
 
 
+def _fixed_baseline_metric_column(metric: str) -> str:
+    if metric == "macro_f1":
+        return "test_macro_f1"
+    if metric == "accuracy":
+        return "test_accuracy"
+    if metric == "weighted_f1":
+        return "test_weighted_f1"
+    return f"test_{metric}"
+
+
+def _fixed_baseline_metrics(summary: dict[str, Any]) -> dict[str, float]:
+    folds = summary.get("folds", [])
+    if not folds:
+        return {}
+    df = pd.DataFrame(folds)
+    metrics: dict[str, float] = {}
+    for column in ("test_macro_f1", "test_accuracy", "test_weighted_f1"):
+        if column in df.columns:
+            values = df[column].dropna().astype(float)
+            if not values.empty:
+                metrics[column] = float(values.mean())
+                metrics[f"{column}_std"] = float(values.std(ddof=1)) if len(values) > 1 else 0.0
+                metrics[f"{column}_num_subjects"] = int(values.shape[0])
+    return metrics
+
+
 def _plot_metric(
     curves: list[dict[str, Any]],
+    fixed_baselines: list[dict[str, Any]],
     metric: str,
     config: Config,
     out_path: Path,
@@ -162,6 +242,34 @@ def _plot_metric(
             linewidth=2,
             capsize=3 if yerr is not None else 0,
             label=curve["label"],
+        )
+        plotted += 1
+
+    baseline_col = _fixed_baseline_metric_column(metric)
+    k_values: list[int] = []
+    for curve in curves:
+        df = curve["df"]
+        if "k" in df.columns:
+            k_values.extend(int(x) for x in df["k"].dropna().astype(int).tolist())
+    x_min = min(k_values) if k_values else 0
+    x_max = max(k_values) if k_values else 1
+    for baseline in fixed_baselines:
+        if baseline_col not in baseline["metrics"]:
+            print(
+                f"[skip] {baseline['stage_name']} missing fixed baseline metric "
+                f"{baseline_col}"
+            )
+            continue
+        value = float(baseline["metrics"][baseline_col])
+        y_values.append(value)
+        ax.hlines(
+            value,
+            xmin=x_min,
+            xmax=x_max,
+            linestyles="--",
+            linewidth=2,
+            alpha=0.85,
+            label=f"{baseline['label']} fixed",
         )
         plotted += 1
 
@@ -241,14 +349,52 @@ def run(config: Config) -> dict[str, Any]:
     if not curves:
         raise RuntimeError("No available curves were loaded.")
 
+    fixed_baselines: list[dict[str, Any]] = []
+    fixed_baseline_rows: list[dict[str, Any]] = []
+    if config.include_fixed_baselines:
+        baseline_specs = (
+            list(config.fixed_baseline_specs)
+            if config.fixed_baseline_specs
+            else _discover_fixed_baseline_specs(config)
+        )
+        for spec in baseline_specs:
+            stage_dir = output_root / spec.stage_dir_name
+            summary = _load_summary(stage_dir)
+            if summary is None:
+                print(f"[skip] missing fixed baseline summary: {stage_dir}")
+                continue
+            metrics = _fixed_baseline_metrics(summary)
+            if not metrics:
+                print(f"[skip] no fixed baseline fold metrics: {stage_dir}")
+                continue
+            label = spec.label or _humanize_stage_name(spec.stage_dir_name, summary)
+            row = {
+                "stage_name": spec.stage_dir_name,
+                "label": label,
+                "summary_path": str(stage_dir / "summary.json"),
+                **metrics,
+            }
+            fixed_baselines.append(
+                {
+                    "stage_name": spec.stage_dir_name,
+                    "label": label,
+                    "summary_path": str(stage_dir / "summary.json"),
+                    "metrics": metrics,
+                }
+            )
+            fixed_baseline_rows.append(row)
+            print(f"[load] {label} fixed baseline: {stage_dir / 'summary.json'}")
+
     combined_df = pd.concat(combined_rows, ignore_index=True)
     combined_csv = comparison_dir / "combined_k_shot_curves.csv"
     combined_df.to_csv(combined_csv, index=False)
+    fixed_baseline_csv = comparison_dir / "fixed_baselines.csv"
+    pd.DataFrame(fixed_baseline_rows).to_csv(fixed_baseline_csv, index=False)
 
     plot_paths: dict[str, str] = {}
     for metric in config.metrics:
         out_path = comparison_dir / f"all_k_shot_curves_{metric}.png"
-        _plot_metric(curves, metric, config, out_path)
+        _plot_metric(curves, fixed_baselines, metric, config, out_path)
         plot_paths[metric] = str(out_path)
         print(f"[plot] {metric}: {out_path}")
 
@@ -256,6 +402,7 @@ def run(config: Config) -> dict[str, Any]:
         "config": asdict(config),
         "comparison_dir": str(comparison_dir),
         "combined_csv": str(combined_csv),
+        "fixed_baseline_csv": str(fixed_baseline_csv),
         "plot_paths": plot_paths,
         "curves": [
             {
@@ -266,6 +413,7 @@ def run(config: Config) -> dict[str, Any]:
             }
             for curve in curves
         ],
+        "fixed_baselines": fixed_baseline_rows,
     }
     (comparison_dir / "summary.json").write_text(
         json.dumps(summary, indent=2), encoding="utf-8"

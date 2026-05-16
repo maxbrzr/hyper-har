@@ -10,16 +10,17 @@ from common import (
     WindowDataset,
     build_loader,
     build_or_load_loso_folds,
+    build_supcon_projection_head,
     class_names,
     classification_metrics,
     config_fingerprint,
-    cosine_logits,
-    build_supcon_projection_head,
     extract_supcon_embeddings,
     load_ce_backbone,
     load_supcon_backbone,
     make_class_prototypes,
     prepare_cfg,
+    prototype_logits,
+    resolve_distance_metric,
     save_confusion_matrix_plot,
     set_seed,
     split_indices_for_fold,
@@ -43,7 +44,8 @@ class Config:
     cosine_temperature: float = 0.1
     normalize_embeddings: bool = True
     embedding_space: str = "projected"  # "projected" or "backbone"
-    backbone_source: str = "supcon"  # "supcon" or "ce"
+    backbone_source: str = "ce"  # "supcon" or "ce"
+    distance_metric: str = "auto"  # "auto", "cosine", or "euclidean"
     skip_missing_folds: bool = False
     device: str = (
         "mps"
@@ -57,6 +59,7 @@ class Config:
     supcon_stage_name: str = "02_tinierhar_supcon_loso"
     ce_stage_name: str = "01_tinierhar_ce_loso"
     eval_stage_name: str = "04_supcon_fixed_prototypes_loso"
+    separate_backbone_source_dir: bool = True
     max_folds: int | None = None
     force_rerun: bool = False
 
@@ -79,10 +82,21 @@ def run(config: Config) -> dict[str, Any]:
     output_root = Path(config.output_root)
     supcon_stage_dir = output_root / config.supcon_stage_name
     ce_stage_dir = output_root / config.ce_stage_name
-    eval_dir = output_root / config.eval_stage_name
-    eval_dir.mkdir(parents=True, exist_ok=True)
     if config.backbone_source not in {"supcon", "ce"}:
         raise ValueError("backbone_source must be 'supcon' or 'ce'.")
+    effective_distance_metric = resolve_distance_metric(
+        config.distance_metric, config.backbone_source
+    )
+    effective_normalize_embeddings = (
+        bool(config.normalize_embeddings) and effective_distance_metric == "cosine"
+    )
+    eval_stage_parts = [config.eval_stage_name]
+    if config.separate_backbone_source_dir:
+        eval_stage_parts.append(f"{config.backbone_source}_backbone")
+    eval_stage_parts.append(effective_distance_metric)
+    eval_stage_name = "_".join(eval_stage_parts)
+    eval_dir = output_root / eval_stage_name
+    eval_dir.mkdir(parents=True, exist_ok=True)
 
     dataset_id = WHARDatasetID(config.dataset_id)
     cfg = prepare_cfg(
@@ -130,10 +144,12 @@ def run(config: Config) -> dict[str, Any]:
         fold_fp = config_fingerprint(
             {
                 "stage": config.eval_stage_name,
+                "resolved_eval_stage": eval_stage_name,
                 "config": asdict(config),
                 "shared_cfg": asdict(shared_cfg),
                 "fold": asdict(fold),
                 "backbone_checkpoint": str(ckpt_path),
+                "effective_distance_metric": effective_distance_metric,
             }
         )
         metrics_path = split_dir / "metrics.json"
@@ -173,13 +189,13 @@ def run(config: Config) -> dict[str, Any]:
             projection_head,
             _loader(train_ds, config),
             device,
-            normalize=config.normalize_embeddings,
+            normalize=effective_normalize_embeddings,
         )
         prototypes = make_class_prototypes(
             train_emb,
             train_y,
             num_classes=int(cfg.num_of_activities),
-            normalize=True,
+            normalize=effective_distance_metric == "cosine",
         )
         split_metrics: dict[str, Any] = {}
         for split_name, dataset in (("val", val_ds), ("test", test_ds)):
@@ -188,9 +204,14 @@ def run(config: Config) -> dict[str, Any]:
                 projection_head,
                 _loader(dataset, config),
                 device,
-                normalize=config.normalize_embeddings,
+                normalize=effective_normalize_embeddings,
             )
-            logits = cosine_logits(emb, prototypes, config.cosine_temperature)
+            logits = prototype_logits(
+                emb,
+                prototypes,
+                config.cosine_temperature,
+                effective_distance_metric,
+            )
             pred = logits.argmax(dim=1).numpy()
             metrics = classification_metrics(
                 y.numpy(), pred, int(cfg.num_of_activities)
@@ -214,6 +235,10 @@ def run(config: Config) -> dict[str, Any]:
                 "config": asdict(config),
                 "backbone_source": config.backbone_source,
                 "backbone_checkpoint": str(ckpt_path),
+                "distance_metric": config.distance_metric,
+                "effective_distance_metric": effective_distance_metric,
+                "normalize_embeddings": bool(config.normalize_embeddings),
+                "effective_normalize_embeddings": effective_normalize_embeddings,
                 "embedding_space": config.embedding_space,
                 "effective_embedding_space": effective_embedding_space,
                 "fold": asdict(fold),
@@ -233,6 +258,10 @@ def run(config: Config) -> dict[str, Any]:
             "test_weighted_f1": float(split_metrics["test"]["weighted_f1"]),
             "backbone_source": config.backbone_source,
             "backbone_checkpoint": str(ckpt_path),
+            "distance_metric": config.distance_metric,
+            "effective_distance_metric": effective_distance_metric,
+            "normalize_embeddings": bool(config.normalize_embeddings),
+            "effective_normalize_embeddings": effective_normalize_embeddings,
             "embedding_space": config.embedding_space,
             "effective_embedding_space": effective_embedding_space,
             "val_confusion_matrix_path": split_metrics["val"]["confusion_matrix_path"],
@@ -250,9 +279,14 @@ def run(config: Config) -> dict[str, Any]:
     summary = {
         "config": asdict(config),
         "splits_manifest_path": str(manifest_path),
+        "eval_stage_name": eval_stage_name,
+        "eval_dir": str(eval_dir),
         "supcon_stage_dir": str(supcon_stage_dir),
         "ce_stage_dir": str(ce_stage_dir),
         "backbone_source": config.backbone_source,
+        "distance_metric": config.distance_metric,
+        "effective_distance_metric": effective_distance_metric,
+        "effective_normalize_embeddings": effective_normalize_embeddings,
         "num_folds": len(rows),
         "skipped_folds": skipped_folds,
         "mean_test_macro_f1": float(

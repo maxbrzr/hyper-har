@@ -449,6 +449,36 @@ def cosine_logits(
     return torch.matmul(emb, proto.T) / float(temperature)
 
 
+def euclidean_logits(
+    embeddings: torch.Tensor,
+    prototypes: torch.Tensor,
+    temperature: float,
+) -> torch.Tensor:
+    dists = torch.cdist(embeddings, prototypes, p=2)
+    return -dists.pow(2) / float(temperature)
+
+
+def resolve_distance_metric(distance_metric: str, backbone_source: str) -> str:
+    if distance_metric == "auto":
+        return "cosine" if backbone_source == "supcon" else "euclidean"
+    if distance_metric not in {"cosine", "euclidean"}:
+        raise ValueError("distance_metric must be 'auto', 'cosine', or 'euclidean'.")
+    return distance_metric
+
+
+def prototype_logits(
+    embeddings: torch.Tensor,
+    prototypes: torch.Tensor,
+    temperature: float,
+    distance_metric: str,
+) -> torch.Tensor:
+    if distance_metric == "cosine":
+        return cosine_logits(embeddings, prototypes, temperature)
+    if distance_metric == "euclidean":
+        return euclidean_logits(embeddings, prototypes, temperature)
+    raise ValueError("distance_metric must be 'cosine' or 'euclidean'.")
+
+
 def classification_metrics(
     y_true: Sequence[int] | np.ndarray,
     y_pred: Sequence[int] | np.ndarray,

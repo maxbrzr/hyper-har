@@ -16,7 +16,6 @@ from common import (
     build_supcon_projection_head,
     class_names,
     config_fingerprint,
-    cosine_logits,
     extract_supcon_embeddings,
     indices_by_activity,
     load_ce_backbone,
@@ -24,6 +23,8 @@ from common import (
     make_class_prototypes,
     mean_std_ci,
     prepare_cfg,
+    prototype_logits,
+    resolve_distance_metric,
     save_confusion_matrix_plot,
     set_seed,
     split_indices_for_fold,
@@ -55,7 +56,8 @@ class Config:
     cosine_temperature: float = 0.1
     normalize_embeddings: bool = True
     embedding_space: str = "projected"  # "projected" or "backbone"
-    backbone_source: str = "ce"  # "supcon"  # "supcon" or "ce"
+    backbone_source: str = "supcon"  # "supcon"  # "supcon" or "ce"
+    distance_metric: str = "auto"  # "auto", "cosine", or "euclidean"
     skip_missing_folds: bool = False
     device: str = (
         "mps"
@@ -244,6 +246,7 @@ def _episode_predict(
     support_y: np.ndarray,
     activity_ids: Sequence[int],
     temperature: float,
+    distance_metric: str,
 ) -> np.ndarray:
     support_emb = torch.stack(
         [embeddings_by_window[int(idx)] for idx in support_indices], dim=0
@@ -259,9 +262,9 @@ def _episode_predict(
         support_emb,
         local_y,
         num_classes=len(activity_ids),
-        normalize=True,
+        normalize=distance_metric == "cosine",
     )
-    logits = cosine_logits(query_emb, local_proto, temperature)
+    logits = prototype_logits(query_emb, local_proto, temperature, distance_metric)
     local_pred = logits.argmax(dim=1).numpy()
     activity_np = np.asarray([int(x) for x in activity_ids], dtype=np.int64)
     return activity_np[local_pred]
@@ -299,11 +302,17 @@ def run(config: Config) -> dict[str, Any]:
     ce_stage_dir = output_root / config.ce_stage_name
     if config.backbone_source not in {"supcon", "ce"}:
         raise ValueError("backbone_source must be 'supcon' or 'ce'.")
-    eval_stage_name = (
-        f"{config.eval_stage_name}_{config.backbone_source}_backbone"
-        if config.separate_backbone_source_dir
-        else config.eval_stage_name
+    effective_distance_metric = resolve_distance_metric(
+        config.distance_metric, config.backbone_source
     )
+    effective_normalize_embeddings = (
+        bool(config.normalize_embeddings) and effective_distance_metric == "cosine"
+    )
+    eval_stage_parts = [config.eval_stage_name]
+    if config.separate_backbone_source_dir:
+        eval_stage_parts.append(f"{config.backbone_source}_backbone")
+    eval_stage_parts.append(effective_distance_metric)
+    eval_stage_name = "_".join(eval_stage_parts)
     eval_dir = output_root / eval_stage_name
     eval_dir.mkdir(parents=True, exist_ok=True)
 
@@ -360,6 +369,7 @@ def run(config: Config) -> dict[str, Any]:
                 "shared_cfg": asdict(shared_cfg),
                 "fold": asdict(fold),
                 "backbone_checkpoint": str(ckpt_path),
+                "effective_distance_metric": effective_distance_metric,
             }
         )
         split_dir = eval_dir / fold.fold_id
@@ -405,20 +415,20 @@ def run(config: Config) -> dict[str, Any]:
             projection_head,
             train_loader,
             device,
-            normalize=config.normalize_embeddings,
+            normalize=effective_normalize_embeddings,
         )
         fixed_prototypes = make_class_prototypes(
             train_emb,
             train_y,
             num_classes=int(cfg.num_of_activities),
-            normalize=True,
+            normalize=effective_distance_metric == "cosine",
         )
         test_emb, test_y, _test_subjects = extract_supcon_embeddings(
             backbone,
             projection_head,
             test_loader,
             device,
-            normalize=config.normalize_embeddings,
+            normalize=effective_normalize_embeddings,
         )
         embeddings_by_window = {
             int(window_idx): test_emb[pos]
@@ -539,10 +549,11 @@ def run(config: Config) -> dict[str, Any]:
                     query_idx = [int(x) for x in test_ds.indices]
                     query_y = test_y.numpy()
                     pred = (
-                        cosine_logits(
+                        prototype_logits(
                             test_emb,
                             fixed_prototypes,
                             config.cosine_temperature,
+                            effective_distance_metric,
                         )
                         .argmax(dim=1)
                         .numpy()
@@ -568,6 +579,7 @@ def run(config: Config) -> dict[str, Any]:
                         support_y,
                         activity_ids,
                         config.cosine_temperature,
+                        effective_distance_metric,
                     )
                 else:
                     support_idx, query_idx, support_y, query_y = _sample_episode(
@@ -583,6 +595,7 @@ def run(config: Config) -> dict[str, Any]:
                         support_y,
                         activity_ids,
                         config.cosine_temperature,
+                        effective_distance_metric,
                     )
                 macro_f1 = float(
                     f1_score(
@@ -623,6 +636,10 @@ def run(config: Config) -> dict[str, Any]:
                     "accuracy": acc,
                     "backbone_source": config.backbone_source,
                     "backbone_checkpoint": str(ckpt_path),
+                    "distance_metric": config.distance_metric,
+                    "effective_distance_metric": effective_distance_metric,
+                    "normalize_embeddings": bool(config.normalize_embeddings),
+                    "effective_normalize_embeddings": effective_normalize_embeddings,
                     "embedding_space": config.embedding_space,
                     "effective_embedding_space": effective_embedding_space,
                     "support_query_session_disjoint": bool(
@@ -696,6 +713,10 @@ def run(config: Config) -> dict[str, Any]:
                     "test_subject_id": int(fold.test_subject_ids[0]),
                     "backbone_source": config.backbone_source,
                     "backbone_checkpoint": str(ckpt_path),
+                    "distance_metric": config.distance_metric,
+                    "effective_distance_metric": effective_distance_metric,
+                    "normalize_embeddings": bool(config.normalize_embeddings),
+                    "effective_normalize_embeddings": effective_normalize_embeddings,
                     "embedding_space": config.embedding_space,
                     "effective_embedding_space": effective_embedding_space,
                     "support_query_session_disjoint": bool(
@@ -781,6 +802,9 @@ def run(config: Config) -> dict[str, Any]:
         "supcon_stage_dir": str(supcon_stage_dir),
         "ce_stage_dir": str(ce_stage_dir),
         "backbone_source": config.backbone_source,
+        "distance_metric": config.distance_metric,
+        "effective_distance_metric": effective_distance_metric,
+        "effective_normalize_embeddings": effective_normalize_embeddings,
         "embedding_space": config.embedding_space,
         "skipped_folds": skipped_folds,
         "trial_results_csv": str(trial_csv),
