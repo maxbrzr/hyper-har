@@ -21,6 +21,8 @@ from common import (
     DEFAULT_TEST_SUBJECTS,
     DEFAULT_VAL_SUBJECTS,
     DEFAULT_WINDOW_OVERLAP,
+    DEFAULT_SPLIT_STRATEGY,
+    DEFAULT_VAL_PERCENTAGE,
     SharedConfig,
     WindowDataset,
     build_loader,
@@ -57,6 +59,8 @@ class Config:
     val_subjects: int = DEFAULT_VAL_SUBJECTS
     test_subjects: int = DEFAULT_TEST_SUBJECTS
     seed: int = DEFAULT_SEED
+    split_strategy: str = DEFAULT_SPLIT_STRATEGY
+    val_percentage: float = DEFAULT_VAL_PERCENTAGE
 
     projection_hidden_dim: int = 128
     projection_dim: int | None = None
@@ -639,6 +643,8 @@ def run(config: Config) -> dict[str, Any]:
         val_subjects=config.val_subjects,
         test_subjects=config.test_subjects,
         seed=config.seed,
+        split_strategy=config.split_strategy,
+        val_percentage=config.val_percentage,
     )
     manifest_path = output_root / "shared_splits" / "loso_subject_folds.json"
     folds = build_or_load_loso_folds(session_df, window_df, shared_cfg, manifest_path)

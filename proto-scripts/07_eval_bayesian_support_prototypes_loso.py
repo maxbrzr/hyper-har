@@ -9,14 +9,16 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 from common import (
-    ROOT,
     DEFAULT_DATASET_ID,
     DEFAULT_DATASETS_DIR,
-    DEFAULT_SELECTED_ACTIVITIES,
     DEFAULT_SEED,
+    DEFAULT_SELECTED_ACTIVITIES,
+    DEFAULT_SPLIT_STRATEGY,
     DEFAULT_TEST_SUBJECTS,
+    DEFAULT_VAL_PERCENTAGE,
     DEFAULT_VAL_SUBJECTS,
     DEFAULT_WINDOW_OVERLAP,
+    ROOT,
     SharedConfig,
     WindowDataset,
     build_loader,
@@ -52,6 +54,8 @@ class Config:
     val_subjects: int = DEFAULT_VAL_SUBJECTS
     test_subjects: int = DEFAULT_TEST_SUBJECTS
     seed: int = DEFAULT_SEED
+    split_strategy: str = DEFAULT_SPLIT_STRATEGY
+    val_percentage: float = DEFAULT_VAL_PERCENTAGE
 
     k_values: tuple[int, ...] = (0, 1, 2, 3, 4, 5, 6, 8, 16, 32)
     episodes_per_k: int = 100
@@ -64,7 +68,7 @@ class Config:
     cosine_temperature: float = 0.1
     normalize_embeddings: bool | None = None
     embedding_space: str = "backbone"  # "projected" or "backbone"
-    backbone_source: str = "supcon"  # "supcon" or "ce"
+    backbone_source: str = "ce"  # "supcon" or "ce"
     distance_metric: str = "auto"  # "auto", "cosine", or "euclidean"
     embedding_transform: str = "none"  # "none" or "signed_power"
     power_transform_exponent: float = 0.5
@@ -536,6 +540,8 @@ def run(config: Config) -> dict[str, Any]:
         val_subjects=config.val_subjects,
         test_subjects=config.test_subjects,
         seed=config.seed,
+        split_strategy=config.split_strategy,
+        val_percentage=config.val_percentage,
     )
     manifest_path = output_root / "shared_splits" / "loso_subject_folds.json"
     folds = build_or_load_loso_folds(session_df, window_df, shared_cfg, manifest_path)

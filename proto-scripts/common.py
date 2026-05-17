@@ -6,6 +6,7 @@ import random
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Sequence
 
 import matplotlib
@@ -19,6 +20,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix, f1_score
 from torch.utils.data import Dataset
 from whar_datasets import (
     Loader,
+    LOSOSplitter,
     PostProcessingPipeline,
     PreProcessingPipeline,
     WHARDatasetID,
@@ -42,6 +44,8 @@ DEFAULT_WINDOW_OVERLAP = 0.0
 DEFAULT_VAL_SUBJECTS = 3
 DEFAULT_TEST_SUBJECTS = 1
 DEFAULT_SEED = 0
+DEFAULT_SPLIT_STRATEGY = "whar_loso"  # "subject_val" or "whar_loso"
+DEFAULT_VAL_PERCENTAGE = 0.2
 
 
 def resolve_output_root(output_root: str | None, dataset_id: str) -> Path:
@@ -57,6 +61,9 @@ class LOSOFold:
     train_subject_ids: list[int]
     val_subject_ids: list[int]
     test_subject_ids: list[int]
+    train_indices: list[int] | None = None
+    val_indices: list[int] | None = None
+    test_indices: list[int] | None = None
 
 
 @dataclass(frozen=True)
@@ -75,6 +82,8 @@ class SharedConfig:
     val_subjects: int
     test_subjects: int
     seed: int
+    split_strategy: str = DEFAULT_SPLIT_STRATEGY
+    val_percentage: float = DEFAULT_VAL_PERCENTAGE
 
 
 class WindowDataset(Dataset[dict[str, torch.Tensor]]):
@@ -143,6 +152,23 @@ def subject_index_map(
     }
 
 
+def subject_ids_for_indices(
+    session_df: pd.DataFrame,
+    window_df: pd.DataFrame,
+    indices: Sequence[int],
+) -> list[int]:
+    if not indices:
+        return []
+    subset = window_df.loc[list(indices), ["session_id"]].copy()
+    session_meta = session_df[["session_id", "subject_id"]].drop_duplicates(
+        "session_id"
+    )
+    merged = subset.merge(session_meta, on="session_id", how="left")
+    if merged["subject_id"].isna().any():
+        raise ValueError("Missing subject metadata for split indices.")
+    return sorted(int(x) for x in merged["subject_id"].unique().tolist())
+
+
 def build_or_load_loso_folds(
     session_df: pd.DataFrame,
     window_df: pd.DataFrame,
@@ -158,7 +184,55 @@ def build_or_load_loso_folds(
         raise ValueError(
             f"LOSO requires test_subjects=1, got {shared_cfg.test_subjects}."
         )
+    if shared_cfg.split_strategy not in {"subject_val", "whar_loso"}:
+        raise ValueError(
+            "split_strategy must be 'subject_val' or 'whar_loso', got "
+            f"{shared_cfg.split_strategy!r}."
+        )
     subject_ids = sorted(subject_index_map(session_df, window_df).keys())
+
+    if shared_cfg.split_strategy == "whar_loso":
+        splitter_cfg = SimpleNamespace(
+            val_percentage=float(shared_cfg.val_percentage),
+            seed=int(shared_cfg.seed),
+        )
+        splits = LOSOSplitter(splitter_cfg, subject_ids=subject_ids).get_splits(
+            session_df, window_df
+        )
+        folds = []
+        for split in splits:
+            test_subjects = subject_ids_for_indices(
+                session_df, window_df, split.test_indices
+            )
+            if len(test_subjects) != 1:
+                raise ValueError(
+                    "WHAR LOSOSplitter produced a split with "
+                    f"{len(test_subjects)} test subjects: {test_subjects}."
+                )
+            folds.append(
+                LOSOFold(
+                    fold_id=f"loso_subject_{int(test_subjects[0])}",
+                    train_subject_ids=subject_ids_for_indices(
+                        session_df, window_df, split.train_indices
+                    ),
+                    val_subject_ids=subject_ids_for_indices(
+                        session_df, window_df, split.val_indices
+                    ),
+                    test_subject_ids=[int(test_subjects[0])],
+                    train_indices=sorted(int(x) for x in split.train_indices),
+                    val_indices=sorted(int(x) for x in split.val_indices),
+                    test_indices=sorted(int(x) for x in split.test_indices),
+                )
+            )
+        folds = sorted(folds, key=lambda fold: int(fold.test_subject_ids[0]))
+        manifest_path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "shared_config": asdict(shared_cfg),
+            "folds": [asdict(fold) for fold in folds],
+        }
+        manifest_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        return folds
+
     if len(subject_ids) <= int(shared_cfg.val_subjects) + 1:
         raise ValueError(
             "Not enough subjects for LOSO with validation subjects: "
@@ -199,6 +273,16 @@ def split_indices_for_fold(
     window_df: pd.DataFrame,
     fold: LOSOFold,
 ) -> IndexSplit:
+    if (
+        fold.train_indices is not None
+        and fold.val_indices is not None
+        and fold.test_indices is not None
+    ):
+        return IndexSplit(
+            train_indices=sorted(int(x) for x in fold.train_indices),
+            val_indices=sorted(int(x) for x in fold.val_indices),
+            test_indices=sorted(int(x) for x in fold.test_indices),
+        )
     subject_map = subject_index_map(session_df, window_df)
 
     def gather(subject_ids: Sequence[int]) -> list[int]:
