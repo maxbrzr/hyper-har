@@ -28,6 +28,7 @@ from common import (
     load_supcon_backbone,
     prepare_cfg,
     prepare_inputs,
+    reconcile_activity_config,
     resolve_output_root,
     save_confusion_matrix_plot,
     set_seed,
@@ -182,6 +183,7 @@ def run(config: Config) -> dict[str, Any]:
     )
     pre = PreProcessingPipeline(cfg)
     _raw_df, session_df, window_df = pre.run()
+    reconcile_activity_config(cfg, session_df)
     shared_cfg = SharedConfig(
         dataset_id=config.dataset_id,
         datasets_dir=config.datasets_dir,
@@ -219,6 +221,8 @@ def run(config: Config) -> dict[str, Any]:
                 "shared_cfg": asdict(shared_cfg),
                 "fold": asdict(fold),
                 "supcon_checkpoint": str(ckpt_path),
+                "num_classes": int(cfg.num_of_activities),
+                "class_names": class_names(cfg),
             }
         )
         metrics_path = split_dir / "metrics.json"

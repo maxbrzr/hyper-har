@@ -37,7 +37,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-DEFAULT_DATASET_ID = WHARDatasetID.MHEALTH.value
+DEFAULT_DATASET_ID = WHARDatasetID.HAPT.value
 DEFAULT_DATASETS_DIR = "datasets"
 DEFAULT_SELECTED_ACTIVITIES: list[str] | None = None
 DEFAULT_WINDOW_OVERLAP = 0.0
@@ -128,11 +128,33 @@ def prepare_cfg(
     )
     if selected_activities is not None:
         cfg.selected_activities = list(selected_activities)
-        cfg.num_of_activities = len(cfg.selected_activities)
+    available_activities = getattr(cfg, "available_activities", None)
+    if available_activities is not None:
+        cfg.num_of_activities = len(available_activities)
     cfg.window_overlap = float(window_overlap)
     if hasattr(cfg, "overlap"):
         cfg.overlap = float(window_overlap)
     return cfg
+
+
+def reconcile_activity_config(cfg: Any, session_df: pd.DataFrame) -> None:
+    activity_ids = sorted(
+        int(x) for x in session_df["activity_id"].dropna().unique().tolist()
+    )
+    expected_ids = list(range(len(activity_ids)))
+    if activity_ids != expected_ids:
+        raise ValueError(
+            "Activity ids must be zero-based and contiguous after preprocessing. "
+            f"Got {activity_ids}; expected {expected_ids}. Label remapping is needed "
+            "before training/evaluation."
+        )
+    cfg.num_of_activities = len(activity_ids)
+    cfg_activities = getattr(cfg, "selected_activities", None)
+    if cfg_activities is not None and len(cfg_activities) != len(activity_ids):
+        raise ValueError(
+            "Configured selected_activities does not match preprocessed activity ids: "
+            f"{len(cfg_activities)} names vs {len(activity_ids)} ids."
+        )
 
 
 def subject_index_map(
@@ -536,6 +558,42 @@ def make_class_prototypes(
     if normalize:
         prototypes = F.normalize(prototypes, p=2, dim=1)
     return prototypes
+
+
+def make_available_class_prototypes(
+    embeddings: torch.Tensor,
+    labels: torch.Tensor,
+    num_classes: int,
+    normalize: bool = True,
+) -> tuple[torch.Tensor, torch.Tensor, list[int]]:
+    proto_list: list[torch.Tensor] = []
+    class_labels: list[int] = []
+    missing_classes: list[int] = []
+    for cls in range(int(num_classes)):
+        mask = labels == int(cls)
+        if not bool(mask.any()):
+            missing_classes.append(int(cls))
+            continue
+        proto_list.append(embeddings[mask].mean(dim=0))
+        class_labels.append(int(cls))
+    if not proto_list:
+        raise ValueError("Cannot build prototypes: no classes are present.")
+    prototypes = torch.stack(proto_list, dim=0)
+    if normalize:
+        prototypes = F.normalize(prototypes, p=2, dim=1)
+    return prototypes, torch.tensor(class_labels, dtype=torch.long), missing_classes
+
+
+def prototype_predictions(
+    embeddings: torch.Tensor,
+    prototypes: torch.Tensor,
+    prototype_class_labels: torch.Tensor,
+    temperature: float,
+    distance_metric: str,
+) -> np.ndarray:
+    logits = prototype_logits(embeddings, prototypes, temperature, distance_metric)
+    local_pred = logits.argmax(dim=1)
+    return prototype_class_labels[local_pred].numpy()
 
 
 def cosine_logits(

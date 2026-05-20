@@ -29,10 +29,13 @@ from common import (
     indices_by_activity,
     load_ce_backbone,
     load_supcon_backbone,
+    make_available_class_prototypes,
     make_class_prototypes,
     mean_std_ci,
     prepare_cfg,
     prototype_logits,
+    prototype_predictions,
+    reconcile_activity_config,
     resolve_distance_metric,
     resolve_output_root,
     save_confusion_matrix_plot,
@@ -63,6 +66,7 @@ class Config:
     support_query_session_disjoint: bool = False
     min_activities_per_episode: int = 2
     require_all_k_activities: bool = True
+    skip_ineligible_k_values: bool = True
     batch_size: int = 256
     num_workers: int = 0
     cosine_temperature: float = 0.1
@@ -337,6 +341,7 @@ def run(config: Config) -> dict[str, Any]:
     )
     pre = PreProcessingPipeline(cfg)
     _raw_df, session_df, window_df = pre.run()
+    reconcile_activity_config(cfg, session_df)
     shared_cfg = SharedConfig(
         dataset_id=config.dataset_id,
         datasets_dir=config.datasets_dir,
@@ -384,6 +389,8 @@ def run(config: Config) -> dict[str, Any]:
                 "fold": asdict(fold),
                 "backbone_checkpoint": str(ckpt_path),
                 "effective_distance_metric": effective_distance_metric,
+                "num_classes": int(cfg.num_of_activities),
+                "class_names": class_names(cfg),
             }
         )
         split_dir = eval_dir / fold.fold_id
@@ -431,12 +438,27 @@ def run(config: Config) -> dict[str, Any]:
             device,
             normalize=effective_normalize_embeddings,
         )
-        fixed_prototypes = make_class_prototypes(
-            train_emb,
-            train_y,
-            num_classes=int(cfg.num_of_activities),
-            normalize=effective_distance_metric == "cosine",
+        fixed_prototypes, fixed_prototype_class_labels, missing_train_classes = (
+            make_available_class_prototypes(
+                train_emb,
+                train_y,
+                num_classes=int(cfg.num_of_activities),
+                normalize=effective_distance_metric == "cosine",
+            )
         )
+        if missing_train_classes:
+            print(
+                f"[{fold.fold_id}] train split is missing classes "
+                f"{missing_train_classes}; k=0 fixed prototypes use "
+                f"{fixed_prototype_class_labels.tolist()}."
+            )
+        available_train_class_ids = {
+            int(x) for x in fixed_prototype_class_labels.tolist()
+        }
+        fixed_label_to_position = {
+            int(label): int(pos)
+            for pos, label in enumerate(fixed_prototype_class_labels.tolist())
+        }
         test_emb, test_y, _test_subjects = extract_supcon_embeddings(
             backbone,
             projection_head,
@@ -444,6 +466,7 @@ def run(config: Config) -> dict[str, Any]:
             device,
             normalize=effective_normalize_embeddings,
         )
+        test_class_ids = {int(x) for x in torch.unique(test_y).tolist()}
         embeddings_by_window = {
             int(window_idx): test_emb[pos]
             for pos, window_idx in enumerate(test_ds.indices)
@@ -455,37 +478,67 @@ def run(config: Config) -> dict[str, Any]:
             else None
         )
         support_k_values = [int(k) for k in config.k_values if int(k) > 0]
-        max_k = max(support_k_values) if support_k_values else 0
-        common_activity_ids: list[int] = []
-        if support_k_values:
-            common_activity_ids = (
+        eligible_activity_ids_by_k: dict[int, list[int]] = {}
+        for candidate_k in support_k_values:
+            candidate_activity_ids = (
                 _eligible_activities_session_disjoint(
                     by_activity_session or {},
-                    max_k,
+                    candidate_k,
                     config.min_query_per_class,
                 )
                 if config.support_query_session_disjoint
                 else _eligible_activities(
                     by_activity,
-                    max_k,
+                    candidate_k,
                     config.min_query_per_class,
                 )
             )
+            eligible_activity_ids_by_k[int(candidate_k)] = [
+                int(x)
+                for x in candidate_activity_ids
+                if int(x) in available_train_class_ids
+            ]
+        feasible_common_k_values = [
+            int(k)
+            for k, values in eligible_activity_ids_by_k.items()
+            if len(values) >= int(config.min_activities_per_episode)
+        ]
+        effective_common_k = (
+            max(feasible_common_k_values) if feasible_common_k_values else 0
+        )
+        common_activity_ids: list[int] = []
+        if support_k_values and config.require_all_k_activities:
+            common_activity_ids = eligible_activity_ids_by_k.get(
+                int(effective_common_k), []
+            )
+            skipped_common_ks = [
+                int(k)
+                for k in support_k_values
+                if int(k) > int(effective_common_k)
+                or len(eligible_activity_ids_by_k.get(int(k), []))
+                < int(config.min_activities_per_episode)
+            ]
+            if skipped_common_ks:
+                print(
+                    f"[{fold.fold_id}] skipping ineligible k values "
+                    f"{skipped_common_ks}; largest feasible shared-activity k is "
+                    f"{effective_common_k} with activities {common_activity_ids}."
+                )
+            if not common_activity_ids and not config.skip_ineligible_k_values:
+                raise ValueError(
+                    f"{fold.fold_id} has no activities with at least "
+                    f"{max(support_k_values) + config.min_query_per_class} windows."
+                )
         if (
             support_k_values
             and config.require_all_k_activities
             and not common_activity_ids
-        ):
-            raise ValueError(
-                f"{fold.fold_id} has no activities with at least "
-                f"{max_k + config.min_query_per_class} windows."
-            )
-        if support_k_values and len(common_activity_ids) < int(
-            config.min_activities_per_episode
+            and not config.skip_ineligible_k_values
         ):
             raise ValueError(
                 f"{fold.fold_id} has only {len(common_activity_ids)} eligible "
-                f"activities for max k={max_k}: {common_activity_ids}. "
+                f"activities for max k={max(support_k_values)}: "
+                f"{common_activity_ids}. "
                 "Prototype evaluation with fewer than "
                 f"{config.min_activities_per_episode} activities is trivial. "
                 "If support_query_session_disjoint=True, this usually means the "
@@ -501,34 +554,52 @@ def run(config: Config) -> dict[str, Any]:
             k = int(k)
             if k < 0:
                 raise ValueError(f"k_values must be >= 0, got {k}.")
+            if (
+                k > 0
+                and config.require_all_k_activities
+                and k > int(effective_common_k)
+            ):
+                if config.skip_ineligible_k_values:
+                    print(
+                        f"[{fold.fold_id}] skipping k={k}: requires "
+                        f"{k + config.min_query_per_class} windows per activity, "
+                        f"largest feasible shared-activity k is {effective_common_k}."
+                    )
+                    continue
+                raise ValueError(
+                    f"{fold.fold_id} k={k} exceeds largest feasible "
+                    f"shared-activity k={effective_common_k}."
+                )
             activity_ids = (
-                sorted(int(x) for x in torch.unique(test_y).tolist())
+                [
+                    int(x)
+                    for x in fixed_prototype_class_labels.tolist()
+                    if int(x) in test_class_ids
+                ]
                 if k == 0
                 else (
                     common_activity_ids
                     if config.require_all_k_activities
-                    else (
-                        _eligible_activities_session_disjoint(
-                            by_activity_session or {},
-                            k,
-                            config.min_query_per_class,
-                        )
-                        if config.support_query_session_disjoint
-                        else _eligible_activities(
-                            by_activity,
-                            k,
-                            config.min_query_per_class,
-                        )
-                    )
+                    else eligible_activity_ids_by_k.get(int(k), [])
                 )
             )
+            activity_ids = [
+                int(x) for x in activity_ids if int(x) in available_train_class_ids
+            ]
             if not activity_ids:
-                if config.skip_missing_folds:
+                if config.skip_missing_folds or config.skip_ineligible_k_values:
+                    print(f"[{fold.fold_id}] skipping k={k}: no eligible activities.")
                     continue
                 raise ValueError(
                     f"{fold.fold_id} has no eligible activities for k={k}."
                 )
             if len(activity_ids) < int(config.min_activities_per_episode):
+                if config.skip_ineligible_k_values:
+                    print(
+                        f"[{fold.fold_id}] skipping k={k}: only "
+                        f"{len(activity_ids)} eligible activities {activity_ids}."
+                    )
+                    continue
                 raise ValueError(
                     f"{fold.fold_id} k={k} has only {len(activity_ids)} eligible "
                     f"activities: {activity_ids}. Prototype evaluation with fewer "
@@ -560,17 +631,29 @@ def run(config: Config) -> dict[str, Any]:
                 episode_session_meta: dict[int, dict[str, Any]] = {}
                 if k == 0:
                     support_idx = []
-                    query_idx = [int(x) for x in test_ds.indices]
-                    query_y = test_y.numpy()
-                    pred = (
-                        prototype_logits(
-                            test_emb,
-                            fixed_prototypes,
-                            config.cosine_temperature,
-                            effective_distance_metric,
-                        )
-                        .argmax(dim=1)
-                        .numpy()
+                    query_mask = torch.zeros_like(test_y, dtype=torch.bool)
+                    for activity_id in activity_ids:
+                        query_mask |= test_y == int(activity_id)
+                    query_positions = torch.nonzero(query_mask, as_tuple=False).view(-1)
+                    query_idx = [
+                        int(test_ds.indices[int(pos)])
+                        for pos in query_positions.tolist()
+                    ]
+                    query_y = test_y[query_positions].numpy()
+                    prototype_positions = torch.tensor(
+                        [fixed_label_to_position[int(x)] for x in activity_ids],
+                        dtype=torch.long,
+                    )
+                    episode_prototypes = fixed_prototypes[prototype_positions]
+                    episode_class_labels = torch.tensor(
+                        [int(x) for x in activity_ids], dtype=torch.long
+                    )
+                    pred = prototype_predictions(
+                        test_emb[query_positions],
+                        episode_prototypes,
+                        episode_class_labels,
+                        config.cosine_temperature,
+                        effective_distance_metric,
                     )
                 elif config.support_query_session_disjoint:
                     (
@@ -656,6 +739,12 @@ def run(config: Config) -> dict[str, Any]:
                     "effective_normalize_embeddings": effective_normalize_embeddings,
                     "embedding_space": config.embedding_space,
                     "effective_embedding_space": effective_embedding_space,
+                    "fixed_prototype_class_labels": json.dumps(
+                        [int(x) for x in fixed_prototype_class_labels.tolist()]
+                    ),
+                    "missing_train_classes": json.dumps(
+                        [int(x) for x in missing_train_classes]
+                    ),
                     "support_query_session_disjoint": bool(
                         config.support_query_session_disjoint
                     ),

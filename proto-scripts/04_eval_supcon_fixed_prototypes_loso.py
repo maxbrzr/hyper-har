@@ -26,9 +26,10 @@ from common import (
     extract_supcon_embeddings,
     load_ce_backbone,
     load_supcon_backbone,
-    make_class_prototypes,
+    make_available_class_prototypes,
     prepare_cfg,
-    prototype_logits,
+    prototype_predictions,
+    reconcile_activity_config,
     resolve_distance_metric,
     resolve_output_root,
     save_confusion_matrix_plot,
@@ -119,6 +120,7 @@ def run(config: Config) -> dict[str, Any]:
     )
     pre = PreProcessingPipeline(cfg)
     _raw_df, session_df, window_df = pre.run()
+    reconcile_activity_config(cfg, session_df)
     shared_cfg = SharedConfig(
         dataset_id=config.dataset_id,
         datasets_dir=config.datasets_dir,
@@ -164,6 +166,8 @@ def run(config: Config) -> dict[str, Any]:
                 "fold": asdict(fold),
                 "backbone_checkpoint": str(ckpt_path),
                 "effective_distance_metric": effective_distance_metric,
+                "num_classes": int(cfg.num_of_activities),
+                "class_names": class_names(cfg),
             }
         )
         metrics_path = split_dir / "metrics.json"
@@ -205,12 +209,20 @@ def run(config: Config) -> dict[str, Any]:
             device,
             normalize=effective_normalize_embeddings,
         )
-        prototypes = make_class_prototypes(
-            train_emb,
-            train_y,
-            num_classes=int(cfg.num_of_activities),
-            normalize=effective_distance_metric == "cosine",
+        prototypes, prototype_class_labels, missing_train_classes = (
+            make_available_class_prototypes(
+                train_emb,
+                train_y,
+                num_classes=int(cfg.num_of_activities),
+                normalize=effective_distance_metric == "cosine",
+            )
         )
+        if missing_train_classes:
+            print(
+                f"[{fold.fold_id}] train split is missing classes "
+                f"{missing_train_classes}; fixed prototypes use "
+                f"{prototype_class_labels.tolist()}."
+            )
         split_metrics: dict[str, Any] = {}
         for split_name, dataset in (("val", val_ds), ("test", test_ds)):
             emb, y, _ = extract_supcon_embeddings(
@@ -220,13 +232,13 @@ def run(config: Config) -> dict[str, Any]:
                 device,
                 normalize=effective_normalize_embeddings,
             )
-            logits = prototype_logits(
+            pred = prototype_predictions(
                 emb,
                 prototypes,
+                prototype_class_labels,
                 config.cosine_temperature,
                 effective_distance_metric,
             )
-            pred = logits.argmax(dim=1).numpy()
             metrics = classification_metrics(
                 y.numpy(), pred, int(cfg.num_of_activities)
             )
@@ -243,9 +255,8 @@ def run(config: Config) -> dict[str, Any]:
         torch.save(
             {
                 "prototypes": prototypes,
-                "class_labels": torch.arange(
-                    int(cfg.num_of_activities), dtype=torch.long
-                ),
+                "class_labels": prototype_class_labels,
+                "missing_train_classes": missing_train_classes,
                 "config": asdict(config),
                 "backbone_source": config.backbone_source,
                 "backbone_checkpoint": str(ckpt_path),
@@ -278,6 +289,8 @@ def run(config: Config) -> dict[str, Any]:
             "effective_normalize_embeddings": effective_normalize_embeddings,
             "embedding_space": config.embedding_space,
             "effective_embedding_space": effective_embedding_space,
+            "prototype_class_labels": prototype_class_labels.tolist(),
+            "missing_train_classes": missing_train_classes,
             "val_confusion_matrix_path": split_metrics["val"]["confusion_matrix_path"],
             "test_confusion_matrix_path": split_metrics["test"][
                 "confusion_matrix_path"

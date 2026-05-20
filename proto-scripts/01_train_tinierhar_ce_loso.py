@@ -24,6 +24,7 @@ from common import (
     config_fingerprint,
     infer_window_size,
     prepare_cfg,
+    reconcile_activity_config,
     resolve_output_root,
     set_seed,
     split_indices_for_fold,
@@ -98,6 +99,7 @@ def run(config: Config) -> dict[str, Any]:
     )
     pre = PreProcessingPipeline(cfg)
     _raw_df, session_df, window_df = pre.run()
+    reconcile_activity_config(cfg, session_df)
 
     shared_cfg = SharedConfig(
         dataset_id=config.dataset_id,
@@ -127,6 +129,8 @@ def run(config: Config) -> dict[str, Any]:
                 "config": asdict(config),
                 "shared_cfg": asdict(shared_cfg),
                 "fold": asdict(fold),
+                "num_classes": int(cfg.num_of_activities),
+                "class_names": class_names(cfg),
             }
         )
         metrics_path = split_dir / "metrics.json"
