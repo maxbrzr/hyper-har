@@ -79,9 +79,14 @@ class Config:
     em_iterations: int = 10  # 3
     em_temperature: float = 1.0  # 2.0  # 0.5  #
     em_likelihood_variance: float | None = None  # 0.05  #
+    em_likelihood_variance_source: str = (
+        "fixed"  # "fixed"  # "fixed" or "responsibility"
+    )
+    em_responsibility_variance_source: str = "fixed"  # "fixed"  # "fixed" or "support"
+    em_support_variance_floor: float = 1e-4
     em_min_soft_count: float = 1e-6
     em_uniform_class_prior: bool = True
-    center_train_support_query: bool = True  # False  # True  # True  # False
+    center_train_support_query: bool = True  # True  # False  # True  # True  # False
     skip_missing_folds: bool = False
     device: str = (
         "mps"
@@ -368,6 +373,22 @@ def _em_likelihood_variance(config: Config) -> float:
     return variance
 
 
+def _validate_em_likelihood_variance_source(value: str) -> str:
+    if value not in {"fixed", "responsibility"}:
+        raise ValueError(
+            "em_likelihood_variance_source must be 'fixed' or 'responsibility'."
+        )
+    return value
+
+
+def _validate_em_responsibility_variance_source(value: str) -> str:
+    if value not in {"fixed", "support"}:
+        raise ValueError(
+            "em_responsibility_variance_source must be 'fixed' or 'support'."
+        )
+    return value
+
+
 def _map_em_update_prototypes(
     prior_means: torch.Tensor,
     prior_variances: torch.Tensor,
@@ -377,6 +398,9 @@ def _map_em_update_prototypes(
     em_iterations: int,
     em_temperature: float,
     em_likelihood_variance: float,
+    em_likelihood_variance_source: str,
+    em_responsibility_variance_source: str,
+    em_support_variance_floor: float,
     em_min_soft_count: float,
     uniform_class_prior: bool,
 ) -> tuple[torch.Tensor, dict[str, float]]:
@@ -388,6 +412,14 @@ def _map_em_update_prototypes(
         raise ValueError("em_temperature must be > 0.")
     if float(em_likelihood_variance) <= 0:
         raise ValueError("em_likelihood_variance must be > 0.")
+    em_likelihood_variance_source = _validate_em_likelihood_variance_source(
+        em_likelihood_variance_source
+    )
+    em_responsibility_variance_source = _validate_em_responsibility_variance_source(
+        em_responsibility_variance_source
+    )
+    if float(em_support_variance_floor) <= 0:
+        raise ValueError("em_support_variance_floor must be > 0.")
     if float(em_min_soft_count) <= 0:
         raise ValueError("em_min_soft_count must be > 0.")
 
@@ -405,13 +437,26 @@ def _map_em_update_prototypes(
     soft_counts = torch.zeros(len(activity_ids), dtype=support_emb.dtype)
     prior_weight_mean = 1.0
     support_weight_mean = 0.0
+    support_var = (
+        prior_var.clamp_min(float(em_support_variance_floor))
+        if em_responsibility_variance_source == "support"
+        else torch.full_like(prior_var, float(em_likelihood_variance))
+    )
     for _iteration in range(int(em_iterations)):
-        logits = prototype_logits(
-            support_emb,
-            prototypes,
-            float(em_temperature),
-            "euclidean",
-        )
+        if em_responsibility_variance_source == "support":
+            responsibility_var = support_var.clamp_min(float(em_support_variance_floor))
+            centered_for_logits = support_emb.unsqueeze(1) - prototypes.unsqueeze(0)
+            logits = -0.5 * (
+                centered_for_logits.pow(2) / responsibility_var.unsqueeze(0)
+                + responsibility_var.unsqueeze(0).log()
+            ).sum(dim=2)
+        else:
+            logits = prototype_logits(
+                support_emb,
+                prototypes,
+                float(em_temperature),
+                "euclidean",
+            )
         if class_log_prior is not None:
             logits = logits + class_log_prior.view(1, -1)
         responsibilities = torch.softmax(logits, dim=1)
@@ -419,8 +464,23 @@ def _map_em_update_prototypes(
         safe_counts = soft_counts.clamp_min(float(em_min_soft_count))
         soft_means = responsibilities.T @ support_emb
         soft_means = soft_means / safe_counts.view(-1, 1)
+        if (
+            em_likelihood_variance_source == "responsibility"
+            or em_responsibility_variance_source == "support"
+        ):
+            centered = support_emb.unsqueeze(1) - soft_means.unsqueeze(0)
+            support_var = (responsibilities.unsqueeze(-1) * centered.pow(2)).sum(dim=0)
+            support_var = support_var / safe_counts.view(-1, 1)
+            support_var = support_var.clamp_min(float(em_support_variance_floor))
+        else:
+            support_var = torch.full_like(prior_var, float(em_likelihood_variance))
         prior_precision = 1.0 / prior_var
-        support_precision = safe_counts.view(-1, 1) / float(em_likelihood_variance)
+        update_var = (
+            support_var
+            if em_likelihood_variance_source == "responsibility"
+            else torch.full_like(prior_var, float(em_likelihood_variance))
+        )
+        support_precision = safe_counts.view(-1, 1) / update_var
         precision_sum = prior_precision + support_precision
         prototypes = (
             prior_precision * prior_mu + support_precision * soft_means
@@ -449,6 +509,11 @@ def _map_em_update_prototypes(
         ),
         "prototype_shift_mean": float(prototype_shift.mean().item()),
         "em_likelihood_variance": float(em_likelihood_variance),
+        "em_likelihood_variance_source": em_likelihood_variance_source,
+        "em_responsibility_variance_source": em_responsibility_variance_source,
+        "em_support_variance_mean": float(support_var.mean().item()),
+        "em_support_variance_min": float(support_var.min().item()),
+        "em_support_variance_max": float(support_var.max().item()),
     }
     return prototypes, diagnostics
 
@@ -465,6 +530,9 @@ def _map_em_episode_predict(
     em_iterations: int,
     em_temperature: float,
     em_likelihood_variance: float,
+    em_likelihood_variance_source: str,
+    em_responsibility_variance_source: str,
+    em_support_variance_floor: float,
     em_min_soft_count: float,
     uniform_class_prior: bool,
     train_center: torch.Tensor | None,
@@ -494,6 +562,9 @@ def _map_em_episode_predict(
         em_iterations,
         em_temperature,
         em_likelihood_variance,
+        em_likelihood_variance_source,
+        em_responsibility_variance_source,
+        em_support_variance_floor,
         em_min_soft_count,
         uniform_class_prior,
     )
@@ -557,6 +628,14 @@ def run(config: Config) -> dict[str, Any]:
     if effective_project_posterior_to_sphere:
         raise ValueError("MAP-EM CE Euclidean mode must not project to the sphere.")
     em_likelihood_variance = _em_likelihood_variance(config)
+    em_likelihood_variance_source = _validate_em_likelihood_variance_source(
+        config.em_likelihood_variance_source
+    )
+    em_responsibility_variance_source = _validate_em_responsibility_variance_source(
+        config.em_responsibility_variance_source
+    )
+    if float(config.em_support_variance_floor) <= 0:
+        raise ValueError("em_support_variance_floor must be > 0.")
     eval_stage_parts = [config.eval_stage_name]
     if config.separate_backbone_source_dir:
         eval_stage_parts.append(f"{config.backbone_source}_backbone")
@@ -568,6 +647,13 @@ def run(config: Config) -> dict[str, Any]:
         )
     if config.center_train_support_query:
         eval_stage_parts.append("centered")
+    if em_likelihood_variance_source == "responsibility":
+        eval_stage_parts.append("respvar")
+        eval_stage_parts.append(
+            f"varfloor_{_artifact_safe_name(f'{float(config.em_support_variance_floor):g}')}"
+        )
+    if em_responsibility_variance_source == "support":
+        eval_stage_parts.append("diaglike")
     eval_stage_name = "_".join(eval_stage_parts)
     eval_dir = output_root / eval_stage_name
     eval_dir.mkdir(parents=True, exist_ok=True)
@@ -842,6 +928,7 @@ def run(config: Config) -> dict[str, Any]:
             trial_posterior_norms: list[float] = []
             trial_prior_weights: list[float] = []
             trial_support_weights: list[float] = []
+            trial_support_variances: list[float] = []
             confusion_accumulator.setdefault(
                 k,
                 np.zeros(
@@ -891,6 +978,15 @@ def run(config: Config) -> dict[str, Any]:
                         "responsibility_confidence_mean": 0.0,
                         "prototype_shift_mean": 0.0,
                         "em_likelihood_variance": float(em_likelihood_variance),
+                        "em_likelihood_variance_source": (
+                            em_likelihood_variance_source
+                        ),
+                        "em_responsibility_variance_source": (
+                            em_responsibility_variance_source
+                        ),
+                        "em_support_variance_mean": float(em_likelihood_variance),
+                        "em_support_variance_min": float(em_likelihood_variance),
+                        "em_support_variance_max": float(em_likelihood_variance),
                         "center_shift_norm": 0.0,
                     }
                     logits = prototype_logits(
@@ -927,6 +1023,9 @@ def run(config: Config) -> dict[str, Any]:
                         config.em_iterations,
                         config.em_temperature,
                         em_likelihood_variance,
+                        em_likelihood_variance_source,
+                        em_responsibility_variance_source,
+                        config.em_support_variance_floor,
                         config.em_min_soft_count,
                         config.em_uniform_class_prior,
                         train_center,
@@ -951,6 +1050,9 @@ def run(config: Config) -> dict[str, Any]:
                         config.em_iterations,
                         config.em_temperature,
                         em_likelihood_variance,
+                        em_likelihood_variance_source,
+                        em_responsibility_variance_source,
+                        config.em_support_variance_floor,
                         config.em_min_soft_count,
                         config.em_uniform_class_prior,
                         train_center,
@@ -984,6 +1086,9 @@ def run(config: Config) -> dict[str, Any]:
                 trial_prior_weights.append(float(em_diagnostics["prior_weight_mean"]))
                 trial_support_weights.append(
                     float(em_diagnostics["support_weight_mean"])
+                )
+                trial_support_variances.append(
+                    float(em_diagnostics["em_support_variance_mean"])
                 )
                 confusion_accumulator[k] += confusion_matrix(
                     query_y, pred, labels=labels_all
@@ -1031,6 +1136,22 @@ def run(config: Config) -> dict[str, Any]:
                     "em_iterations": int(config.em_iterations),
                     "em_temperature": float(config.em_temperature),
                     "em_likelihood_variance": float(em_likelihood_variance),
+                    "em_likelihood_variance_source": em_likelihood_variance_source,
+                    "em_responsibility_variance_source": (
+                        em_responsibility_variance_source
+                    ),
+                    "em_support_variance_floor": float(
+                        config.em_support_variance_floor
+                    ),
+                    "em_support_variance_mean": float(
+                        em_diagnostics["em_support_variance_mean"]
+                    ),
+                    "em_support_variance_min": float(
+                        em_diagnostics["em_support_variance_min"]
+                    ),
+                    "em_support_variance_max": float(
+                        em_diagnostics["em_support_variance_max"]
+                    ),
                     "em_min_soft_count": float(config.em_min_soft_count),
                     "em_uniform_class_prior": bool(config.em_uniform_class_prior),
                     "center_train_support_query": bool(
@@ -1074,6 +1195,9 @@ def run(config: Config) -> dict[str, Any]:
             support_weight_mean, support_weight_std, _ = mean_std_ci(
                 trial_support_weights
             )
+            support_variance_mean, support_variance_std, _ = mean_std_ci(
+                trial_support_variances
+            )
             fold_summary_by_k.append(
                 {
                     "test_subject_id": int(fold.test_subject_ids[0]),
@@ -1085,6 +1209,13 @@ def run(config: Config) -> dict[str, Any]:
                     "active_embedding_transform": active_embedding_transform,
                     "normalize_embeddings": config.normalize_embeddings,
                     "effective_normalize_embeddings": effective_normalize_embeddings,
+                    "em_likelihood_variance_source": em_likelihood_variance_source,
+                    "em_responsibility_variance_source": (
+                        em_responsibility_variance_source
+                    ),
+                    "em_support_variance_floor": float(
+                        config.em_support_variance_floor
+                    ),
                     "center_train_support_query": bool(
                         config.center_train_support_query
                     ),
@@ -1106,6 +1237,8 @@ def run(config: Config) -> dict[str, Any]:
                     "prior_weight_std": prior_weight_std,
                     "support_weight_mean": support_weight_mean,
                     "support_weight_std": support_weight_std,
+                    "em_support_variance_mean": support_variance_mean,
+                    "em_support_variance_std": support_variance_std,
                 }
             )
             subject_k_rows.append(
@@ -1120,6 +1253,13 @@ def run(config: Config) -> dict[str, Any]:
                     "active_embedding_transform": active_embedding_transform,
                     "normalize_embeddings": config.normalize_embeddings,
                     "effective_normalize_embeddings": effective_normalize_embeddings,
+                    "em_likelihood_variance_source": em_likelihood_variance_source,
+                    "em_responsibility_variance_source": (
+                        em_responsibility_variance_source
+                    ),
+                    "em_support_variance_floor": float(
+                        config.em_support_variance_floor
+                    ),
                     "center_train_support_query": bool(
                         config.center_train_support_query
                     ),
@@ -1141,6 +1281,8 @@ def run(config: Config) -> dict[str, Any]:
                     "prior_weight_std": prior_weight_std,
                     "support_weight_mean": support_weight_mean,
                     "support_weight_std": support_weight_std,
+                    "em_support_variance_mean": support_variance_mean,
+                    "em_support_variance_std": support_variance_std,
                 }
             )
             print(
@@ -1183,6 +1325,13 @@ def run(config: Config) -> dict[str, Any]:
                     "em_iterations": int(config.em_iterations),
                     "em_temperature": float(config.em_temperature),
                     "em_likelihood_variance": float(em_likelihood_variance),
+                    "em_likelihood_variance_source": em_likelihood_variance_source,
+                    "em_responsibility_variance_source": (
+                        em_responsibility_variance_source
+                    ),
+                    "em_support_variance_floor": float(
+                        config.em_support_variance_floor
+                    ),
                     "em_min_soft_count": float(config.em_min_soft_count),
                     "em_uniform_class_prior": bool(config.em_uniform_class_prior),
                     "center_train_support_query": bool(
@@ -1286,6 +1435,9 @@ def run(config: Config) -> dict[str, Any]:
         "em_iterations": int(config.em_iterations),
         "em_temperature": float(config.em_temperature),
         "em_likelihood_variance": float(em_likelihood_variance),
+        "em_likelihood_variance_source": em_likelihood_variance_source,
+        "em_responsibility_variance_source": em_responsibility_variance_source,
+        "em_support_variance_floor": float(config.em_support_variance_floor),
         "em_min_soft_count": float(config.em_min_soft_count),
         "em_uniform_class_prior": bool(config.em_uniform_class_prior),
         "center_train_support_query": bool(config.center_train_support_query),

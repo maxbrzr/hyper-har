@@ -29,11 +29,10 @@ class Config:
 
     # Explicit order requested by user.
     method_order: tuple[str, ...] = (
-        "Baseline CE",
-        "ProtoNet Fixed",
-        "MAP-EM centered (k=16)",
-        "Bayesian (k=16)",
-        "Support Proto (k=16)",
+        "Original Classifier",
+        "Prior Proto",
+        "MAP-EM Proto (16-Shot)",
+        "Bayesian Proto (16-Shot)",
     )
     require_all_methods_per_dataset: bool = False
 
@@ -42,7 +41,6 @@ class Config:
     fixed_prefix: str = "04_supcon_fixed_prototypes_loso"
     map_em_prefix: str = "09_unlabeled_map_em_support_prototypes_loso"
     bayesian_prefix: str = "07_bayesian_support_prototypes_loso"
-    support_prefix: str = "05_supcon_support_prototypes_loso"
 
     # Prefer centered EM runs when both exist.
     map_em_prefer_contains: tuple[str, ...] = ("_centered",)
@@ -50,12 +48,12 @@ class Config:
 
     # Visual settings.
     title: str = "LOSO Macro-F1 by Dataset"
-    y_label: str = "Mean Macro-F1 over Subjects"
-    x_label: str = "Dataset"
+    y_label: str = "Mean LOSO Macro-F1"
+    x_label: str = ""
     figure_width: float = 12
-    figure_height: float = 3
+    figure_height: float = 2.7
     dpi: int = 220
-    ylim_low: float = 0.5
+    ylim_low: float = 0.45
     ylim_high: float = 1.0
     bar_label_fmt: str = "{:.3f}"
     bar_label_color: str = "white"
@@ -65,7 +63,6 @@ class Config:
     color_fixed_proto: str = "#d62728"
     color_map_em: str = "#1f77b4"
     color_bayesian: str = "#2ca02c"
-    color_support: str = "#ff7f0e"
     axis_label_fontsize: int = 12
 
 
@@ -186,25 +183,19 @@ def _collect(config: Config) -> tuple[pd.DataFrame, list[str]]:
             continue
 
         method_results: dict[str, tuple[float, float, str] | None] = {
-            "Baseline CE": _baseline_result(dataset_dir, config),
-            "ProtoNet Fixed": _fixed_result(dataset_dir, config),
-            "MAP-EM centered (k=16)": _k_result(
+            "Original Classifier": _baseline_result(dataset_dir, config),
+            "Prior Proto": _fixed_result(dataset_dir, config),
+            "MAP-EM Proto (16-Shot)": _k_result(
                 dataset_dir,
                 config.map_em_prefix,
                 method_key="map_em",
                 k_value=config.k_value_for_proto_methods,
                 prefer_contains=config.map_em_prefer_contains,
             ),
-            "Bayesian (k=16)": _k_result(
+            "Bayesian Proto (16-Shot)": _k_result(
                 dataset_dir,
                 config.bayesian_prefix,
                 method_key="bayesian",
-                k_value=config.k_value_for_proto_methods,
-            ),
-            "Support Proto (k=16)": _k_result(
-                dataset_dir,
-                config.support_prefix,
-                method_key="support",
                 k_value=config.k_value_for_proto_methods,
             ),
         }
@@ -243,11 +234,11 @@ def _collect(config: Config) -> tuple[pd.DataFrame, list[str]]:
         dropped = sorted(set(df["dataset"].astype(str).tolist()) - keep)
         for dataset_id in dropped:
             warnings.append(
-                f"[{dataset_id}] dropped from plot (missing one or more of 5 methods)"
+                f"[{dataset_id}] dropped from plot (missing one or more methods)"
             )
         df = df[df["dataset"].astype(str).isin(keep)].copy()
         if df.empty:
-            raise RuntimeError("No datasets with complete 5-method results were found.")
+            raise RuntimeError("No datasets with complete method results were found.")
     return df, warnings
 
 
@@ -309,11 +300,10 @@ def _plot(df: pd.DataFrame, config: Config, output_root: Path) -> dict[str, str]
     bar_width = total_width / n_methods
     offsets = (np.arange(n_methods, dtype=float) - (n_methods - 1) / 2.0) * bar_width
     method_colors = {
-        "Baseline CE": config.color_baseline_ce,
-        "ProtoNet Fixed": config.color_fixed_proto,
-        "MAP-EM centered (k=16)": config.color_map_em,
-        "Bayesian (k=16)": config.color_bayesian,
-        "Support Proto (k=16)": config.color_support,
+        "Original Classifier": config.color_baseline_ce,
+        "Prior Proto": config.color_fixed_proto,
+        "MAP-EM Proto (16-Shot)": config.color_map_em,
+        "Bayesian Proto (16-Shot)": config.color_bayesian,
     }
 
     for j, method in enumerate(config.method_order):
@@ -349,25 +339,36 @@ def _plot(df: pd.DataFrame, config: Config, output_root: Path) -> dict[str, str]
                     capsize=3,
                     capthick=1.3,
                     zorder=10,
+                    clip_on=False,
                 )
             _add_bar_label(ax, centers[i], float(mean_val), config)
             if method in {
-                "MAP-EM centered (k=16)",
-                "Bayesian (k=16)",
-                "Support Proto (k=16)",
+                "MAP-EM Proto (16-Shot)",
+                "Bayesian Proto (16-Shot)",
             }:
-                baseline_fixed = pivot_mean.loc[dataset_order[i], "ProtoNet Fixed"]
+                baseline_fixed = pivot_mean.loc[dataset_order[i], "Prior Proto"]
                 if np.isfinite(baseline_fixed):
                     delta = float(mean_val - float(baseline_fixed))
                     _add_delta_label(ax, centers[i], float(config.ylim_low), delta)
 
     ax.set_xticks(x)
-    ax.set_xticklabels(dataset_order)
+    ax.set_xticklabels([dataset.upper() for dataset in dataset_order])
+    for tick_label in ax.get_xticklabels():
+        tick_label.set_fontweight("bold")
     ax.xaxis.grid(False)
     ax.yaxis.grid(True)
     ax.set_xlabel(config.x_label, fontsize=config.axis_label_fontsize)
-    ax.set_ylabel(config.y_label, fontsize=config.axis_label_fontsize)
-    ax.set_ylim(config.ylim_low, config.ylim_high)
+    ax.set_ylabel(
+        config.y_label,
+        fontsize=config.axis_label_fontsize,
+        fontweight="bold",
+    )
+    finite_error_tops = (pivot_mean + pivot_std).to_numpy(dtype=float)
+    finite_error_tops = finite_error_tops[np.isfinite(finite_error_tops)]
+    ylim_high = float(config.ylim_high)
+    if finite_error_tops.size:
+        ylim_high = max(ylim_high, float(np.max(finite_error_tops)) + 0.02)
+    ax.set_ylim(config.ylim_low, ylim_high)
     ax.yaxis.set_major_formatter(FormatStrFormatter("%.3f"))
     handles, labels = ax.get_legend_handles_labels()
     if handles:
@@ -376,10 +377,11 @@ def _plot(df: pd.DataFrame, config: Config, output_root: Path) -> dict[str, str]
             labels,
             loc="upper center",
             bbox_to_anchor=(0.5, 1.01),
-            ncol=5,
+            ncol=len(labels),
             frameon=False,
             columnspacing=1.6,
             handletextpad=0.6,
+            prop={"weight": "bold"},
         )
     plt.tight_layout(rect=[0.0, 0.0, 1.0, 0.94])
 

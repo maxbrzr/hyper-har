@@ -37,7 +37,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-DEFAULT_DATASET_ID = WHARDatasetID.HAPT.value
+DEFAULT_DATASET_ID = WHARDatasetID.HARTH.value
 DEFAULT_DATASETS_DIR = "datasets"
 DEFAULT_SELECTED_ACTIVITIES: list[str] | None = None
 DEFAULT_WINDOW_OVERLAP = 0.0

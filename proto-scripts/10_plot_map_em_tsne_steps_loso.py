@@ -29,6 +29,7 @@ from common import (
     prepare_cfg,
     prototype_logits,
     reconcile_activity_config,
+    resolve_distance_metric,
     resolve_output_root,
     set_seed,
     split_indices_for_fold,
@@ -64,14 +65,20 @@ class Config:
     batch_size: int = 256
     num_workers: int = 0
     normalize_embeddings: bool | None = None
+    backbone_source: str = "ce"
+    distance_metric: str = "auto"  # "auto", "cosine", or "euclidean"
     embedding_transform: str = "none"  # "none" or "signed_power"
     power_transform_exponent: float = 0.5
     power_transform_backbone_sources: tuple[str, ...] = ("ce",)
-    prior_variance_floor: float = 1e-3  # 1e-4
+    prior_variance_floor: float = 1e-4  # 1e-4
     normalize_prior_mean_for_update: bool | None = None
-    em_iterations: int = 10
+    project_posterior_to_sphere: bool | None = None
+    em_iterations: int = 1  # 10
     em_temperature: float = 0.5  # 1.0
     em_likelihood_variance: float | None = 0.05  # None
+    em_likelihood_variance_source: str = "fixed"  # "fixed" or "responsibility"
+    em_responsibility_variance_source: str = "fixed"  # "fixed" or "support"
+    em_support_variance_floor: float = 1e-4
     em_min_soft_count: float = 1e-6
     em_uniform_class_prior: bool = True
     center_train_support_query: bool = True
@@ -82,22 +89,34 @@ class Config:
     tsne_random_state: int = 0
     support_alpha: float = 0.28
     support_size: float = 18.0
+    support_color: str = "#ef4444"
     prototype_size: float = 150.0
     final_prototype_size: float = 120.0
     initial_prototype_size: float = 105.0
     trajectory_marker_size: float = 38.0
-    trajectory_alpha: float = 0.75
-    arrow_alpha: float = 0.55
+    trajectory_alpha: float = 1
+    arrow_alpha: float = 1.0
     arrow_linewidth: float = 1.2
     seaborn_style: str = "whitegrid"
     frame_facecolor: str = "#ffffff"
     frame_edgecolor: str = "#cbd5e1"
     frame_linewidth: float = 1.2
-    figure_height: float = 5
-    panel_width: float = 3
+    remove_tsne_frame: bool = False
+    figure_width: float = 4.0
+    figure_height: float = 3.5
+    panel_width: float = 4
     dpi: int = 220
     show_support_true_colors: bool = False
     show_initial_prototypes_each_frame: bool = True
+    show_kde_modes: bool = True
+    kde_by_class: bool = False
+    kde_levels: int = 22
+    kde_thresh: float = 0.005
+    kde_cut: float = 3.0
+    kde_bw_adjust: float = 0.45
+    kde_alpha: float = 0.55
+    kde_cubehelix_start: float = 0.6
+    kde_cubehelix_rot: float = -0.7
 
     device: str = (
         "mps"
@@ -110,7 +129,8 @@ class Config:
     output_root: str | None = None
     ce_stage_name: str = "01_tinierhar_ce_loso"
     stage_name: str = "10_map_em_tsne_steps_loso"
-    force_rerun: bool = False
+    separate_backbone_source_dir: bool = True
+    force_rerun: bool = True
 
 
 RUN_CONFIG = Config()
@@ -165,6 +185,7 @@ def _extract_preprocessed_embeddings(
     dataloader: DataLoader,
     device: torch.device,
     config: Config,
+    backbone_source: str,
     normalize_embeddings: bool,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, str]:
     embeddings, labels, subjects = extract_supcon_embeddings(
@@ -174,7 +195,9 @@ def _extract_preprocessed_embeddings(
         device,
         normalize=False,
     )
-    embeddings, transform_name = _apply_embedding_transform(embeddings, config, "ce")
+    embeddings, transform_name = _apply_embedding_transform(
+        embeddings, config, backbone_source
+    )
     if normalize_embeddings:
         embeddings = F.normalize(embeddings, p=2, dim=1)
     return embeddings, labels, subjects, transform_name
@@ -364,6 +387,22 @@ def _em_likelihood_variance(config: Config) -> float:
     return variance
 
 
+def _validate_em_likelihood_variance_source(value: str) -> str:
+    if value not in {"fixed", "responsibility"}:
+        raise ValueError(
+            "em_likelihood_variance_source must be 'fixed' or 'responsibility'."
+        )
+    return value
+
+
+def _validate_em_responsibility_variance_source(value: str) -> str:
+    if value not in {"fixed", "support"}:
+        raise ValueError(
+            "em_responsibility_variance_source must be 'fixed' or 'support'."
+        )
+    return value
+
+
 def _record_map_em_prototypes(
     prior_means: torch.Tensor,
     prior_variances: torch.Tensor,
@@ -371,6 +410,8 @@ def _record_map_em_prototypes(
     activity_ids: Sequence[int],
     config: Config,
     em_likelihood_variance: float,
+    em_likelihood_variance_source: str,
+    em_responsibility_variance_source: str,
 ) -> tuple[list[torch.Tensor], list[dict[str, float]]]:
     if int(config.em_iterations) < 1:
         raise ValueError("em_iterations must be >= 1.")
@@ -378,6 +419,14 @@ def _record_map_em_prototypes(
         raise ValueError("em_temperature must be > 0.")
     if float(config.em_min_soft_count) <= 0:
         raise ValueError("em_min_soft_count must be > 0.")
+    em_likelihood_variance_source = _validate_em_likelihood_variance_source(
+        em_likelihood_variance_source
+    )
+    em_responsibility_variance_source = _validate_em_responsibility_variance_source(
+        em_responsibility_variance_source
+    )
+    if float(config.em_support_variance_floor) <= 0:
+        raise ValueError("em_support_variance_floor must be > 0.")
 
     activity_tensor = torch.tensor([int(x) for x in activity_ids], dtype=torch.long)
     prior_mu = prior_means[activity_tensor]
@@ -401,13 +450,28 @@ def _record_map_em_prototypes(
     if not config.em_uniform_class_prior:
         class_log_prior = torch.zeros(len(activity_ids), dtype=support_emb.dtype)
 
+    support_var = (
+        prior_var.clamp_min(float(config.em_support_variance_floor))
+        if em_responsibility_variance_source == "support"
+        else torch.full_like(prior_var, float(em_likelihood_variance))
+    )
     for iteration in range(1, int(config.em_iterations) + 1):
-        logits = prototype_logits(
-            support_emb,
-            prototypes,
-            float(config.em_temperature),
-            "euclidean",
-        )
+        if em_responsibility_variance_source == "support":
+            responsibility_var = support_var.clamp_min(
+                float(config.em_support_variance_floor)
+            )
+            centered_for_logits = support_emb.unsqueeze(1) - prototypes.unsqueeze(0)
+            logits = -0.5 * (
+                centered_for_logits.pow(2) / responsibility_var.unsqueeze(0)
+                + responsibility_var.unsqueeze(0).log()
+            ).sum(dim=2)
+        else:
+            logits = prototype_logits(
+                support_emb,
+                prototypes,
+                float(config.em_temperature),
+                "euclidean",
+            )
         if class_log_prior is not None:
             logits = logits + class_log_prior.view(1, -1)
         responsibilities = torch.softmax(logits, dim=1)
@@ -415,8 +479,23 @@ def _record_map_em_prototypes(
         safe_counts = soft_counts.clamp_min(float(config.em_min_soft_count))
         soft_means = responsibilities.T @ support_emb
         soft_means = soft_means / safe_counts.view(-1, 1)
+        if (
+            em_likelihood_variance_source == "responsibility"
+            or em_responsibility_variance_source == "support"
+        ):
+            centered = support_emb.unsqueeze(1) - soft_means.unsqueeze(0)
+            support_var = (responsibilities.unsqueeze(-1) * centered.pow(2)).sum(dim=0)
+            support_var = support_var / safe_counts.view(-1, 1)
+            support_var = support_var.clamp_min(float(config.em_support_variance_floor))
+        else:
+            support_var = torch.full_like(prior_var, float(em_likelihood_variance))
         prior_precision = 1.0 / prior_var
-        support_precision = safe_counts.view(-1, 1) / float(em_likelihood_variance)
+        update_var = (
+            support_var
+            if em_likelihood_variance_source == "responsibility"
+            else torch.full_like(prior_var, float(em_likelihood_variance))
+        )
+        support_precision = safe_counts.view(-1, 1) / update_var
         precision_sum = prior_precision + support_precision
         prototypes = (
             prior_precision * prior_mu + support_precision * soft_means
@@ -435,6 +514,11 @@ def _record_map_em_prototypes(
                     responsibilities.max(dim=1).values.mean().item()
                 ),
                 "prototype_shift_mean": float(prototype_shift.mean().item()),
+                "em_likelihood_variance_source": em_likelihood_variance_source,
+                "em_responsibility_variance_source": em_responsibility_variance_source,
+                "em_support_variance_mean": float(support_var.mean().item()),
+                "em_support_variance_min": float(support_var.min().item()),
+                "em_support_variance_max": float(support_var.max().item()),
             }
         )
         states.append(prototypes.clone())
@@ -492,8 +576,9 @@ def _plot_trajectory(
         int(activity_id): palette[i % len(palette)]
         for i, activity_id in enumerate(activity_ids)
     }
-    fig_width = max(7.0, float(config.panel_width) * 1.55)
-    fig, ax = plt.subplots(1, 1, figsize=(fig_width, float(config.figure_height)))
+    fig, ax = plt.subplots(
+        1, 1, figsize=(float(config.figure_width), float(config.figure_height))
+    )
     support_xy, prototype_xy_states = _fit_shared_tsne(
         support_emb,
         prototype_states,
@@ -502,8 +587,80 @@ def _plot_trajectory(
     all_xy = np.concatenate([support_xy, *prototype_xy_states], axis=0)
     x_min, y_min = all_xy.min(axis=0)
     x_max, y_max = all_xy.max(axis=0)
-    x_pad = max((float(x_max) - float(x_min)) * 0.06, 1e-6)
-    y_pad = max((float(y_max) - float(y_min)) * 0.06, 1e-6)
+    x_pad = max((float(x_max) - float(x_min)) * 0.15, 1e-6)
+    y_pad = max((float(y_max) - float(y_min)) * 0.15, 1e-6)
+    x_lim_min = float(x_min) - x_pad
+    x_lim_max = float(x_max) + x_pad
+    y_lim_min = float(y_min) - y_pad
+    y_lim_max = float(y_max) + y_pad
+
+    if bool(config.show_kde_modes) and support_xy.shape[0] >= 4:
+        support_min_x = float(support_xy[:, 0].min())
+        support_max_x = float(support_xy[:, 0].max())
+        support_min_y = float(support_xy[:, 1].min())
+        support_max_y = float(support_xy[:, 1].max())
+        clearance = max(
+            min(
+                support_min_x - x_lim_min,
+                x_lim_max - support_max_x,
+                support_min_y - y_lim_min,
+                y_lim_max - support_max_y,
+            ),
+            0.0,
+        )
+        bw = max(float(config.kde_bw_adjust), 1e-6)
+        support_std = max(
+            float(np.std(support_xy[:, 0])), float(np.std(support_xy[:, 1])), 1e-6
+        )
+        max_safe_cut = clearance / (bw * support_std)
+        effective_kde_cut = config.kde_cut  # min(float(config.kde_cut), max_safe_cut)
+        if bool(config.kde_by_class):
+            unique_ids = [int(a) for a in activity_ids if np.any(support_y == int(a))]
+            denom = max(1, len(unique_ids))
+            for i, activity_id in enumerate(unique_ids):
+                mask = support_y == int(activity_id)
+                if int(mask.sum()) < 4:
+                    continue
+                start = float(config.kde_cubehelix_start) + (3.0 * i / denom)
+                cmap = sns.cubehelix_palette(
+                    start=start,
+                    rot=float(config.kde_cubehelix_rot),
+                    light=1.0,
+                    as_cmap=True,
+                )
+                sns.kdeplot(
+                    x=support_xy[mask, 0],
+                    y=support_xy[mask, 1],
+                    cmap=cmap,
+                    fill=True,
+                    levels=int(config.kde_levels),
+                    thresh=float(config.kde_thresh),
+                    cut=effective_kde_cut,
+                    bw_adjust=float(config.kde_bw_adjust),
+                    alpha=float(config.kde_alpha),
+                    ax=ax,
+                    zorder=0,
+                )
+        else:
+            cmap = sns.cubehelix_palette(
+                start=float(config.kde_cubehelix_start),
+                rot=float(config.kde_cubehelix_rot),
+                light=1.0,
+                as_cmap=True,
+            )
+            sns.kdeplot(
+                x=support_xy[:, 0],
+                y=support_xy[:, 1],
+                cmap=cmap,
+                fill=True,
+                levels=int(config.kde_levels),
+                thresh=float(config.kde_thresh),
+                cut=effective_kde_cut,
+                bw_adjust=float(config.kde_bw_adjust),
+                alpha=float(config.kde_alpha),
+                ax=ax,
+                zorder=0,
+            )
 
     if config.show_support_true_colors:
         for activity_id in activity_ids:
@@ -512,7 +669,7 @@ def _plot_trajectory(
                 support_xy[mask, 0],
                 support_xy[mask, 1],
                 s=float(config.support_size),
-                color=proto_colors[int(activity_id)],
+                color=config.support_color,
                 alpha=float(config.support_alpha),
                 linewidths=0,
             )
@@ -521,10 +678,10 @@ def _plot_trajectory(
             support_xy[:, 0],
             support_xy[:, 1],
             s=float(config.support_size),
-            color="#9ca3af",
+            color=config.support_color,
             alpha=float(config.support_alpha),
             linewidths=0,
-            label="unlabeled support",
+            label="Unlabeled Support",
             zorder=1,
         )
 
@@ -544,21 +701,23 @@ def _plot_trajectory(
             end = path[step_idx + 1]
             if np.allclose(start, end):
                 continue
-            ax.annotate(
+            arrow_ann = ax.annotate(
                 "",
                 xy=(end[0], end[1]),
                 xytext=(start[0], start[1]),
                 arrowprops={
                     "arrowstyle": "->",
-                    "color": color,
+                    "color": "#111827",
                     "alpha": float(config.arrow_alpha),
                     "lw": float(config.arrow_linewidth),
                     "shrinkA": 0,
                     "shrinkB": 0,
                     "mutation_scale": 12,
                 },
-                zorder=5,
+                zorder=10,
             )
+            if arrow_ann.arrow_patch is not None:
+                arrow_ann.arrow_patch.set_zorder(10)
         if path.shape[0] > 2:
             ax.scatter(
                 path[1:-1, 0],
@@ -588,26 +747,30 @@ def _plot_trajectory(
             s=float(config.final_prototype_size),
             marker="o",
             color=color,
-            edgecolor="black",
-            linewidth=1.4,
+            edgecolor="white",
+            linewidth=0.8,
             zorder=6,
         )
 
-    ax.set_title(
-        f"MAP-EM Prototype Trajectories (k={config.k}, {config.em_iterations} iters)",
-        fontsize=13,
+    fig.suptitle(
+        f"MAP-EM Prototype Trajectories\n(HARTH, {int(config.k)}-Shot, {int(config.em_iterations)} Iter)",
+        fontsize=11,
         fontweight="bold",
+        y=0.975,
     )
     ax.set_xticks([])
     ax.set_yticks([])
-    ax.set_xlim(float(x_min) - x_pad, float(x_max) + x_pad)
-    ax.set_ylim(float(y_min) - y_pad, float(y_max) + y_pad)
+    ax.set_xlim(x_lim_min, x_lim_max)
+    ax.set_ylim(y_lim_min, y_lim_max)
     ax.set_facecolor(config.frame_facecolor)
     ax.grid(True, color="#e5e7eb", linewidth=0.7, alpha=0.7)
     for spine in ax.spines.values():
-        spine.set_visible(True)
-        spine.set_color(config.frame_edgecolor)
-        spine.set_linewidth(float(config.frame_linewidth))
+        if bool(config.remove_tsne_frame):
+            spine.set_visible(False)
+        else:
+            spine.set_visible(True)
+            spine.set_color(config.frame_edgecolor)
+            spine.set_linewidth(float(config.frame_linewidth))
 
     class_handles = [
         plt.Line2D(
@@ -619,7 +782,7 @@ def _plot_trajectory(
             markeredgecolor="white",
             linewidth=2.0,
             markersize=7,
-            label=f"{activity_id}: {names[int(activity_id)]}",
+            label=names[int(activity_id)],
         )
         for activity_id in activity_ids
     ]
@@ -629,11 +792,11 @@ def _plot_trajectory(
             [0],
             marker="o",
             color="w",
-            markerfacecolor="#9ca3af",
+            markerfacecolor=config.support_color,
             markeredgecolor="none",
             alpha=float(config.support_alpha),
             markersize=7,
-            label="unlabeled support",
+            label="Unlabeled Support",
         ),
         plt.Line2D(
             [0],
@@ -643,26 +806,7 @@ def _plot_trajectory(
             markerfacecolor="none",
             markeredgecolor="#111827",
             markersize=9,
-            label="initial prototype",
-        ),
-        plt.Line2D(
-            [0],
-            [0],
-            marker="o",
-            color="#111827",
-            markerfacecolor="#111827",
-            markeredgecolor="white",
-            markersize=6,
-            label="intermediate EM step",
-        ),
-        plt.Line2D(
-            [0],
-            [0],
-            color="#111827",
-            marker=r"$\rightarrow$",
-            markersize=12,
-            linewidth=1.4,
-            label="update direction",
+            label="Prior Proto",
         ),
         plt.Line2D(
             [0],
@@ -673,37 +817,70 @@ def _plot_trajectory(
             markeredgecolor="black",
             markeredgewidth=1.3,
             markersize=8,
-            label="final prototype",
+            label="Updated Proto",
         ),
     ]
-    fig.legend(
+    content_left = 0.03
+    content_right = 0.97
+    content_width = content_right - content_left
+
+    upper_legend = fig.legend(
         handles=semantic_handles,
-        loc="lower center",
-        bbox_to_anchor=(0.5, 0.09),
+        loc="upper left",
+        bbox_to_anchor=(content_left, 0.875, content_width, 0.0),
+        mode="expand",
         ncol=min(len(semantic_handles), 5),
         frameon=True,
         fancybox=True,
         framealpha=0.92,
-        fontsize=8.5,
-        borderpad=0.6,
-        labelspacing=0.5,
-        columnspacing=1.2,
-        handletextpad=0.6,
+        fontsize=8.0,
+        borderpad=0.60,
+        labelspacing=0.35,
+        columnspacing=0.9,
+        handletextpad=0.4,
     )
-    fig.legend(
-        handles=class_handles,
-        loc="lower center",
-        ncol=min(len(class_handles), 4),
-        frameon=False,
-        fontsize=8.5,
-        bbox_to_anchor=(0.5, -0.02),
-        columnspacing=1.4,
-        handletextpad=0.6,
-    )
-    fig.tight_layout(rect=(0.0, 0.24, 1.0, 1.0))
+    upper_legend.get_frame().set_edgecolor(config.frame_edgecolor)
+    upper_legend.get_frame().set_linewidth(float(config.frame_linewidth))
+    for text in upper_legend.get_texts():
+        text.set_fontweight("bold")
+    top_row = class_handles[:3]
+    bottom_row = class_handles[3:]
+    if top_row:
+        top_class_legend = fig.legend(
+            handles=top_row,
+            loc="lower center",
+            ncol=len(top_row),
+            frameon=False,
+            fontsize=8.5,
+            bbox_to_anchor=(0.5, 0.055),
+            columnspacing=1.0,
+            handletextpad=0.5,
+            handlelength=1.8,
+            labelspacing=0.25,
+            borderaxespad=0.0,
+        )
+        for text in top_class_legend.get_texts():
+            text.set_fontweight("bold")
+    if bottom_row:
+        bottom_class_legend = fig.legend(
+            handles=bottom_row,
+            loc="lower center",
+            ncol=len(bottom_row),
+            frameon=False,
+            fontsize=8.5,
+            bbox_to_anchor=(0.5, 0.02),
+            columnspacing=1.0,
+            handletextpad=0.5,
+            handlelength=1.8,
+            labelspacing=0.25,
+            borderaxespad=0.0,
+        )
+        for text in bottom_class_legend.get_texts():
+            text.set_fontweight("bold")
+    fig.subplots_adjust(left=content_left, right=content_right, top=0.775, bottom=0.14)
     out_png.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out_png, dpi=int(config.dpi), bbox_inches="tight")
-    fig.savefig(out_pdf, bbox_inches="tight")
+    fig.savefig(out_png, dpi=int(config.dpi))
+    fig.savefig(out_pdf)
     plt.close(fig)
 
 
@@ -717,19 +894,54 @@ def run(config: Config) -> dict[str, Any]:
     device = torch.device(config.device)
     output_root = resolve_output_root(config.output_root, config.dataset_id)
     ce_stage_dir = output_root / config.ce_stage_name
-    active_embedding_transform = _active_embedding_transform_name(config, "ce")
+    if config.backbone_source != "ce":
+        raise ValueError("MAP-EM script currently supports only backbone_source='ce'.")
+    active_embedding_transform = _active_embedding_transform_name(
+        config, config.backbone_source
+    )
+    effective_distance_metric = resolve_distance_metric(
+        config.distance_metric, config.backbone_source
+    )
+    if effective_distance_metric != "euclidean":
+        raise ValueError("MAP-EM script currently supports only Euclidean distance.")
+    spherical_geometry = False
     effective_normalize_embeddings = (
-        _resolve_optional_bool(config.normalize_embeddings, False) and False
+        _resolve_optional_bool(config.normalize_embeddings, spherical_geometry)
+        and spherical_geometry
     )
     effective_normalize_prior_mean = _resolve_optional_bool(
-        config.normalize_prior_mean_for_update, False
+        config.normalize_prior_mean_for_update, spherical_geometry
     )
+    effective_project_posterior_to_sphere = _resolve_optional_bool(
+        config.project_posterior_to_sphere, spherical_geometry
+    )
+    if effective_project_posterior_to_sphere:
+        raise ValueError("MAP-EM CE Euclidean mode must not project to the sphere.")
     em_likelihood_variance = _em_likelihood_variance(config)
+    em_likelihood_variance_source = _validate_em_likelihood_variance_source(
+        config.em_likelihood_variance_source
+    )
+    em_responsibility_variance_source = _validate_em_responsibility_variance_source(
+        config.em_responsibility_variance_source
+    )
+    if float(config.em_support_variance_floor) <= 0:
+        raise ValueError("em_support_variance_floor must be > 0.")
     stage_parts = [config.stage_name, f"k{int(config.k)}"]
+    if config.separate_backbone_source_dir:
+        stage_parts.append(f"{config.backbone_source}_backbone")
+    stage_parts.append(effective_distance_metric)
     if active_embedding_transform != "none":
         stage_parts.append(_artifact_safe_name(active_embedding_transform))
+        stage_parts.append("l2norm" if effective_normalize_embeddings else "rawstats")
     if config.center_train_support_query:
         stage_parts.append("centered")
+    if em_likelihood_variance_source == "responsibility":
+        stage_parts.append("respvar")
+        stage_parts.append(
+            f"varfloor_{_artifact_safe_name(f'{float(config.em_support_variance_floor):g}')}"
+        )
+    if em_responsibility_variance_source == "support":
+        stage_parts.append("diaglike")
     stage_dir = output_root / "_".join(stage_parts)
     stage_dir.mkdir(parents=True, exist_ok=True)
 
@@ -781,6 +993,7 @@ def run(config: Config) -> dict[str, Any]:
                 _loader(train_ds, config),
                 device,
                 config,
+                config.backbone_source,
                 effective_normalize_embeddings,
             )
         )
@@ -809,6 +1022,7 @@ def run(config: Config) -> dict[str, Any]:
                 _loader(test_ds, config),
                 device,
                 config,
+                config.backbone_source,
                 effective_normalize_embeddings,
             )
         )
@@ -908,6 +1122,8 @@ def run(config: Config) -> dict[str, Any]:
                 activity_ids=activity_ids,
                 config=config,
                 em_likelihood_variance=em_likelihood_variance,
+                em_likelihood_variance_source=em_likelihood_variance_source,
+                em_responsibility_variance_source=em_responsibility_variance_source,
             )
             out_pdf = out_png.with_suffix(".pdf")
             _plot_trajectory(
@@ -935,6 +1151,8 @@ def run(config: Config) -> dict[str, Any]:
                 "prototype_step_indices": list(range(len(prototype_states))),
                 "tsne_mode": "single_shared_support_and_all_prototype_states",
                 "em_diagnostics": diagnostics,
+                "em_likelihood_variance_source": em_likelihood_variance_source,
+                "em_responsibility_variance_source": em_responsibility_variance_source,
                 "center_train_support_query": bool(config.center_train_support_query),
                 "center_shift_norm": center_shift_norm,
                 "episode_session_meta": episode_session_meta,

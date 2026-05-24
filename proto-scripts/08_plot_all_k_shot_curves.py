@@ -39,8 +39,17 @@ class Config:
     # Leave empty to auto-discover every overall_by_k_results.csv under output_root.
     curve_specs: tuple[CurveSpec, ...] = ()
     fixed_baseline_specs: tuple[FixedBaselineSpec, ...] = ()
-    include_stage_prefixes: tuple[str, ...] = ("05_", "07_", "09_")
-    include_fixed_baseline_prefixes: tuple[str, ...] = ("04_",)
+    include_stage_prefixes: tuple[str, ...] = (
+        "05_",
+        "07_",
+        "09_",
+        "16_",
+        "17_",
+        "18_",
+        "19_",
+        "20_",
+    )
+    include_fixed_baseline_prefixes: tuple[str, ...] = ("04_", "06_", "21_")
     exclude_stage_names: tuple[str, ...] = ("08_k_shot_curve_comparison",)
     include_fixed_baselines: bool = True
 
@@ -48,12 +57,34 @@ class Config:
     aggregation: str = "subject"  # "subject" or "trial"
     error_band: str = "ci95"  # "ci95", "std", or "none"
     min_subjects: int = 1
-    title_prefix: str = "K-Shot Prototype Evaluation"
+    title_prefix: str = "K-Shot Adaptation Evaluation"
     figure_width: float = 9.5
     figure_height: float = 5.8
     dpi: int = 220
     y_axis_mode: str = "auto"  # "auto" or "zero"
     y_axis_padding: float = 0.03
+    color_palette: tuple[str, ...] = (
+        "#1f77b4",
+        "#ff7f0e",
+        "#2ca02c",
+        "#d62728",
+        "#9467bd",
+        "#8c564b",
+        "#e377c2",
+        "#17becf",
+        "#bcbd22",
+        "#393b79",
+        "#637939",
+        "#8c6d31",
+        "#843c39",
+        "#7b4173",
+        "#3182bd",
+        "#31a354",
+        "#756bb1",
+        "#636363",
+        "#e6550d",
+        "#969696",
+    )
     force_rerun: bool = True
 
 
@@ -69,7 +100,9 @@ def _humanize_stage_name(stage_name: str, summary: dict[str, Any] | None) -> str
         normalize_embeddings = summary.get(
             "effective_normalize_embeddings", summary.get("normalize_embeddings")
         )
-        effective_distance = summary.get("effective_distance_metric")
+        effective_distance = summary.get(
+            "effective_distance_metric", summary.get("distance_metric")
+        )
         folds = summary.get("folds", [])
         first_fold = folds[0] if folds else {}
     else:
@@ -81,15 +114,29 @@ def _humanize_stage_name(stage_name: str, summary: dict[str, Any] | None) -> str
         first_fold = {}
 
     name = stage_name
-    method = "Support"
-    if name.startswith("04_") or "fixed" in name:
-        method = "Fixed"
+    method = "Support Proto"
+    if name.startswith("06_") or "ce_baseline" in name:
+        method = "CE classifier"
+    elif name.startswith("21_") or "classifier_weight" in name:
+        method = "Classifier-weight proto"
+    elif name.startswith("20_") or "logistic_linear_head" in name:
+        method = "Logistic head"
+    elif name.startswith("19_") or "closed_form_linear_head" in name:
+        method = "Closed-form head"
+    elif name.startswith("18_") or "oftta" in name:
+        method = "OFTTA"
+    elif name.startswith("17_") or "neo_recenter" in name:
+        method = "NEO"
+    elif name.startswith("16_") or "pda" in name:
+        method = "PDA"
+    elif name.startswith("04_") or "fixed" in name:
+        method = "Train fixed proto"
     elif "map_em" in name or "unlabeled" in name:
         method = "MAP-EM"
     elif "bayesian" in name:
         method = "Bayesian"
     elif "support" in name:
-        method = "Support"
+        method = "Support Proto"
 
     if backbone_source is None and first_fold:
         backbone_source = first_fold.get("backbone_source")
@@ -98,13 +145,24 @@ def _humanize_stage_name(stage_name: str, summary: dict[str, Any] | None) -> str
             "embedding_space"
         )
     if effective_distance is None and first_fold:
-        effective_distance = first_fold.get("effective_distance_metric")
+        effective_distance = first_fold.get("effective_distance_metric") or first_fold.get(
+            "distance_metric"
+        )
     if backbone_source is None:
         if "_ce_backbone" in name:
             backbone_source = "ce"
         elif "_supcon_backbone" in name or "supcon" in name:
             backbone_source = "supcon"
-    if effective_distance is None and backbone_source in {"supcon", "ce"}:
+    if effective_distance is None:
+        if "_cosine" in name:
+            effective_distance = "cosine"
+        elif "_euclidean" in name:
+            effective_distance = "euclidean"
+    if (
+        effective_distance is None
+        and backbone_source in {"supcon", "ce"}
+        and method in {"Support Proto", "Train fixed proto", "Bayesian", "MAP-EM"}
+    ):
         effective_distance = "cosine" if backbone_source == "supcon" else "euclidean"
 
     label_parts = [method]
@@ -117,6 +175,30 @@ def _humanize_stage_name(stage_name: str, summary: dict[str, Any] | None) -> str
     if active_transform and active_transform != "none":
         label_parts.append(str(active_transform))
         label_parts.append("L2" if normalize_embeddings else "raw stats")
+    if "centered" in name and method == "MAP-EM":
+        label_parts.append("centered")
+    if "respvar" in name and method == "MAP-EM":
+        label_parts.append("resp-var")
+    if "diaglike" in name:
+        label_parts.append("diag-like")
+    if "mcd" in name and method == "PDA":
+        label_parts.append("MCD")
+    elif "classifier_confidence" in name and method == "PDA":
+        label_parts.append("classifier")
+    if method == "OFTTA":
+        edtn_decay = config.get("edtn_decay") if summary is not None else None
+        if edtn_decay is not None:
+            label_parts.append(f"EDTN d={float(edtn_decay):g}")
+    if method == "Closed-form head":
+        ridge = summary.get("ridge_lambda") if summary is not None else None
+        if ridge is not None:
+            label_parts.append(f"ridge={float(ridge):g}")
+    if method == "Logistic head":
+        inverse_regularization = (
+            summary.get("inverse_regularization") if summary is not None else None
+        )
+        if inverse_regularization is not None:
+            label_parts.append(f"C={float(inverse_regularization):g}")
     return " - ".join(label_parts)
 
 
@@ -213,11 +295,14 @@ def _plot_metric(
 ) -> None:
     mean_col, err_col = _metric_columns(metric, config.aggregation, config.error_band)
     fig, ax = plt.subplots(figsize=(config.figure_width, config.figure_height))
+    palette = tuple(config.color_palette)
+    if not palette:
+        raise ValueError("color_palette must contain at least one color.")
 
     plotted = 0
     y_values: list[float] = []
     y_err_values: list[float] = []
-    for curve in curves:
+    for curve_idx, curve in enumerate(curves):
         df = curve["df"]
         missing = [col for col in ("k", mean_col) if col not in df.columns]
         if missing:
@@ -245,6 +330,7 @@ def _plot_metric(
             marker="o",
             linewidth=2,
             capsize=3 if yerr is not None else 0,
+            color=palette[curve_idx % len(palette)],
             label=curve["label"],
         )
         plotted += 1
@@ -257,7 +343,7 @@ def _plot_metric(
             k_values.extend(int(x) for x in df["k"].dropna().astype(int).tolist())
     x_min = min(k_values) if k_values else 0
     x_max = max(k_values) if k_values else 1
-    for baseline in fixed_baselines:
+    for baseline_idx, baseline in enumerate(fixed_baselines):
         if baseline_col not in baseline["metrics"]:
             print(
                 f"[skip] {baseline['stage_name']} missing fixed baseline metric "
@@ -273,7 +359,8 @@ def _plot_metric(
             linestyles="--",
             linewidth=2,
             alpha=0.85,
-            label=f"{baseline['label']} fixed",
+            color=palette[(len(curves) + baseline_idx) % len(palette)],
+            label=baseline["label"],
         )
         plotted += 1
 
