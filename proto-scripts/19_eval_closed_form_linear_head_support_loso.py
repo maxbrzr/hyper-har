@@ -53,7 +53,26 @@ class Config:
     split_strategy: str = DEFAULT_SPLIT_STRATEGY
     val_percentage: float = DEFAULT_VAL_PERCENTAGE
 
-    k_values: tuple[int, ...] = (0, 1, 2, 3, 4, 5, 6, 8, 16, 32)
+    k_values: tuple[int, ...] = (
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        32,
+    )
     episodes_per_k: int = 100
     min_query_per_class: int = 1
     support_query_session_disjoint: bool = False
@@ -308,9 +327,7 @@ def _closed_form_episode_predict(
     if config.standardize_features:
         feature_mean = support_emb.mean(dim=0)
         feature_std = support_emb.std(dim=0, unbiased=False).clamp_min(1e-6)
-        support_emb = (support_emb - feature_mean.view(1, -1)) / feature_std.view(
-            1, -1
-        )
+        support_emb = (support_emb - feature_mean.view(1, -1)) / feature_std.view(1, -1)
         query_emb = (query_emb - feature_mean.view(1, -1)) / feature_std.view(1, -1)
 
     if config.fit_bias:
@@ -359,7 +376,9 @@ def _closed_form_episode_predict(
         ),
         "feature_mean_norm": float(feature_mean.norm(p=2).item()),
         "feature_std_mean": float(feature_std.mean().item()),
-        "support_embedding_norm_mean": float(support_emb.norm(p=2, dim=1).mean().item()),
+        "support_embedding_norm_mean": float(
+            support_emb.norm(p=2, dim=1).mean().item()
+        ),
         "query_embedding_norm_mean": float(query_emb.norm(p=2, dim=1).mean().item()),
     }
     return pred, diagnostics

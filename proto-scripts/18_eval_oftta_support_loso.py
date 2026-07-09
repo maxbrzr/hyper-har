@@ -1,8 +1,8 @@
 import json
 import math
 import types
-from dataclasses import asdict, dataclass
 from contextlib import contextmanager
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Iterator, Sequence
 
@@ -57,7 +57,26 @@ class Config:
     split_strategy: str = DEFAULT_SPLIT_STRATEGY
     val_percentage: float = DEFAULT_VAL_PERCENTAGE
 
-    k_values: tuple[int, ...] = (0, 1, 2, 3, 4, 5, 6, 8, 16, 32)
+    k_values: tuple[int, ...] = (
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        32,
+    )
     episodes_per_k: int = 100
     min_query_per_class: int = 1
     support_query_session_disjoint: bool = False
@@ -137,7 +156,9 @@ def _edtn_context(
                 mixed_stats[layer_idx] = (mean.detach(), var.detach())
             elif mode == "frozen":
                 if frozen_stats is None or layer_idx not in frozen_stats:
-                    raise RuntimeError(f"Missing frozen EDTN stats for layer {layer_idx}.")
+                    raise RuntimeError(
+                        f"Missing frozen EDTN stats for layer {layer_idx}."
+                    )
                 mean, var = frozen_stats[layer_idx]
                 mean = mean.to(x.device, dtype=x.dtype)
                 var = var.to(x.device, dtype=x.dtype)
@@ -222,7 +243,9 @@ def _encode_with_frozen_edtn(
     chunks: list[torch.Tensor] = []
     with _edtn_context(model, config, mode="frozen", frozen_stats=frozen_stats):
         for start in range(0, int(x.shape[0]), int(batch_size)):
-            batch = prepare_inputs(x[start : start + int(batch_size)]).to(device).float()
+            batch = (
+                prepare_inputs(x[start : start + int(batch_size)]).to(device).float()
+            )
             chunks.append(model.encode(batch).cpu())
     return torch.cat(chunks, dim=0)
 
@@ -232,7 +255,9 @@ def _entropy_from_logits(logits: torch.Tensor) -> torch.Tensor:
     return -(probs * probs.clamp_min(1e-12).log()).sum(dim=1)
 
 
-def _restricted_logits(logits: torch.Tensor, activity_ids: Sequence[int]) -> torch.Tensor:
+def _restricted_logits(
+    logits: torch.Tensor, activity_ids: Sequence[int]
+) -> torch.Tensor:
     activity_tensor = torch.tensor([int(x) for x in activity_ids], dtype=torch.long)
     return logits[:, activity_tensor]
 
@@ -489,7 +514,9 @@ def _oftta_episode_predict(
         "support_entropy_mean": float(support_entropy.mean().item()),
         "support_entropy_min": float(support_entropy.min().item()),
         "support_entropy_max": float(support_entropy.max().item()),
-        "support_embedding_norm_mean": float(support_emb.norm(p=2, dim=1).mean().item()),
+        "support_embedding_norm_mean": float(
+            support_emb.norm(p=2, dim=1).mean().item()
+        ),
         "query_embedding_norm_mean": float(query_emb.norm(p=2, dim=1).mean().item()),
         "prototype_norm_mean": float(prototype_tensor.norm(p=2, dim=1).mean().item()),
     }

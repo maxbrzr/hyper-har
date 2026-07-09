@@ -46,7 +46,8 @@ class Config:
     dataset_ids: tuple[str, ...] = ("hhar", "wear", "harth", "hapt")
     dataset_titles: tuple[str, ...] = ("HHAR", "WEAR", "HARTH", "HAPT")
     max_k: int = 16
-    k_values: tuple[int, ...] = (0, 1, 2, 3, 4, 5, 6, 8, 16)
+    k_values: tuple[int, ...] = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16)
+    x_label_k_values: tuple[int, ...] = (0, 1, 2, 3, 4, 5, 6, 8, 16)
     k0_plot_value: float = 0.5
 
     fixed_prefix: str = "04_supcon_fixed_prototypes_loso"
@@ -424,13 +425,18 @@ def _plot_mode_on_axes(
         )
         ax.set_xscale("log")
         ax.set_xlim(float(config.k0_plot_value) * 0.9, int(config.max_k) * 1.08)
+        tick_k_values = [
+            int(k) for k in config.k_values if int(k) <= int(config.max_k)
+        ]
+        labeled_k_values = {
+            int(k) for k in config.x_label_k_values if int(k) <= int(config.max_k)
+        }
         tick_values = [
             float(config.k0_plot_value) if int(k) == 0 else int(k)
-            for k in config.k_values
-            if int(k) <= int(config.max_k)
+            for k in tick_k_values
         ]
         tick_labels = [
-            str(int(k)) for k in config.k_values if int(k) <= int(config.max_k)
+            str(int(k)) if int(k) in labeled_k_values else "" for k in tick_k_values
         ]
         ax.set_xticks(tick_values)
         ax.set_xticklabels(tick_labels)

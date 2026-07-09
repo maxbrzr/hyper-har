@@ -58,7 +58,26 @@ class Config:
     split_strategy: str = DEFAULT_SPLIT_STRATEGY
     val_percentage: float = DEFAULT_VAL_PERCENTAGE
 
-    k_values: tuple[int, ...] = (0, 1, 2, 3, 4, 5, 6, 8, 16, 32)
+    k_values: tuple[int, ...] = (
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        32,
+    )
     episodes_per_k: int = 100
     min_query_per_class: int = 1
     support_query_session_disjoint: bool = False
@@ -339,7 +358,9 @@ def _class_diagonal_gaussian_stats(
             missing_classes.append(int(cls))
             means.append(torch.zeros(feature_dim, dtype=embeddings.dtype))
             variances.append(
-                torch.full((feature_dim,), float(variance_floor), dtype=embeddings.dtype)
+                torch.full(
+                    (feature_dim,), float(variance_floor), dtype=embeddings.dtype
+                )
             )
             continue
         cls_emb = embeddings[mask]

@@ -74,8 +74,8 @@ class Config:
     normalize_prior_mean_for_update: bool | None = None
     project_posterior_to_sphere: bool | None = None
     em_iterations: int = 1  # 10
-    em_temperature: float = 0.5  # 1.0
-    em_likelihood_variance: float | None = 0.05  # None
+    em_temperature: float = 0.1  # 0.5 #  1.0
+    em_likelihood_variance: float | None = None  # 0.05  #
     em_likelihood_variance_source: str = "fixed"  # "fixed" or "responsibility"
     em_responsibility_variance_source: str = "fixed"  # "fixed" or "support"
     em_support_variance_floor: float = 1e-4

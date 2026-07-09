@@ -55,7 +55,26 @@ class Config:
     split_strategy: str = DEFAULT_SPLIT_STRATEGY
     val_percentage: float = DEFAULT_VAL_PERCENTAGE
 
-    k_values: tuple[int, ...] = (0, 1, 2, 3, 4, 5, 6, 8, 16, 32)
+    k_values: tuple[int, ...] = (
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        32,
+    )
     episodes_per_k: int = 100
     min_query_per_class: int = 1
     support_query_session_disjoint: bool = False
@@ -333,7 +352,9 @@ def _logistic_episode_predict(
         "head_weight_norm": float(np.linalg.norm(coef)),
         "head_bias_norm": float(np.linalg.norm(intercept)),
         "num_iterations": float(np.max(fitted_logistic.n_iter_)),
-        "support_embedding_norm_mean": float(support_emb.norm(p=2, dim=1).mean().item()),
+        "support_embedding_norm_mean": float(
+            support_emb.norm(p=2, dim=1).mean().item()
+        ),
         "query_embedding_norm_mean": float(query_emb.norm(p=2, dim=1).mean().item()),
     }
     return pred, diagnostics

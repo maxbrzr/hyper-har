@@ -56,7 +56,26 @@ class Config:
     split_strategy: str = DEFAULT_SPLIT_STRATEGY
     val_percentage: float = DEFAULT_VAL_PERCENTAGE
 
-    k_values: tuple[int, ...] = (0, 1, 2, 3, 4, 5, 6, 8, 16, 32)
+    k_values: tuple[int, ...] = (
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        32,
+    )
     episodes_per_k: int = 100
     min_query_per_class: int = 1
     support_query_session_disjoint: bool = False
@@ -76,9 +95,9 @@ class Config:
     prior_variance_floor: float = 1e-4  # 3
     normalize_prior_mean_for_update: bool | None = None
     project_posterior_to_sphere: bool | None = None
-    em_iterations: int = 10  # 3
-    em_temperature: float = 1.0  # 2.0  # 0.5  #
-    em_likelihood_variance: float | None = None  # 0.05  #
+    em_iterations: int = 1  # 10  # 3
+    em_temperature: float = 0.2  # 1.0  # 2.0  # 0.5  #
+    em_likelihood_variance: float | None = None  # 0.05  #j
     em_likelihood_variance_source: str = (
         "fixed"  # "fixed"  # "fixed" or "responsibility"
     )

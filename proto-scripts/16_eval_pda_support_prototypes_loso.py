@@ -59,7 +59,26 @@ class Config:
     split_strategy: str = DEFAULT_SPLIT_STRATEGY
     val_percentage: float = DEFAULT_VAL_PERCENTAGE
 
-    k_values: tuple[int, ...] = (0, 1, 2, 3, 4, 5, 6, 8, 16, 32)
+    k_values: tuple[int, ...] = (
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        32,
+    )
     episodes_per_k: int = 100
     min_query_per_class: int = 1
     support_query_session_disjoint: bool = False
@@ -388,9 +407,8 @@ def _mcd_scores(
         n_samples = int(cls_emb.shape[0])
         if n_samples == 0:
             continue
-        can_fit_mcd = (
-            MinCovDet is not None
-            and n_samples >= max(int(min_samples), feature_dim + 2)
+        can_fit_mcd = MinCovDet is not None and n_samples >= max(
+            int(min_samples), feature_dim + 2
         )
         if can_fit_mcd:
             try:
@@ -406,7 +424,9 @@ def _mcd_scores(
                 mahal = np.einsum("nd,dd,nd->n", diff, precision, diff)
                 sign, logdet = np.linalg.slogdet(cov)
                 if sign <= 0:
-                    logdet = float(np.log(np.maximum(np.diag(cov), regularization)).sum())
+                    logdet = float(
+                        np.log(np.maximum(np.diag(cov), regularization)).sum()
+                    )
                 score_np = -0.5 * (mahal + logdet)
                 scores.append(torch.from_numpy(score_np).to(dtype=embeddings.dtype))
                 usable_classes.append(int(activity_id))
@@ -973,9 +993,7 @@ def run(config: Config) -> dict[str, Any]:
                     "pseudo_label_counts": json.dumps(
                         {
                             str(int(cls)): int(count)
-                            for cls, count in diagnostics[
-                                "pseudo_label_counts"
-                            ].items()
+                            for cls, count in diagnostics["pseudo_label_counts"].items()
                         }
                     ),
                     "pseudo_label_confidence_mean": float(
@@ -1008,7 +1026,9 @@ def run(config: Config) -> dict[str, Any]:
                 ):
                     if key in diagnostics:
                         value = diagnostics[key]
-                        row[key] = json.dumps(value) if isinstance(value, list) else value
+                        row[key] = (
+                            json.dumps(value) if isinstance(value, list) else value
+                        )
                 all_trial_rows.append(row)
                 fold_rows.append(row)
 
