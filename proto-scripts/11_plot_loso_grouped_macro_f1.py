@@ -25,6 +25,13 @@ from matplotlib.ticker import FormatStrFormatter
 class Config:
     output_root: str | None = None
     comparison_stage_name: str = "11_loso_grouped_macro_f1"
+    source_records_csv: str | None = str(
+        ROOT
+        / "artifacts"
+        / "proto_pipeline"
+        / "22_supervised_unsupervised_n_shot_grid_old"
+        / "combined_macro_f1_grid_values.csv"
+    )
     dataset_ids: tuple[str, ...] = ("hhar", "wear", "harth", "hapt")
 
     # Explicit order requested by user.
@@ -32,7 +39,7 @@ class Config:
         "Original Classifier",
         "Prior Proto",
         "MAP-EM Proto (16-Shot)",
-        "Bayesian Proto (16-Shot)",
+        "MAP Proto (16-Shot)",
     )
     require_all_methods_per_dataset: bool = False
 
@@ -169,9 +176,42 @@ def _k_result(
     )
 
 
+def _load_source_records(config: Config) -> pd.DataFrame | None:
+    if not config.source_records_csv:
+        return None
+    source_path = Path(config.source_records_csv)
+    if not source_path.exists():
+        return None
+
+    records = pd.read_csv(source_path)
+    required = {"dataset_id", "method_key", "n", "value"}
+    if not required.issubset(records.columns):
+        raise ValueError(f"Source records CSV is missing columns: {source_path}")
+    return records
+
+
+def _source_record_value(
+    records: pd.DataFrame | None,
+    dataset_id: str,
+    method_key: str,
+    n_value: int,
+) -> float | None:
+    if records is None:
+        return None
+    rows = records[
+        (records["dataset_id"].astype(str).str.lower() == dataset_id.lower())
+        & (records["method_key"].astype(str) == method_key)
+        & (records["n"].astype(int) == int(n_value))
+    ]
+    if rows.empty:
+        return None
+    return float(rows.iloc[0]["value"])
+
+
 def _collect(config: Config) -> tuple[pd.DataFrame, list[str]]:
     output_root = resolve_output_root(config.output_root, dataset_id="")
     dataset_dirs = _list_dataset_dirs(output_root)
+    source_records = _load_source_records(config)
 
     rows: list[dict[str, Any]] = []
     warnings: list[str] = []
@@ -192,13 +232,37 @@ def _collect(config: Config) -> tuple[pd.DataFrame, list[str]]:
                 k_value=config.k_value_for_proto_methods,
                 prefer_contains=config.map_em_prefer_contains,
             ),
-            "Bayesian Proto (16-Shot)": _k_result(
+            "MAP Proto (16-Shot)": _k_result(
                 dataset_dir,
                 config.bayesian_prefix,
                 method_key="bayesian",
                 k_value=config.k_value_for_proto_methods,
             ),
         }
+        source_specs = {
+            "Prior Proto": ("fixed", config.k_value_for_proto_methods),
+            "MAP-EM Proto (16-Shot)": (
+                "map_em_centered",
+                config.k_value_for_proto_methods,
+            ),
+            "MAP Proto (16-Shot)": ("bayesian", config.k_value_for_proto_methods),
+        }
+        for method_name, (source_key, source_k) in source_specs.items():
+            source_value = _source_record_value(
+                source_records,
+                dataset_id,
+                source_key,
+                source_k,
+            )
+            if source_value is None:
+                continue
+            current = method_results.get(method_name)
+            fold_std = current[1] if current is not None else 0.0
+            method_results[method_name] = (
+                float(source_value),
+                float(fold_std),
+                f"{source_key}:n={int(source_k)}:source22",
+            )
 
         present_count = sum(result is not None for result in method_results.values())
         if present_count == 0:
@@ -303,7 +367,7 @@ def _plot(df: pd.DataFrame, config: Config, output_root: Path) -> dict[str, str]
         "Original Classifier": config.color_baseline_ce,
         "Prior Proto": config.color_fixed_proto,
         "MAP-EM Proto (16-Shot)": config.color_map_em,
-        "Bayesian Proto (16-Shot)": config.color_bayesian,
+        "MAP Proto (16-Shot)": config.color_bayesian,
     }
 
     for j, method in enumerate(config.method_order):
@@ -344,7 +408,7 @@ def _plot(df: pd.DataFrame, config: Config, output_root: Path) -> dict[str, str]
             _add_bar_label(ax, centers[i], float(mean_val), config)
             if method in {
                 "MAP-EM Proto (16-Shot)",
-                "Bayesian Proto (16-Shot)",
+                "MAP Proto (16-Shot)",
             }:
                 baseline_fixed = pivot_mean.loc[dataset_order[i], "Prior Proto"]
                 if np.isfinite(baseline_fixed):

@@ -40,6 +40,13 @@ class MethodSpec:
 class Config:
     output_root: str | None = None
     comparison_stage_name: str = "22_supervised_unsupervised_n_shot_grid"
+    source_records_csv: str | None = str(
+        ROOT
+        / "artifacts"
+        / "proto_pipeline"
+        / "22_supervised_unsupervised_n_shot_grid_old"
+        / "combined_macro_f1_grid_values.csv"
+    )
     mode: str = "all"  # "supervised", "unsupervised", "combined", or "all"
     metric: str = "macro_f1"
 
@@ -93,14 +100,14 @@ def _method_specs_for_mode(config: Config, mode: str) -> tuple[MethodSpec, ...]:
             ),
             MethodSpec(
                 key="bayesian",
-                label="Bayesian Proto\n(ours)",
+                label="MAP Proto\n(ours)",
                 stage_prefix=config.bayesian_prefix,
                 color="#2ca02c",
                 marker="s",
             ),
             MethodSpec(
                 key="support",
-                label="Standard Proto\n(baseline)",
+                label="ProtoNet\n(baseline)",
                 stage_prefix=config.support_prefix,
                 color="#ff7f0e",
                 marker="o",
@@ -239,6 +246,43 @@ def _load_curve(
     return out[["k", "value"]].sort_values("k"), stage_dir
 
 
+def _load_source_records(config: Config) -> pd.DataFrame | None:
+    if not config.source_records_csv:
+        return None
+    csv_path = Path(config.source_records_csv)
+    if not csv_path.exists():
+        return None
+
+    records = pd.read_csv(csv_path)
+    required = {"dataset_id", "method_key", "stage_dir", "n", "value"}
+    if not required.issubset(records.columns):
+        raise ValueError(f"Source records CSV is missing columns: {csv_path}")
+    return records
+
+
+def _load_curve_from_source_records(
+    records: pd.DataFrame | None,
+    dataset_id: str,
+    spec: MethodSpec,
+    max_k: int,
+) -> tuple[pd.DataFrame, Path | None] | None:
+    if records is None:
+        return None
+    rows = records[
+        (records["dataset_id"].astype(str).str.lower() == dataset_id.lower())
+        & (records["method_key"].astype(str) == spec.key)
+        & (records["n"].astype(int) <= int(max_k))
+    ].copy()
+    if rows.empty:
+        return None
+    rows = rows.drop_duplicates(subset=["n"], keep="first").copy()
+    rows["k"] = rows["n"].astype(int)
+    rows["value"] = rows["value"].astype(float)
+    stage_values = [str(x) for x in rows["stage_dir"].dropna().unique().tolist()]
+    stage_dir = Path(stage_values[0]) if stage_values else None
+    return rows[["k", "value"]].sort_values("k"), stage_dir
+
+
 def _load_fixed_value(
     dataset_dir: Path,
     spec: MethodSpec,
@@ -342,6 +386,7 @@ def _plot_mode_on_axes(
     specs = _method_specs_for_mode(config, mode)
     warnings: list[str] = []
     records: list[dict[str, Any]] = []
+    source_records = _load_source_records(config)
 
     for ax, dataset_id, dataset_title in zip(
         axes_flat,
@@ -365,7 +410,16 @@ def _plot_mode_on_axes(
 
         fixed_spec = next((spec for spec in specs if spec.is_fixed_baseline), None)
         fixed_value: float | None = None
-        if fixed_spec is not None:
+        if source_records is not None and fixed_spec is not None:
+            source_fixed = _load_curve_from_source_records(
+                source_records, dataset_id, fixed_spec, config.max_k
+            )
+            if source_fixed is not None:
+                fixed_df, _fixed_stage_dir = source_fixed
+                fixed_rows = fixed_df[fixed_df["k"].astype(int) == 0]
+                if not fixed_rows.empty:
+                    fixed_value = float(fixed_rows.iloc[0]["value"])
+        elif fixed_spec is not None:
             fixed_value, _fixed_stage_dir = _load_fixed_value(
                 dataset_dir,
                 fixed_spec,
@@ -373,7 +427,12 @@ def _plot_mode_on_axes(
             )
 
         for spec in specs:
-            if spec.is_fixed_baseline:
+            source_curve = _load_curve_from_source_records(
+                source_records, dataset_id, spec, config.max_k
+            )
+            if source_curve is not None:
+                df, stage_dir = source_curve
+            elif spec.is_fixed_baseline:
                 value, stage_dir = _load_fixed_value(dataset_dir, spec, config.metric)
                 if value is None:
                     warnings.append(f"[{dataset_id}] missing {spec.label}")
@@ -425,9 +484,7 @@ def _plot_mode_on_axes(
         )
         ax.set_xscale("log")
         ax.set_xlim(float(config.k0_plot_value) * 0.9, int(config.max_k) * 1.08)
-        tick_k_values = [
-            int(k) for k in config.k_values if int(k) <= int(config.max_k)
-        ]
+        tick_k_values = [int(k) for k in config.k_values if int(k) <= int(config.max_k)]
         labeled_k_values = {
             int(k) for k in config.x_label_k_values if int(k) <= int(config.max_k)
         }
@@ -531,7 +588,7 @@ def _run_single_mode(config: Config) -> dict[str, Any]:
         frameon=False,
         prop={"weight": "bold"},
     )
-    fig.supxlabel("N Shots Per Activity Class", y=0.02, fontweight="bold")
+    fig.supxlabel("N Shots Per Activity Class (log scale)", y=0.02, fontweight="bold")
     fig.tight_layout(rect=(0.0, 0.06, 1.0, 0.98))
 
     records_df = pd.DataFrame(records)
@@ -629,7 +686,7 @@ def _run_combined(config: Config) -> dict[str, Any]:
     fig.text(
         right_center,
         0.985,
-        "Unsupervised Adaptation",
+        "Weakly / Unsupervised Adaptation",
         ha="center",
         va="top",
         fontsize=12,
@@ -662,7 +719,7 @@ def _run_combined(config: Config) -> dict[str, Any]:
     fig.text(
         left_center,
         0.025,
-        "N Shots Per Activity Class",
+        "N Shots Per Activity Class (log scale)",
         ha="center",
         va="center",
         fontsize=axis_label_size,
@@ -671,7 +728,7 @@ def _run_combined(config: Config) -> dict[str, Any]:
     fig.text(
         right_center,
         0.025,
-        "N Shots Per Activity Class",
+        "N Shots Per Activity Class (log scale)",
         ha="center",
         va="center",
         fontsize=axis_label_size,

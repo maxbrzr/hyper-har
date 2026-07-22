@@ -796,7 +796,7 @@ def _plot_trajectory(
             markeredgecolor="none",
             alpha=float(config.support_alpha),
             markersize=7,
-            label="Unlabeled Support",
+            label="Weakly Labeled Support",
         ),
         plt.Line2D(
             [0],
