@@ -1,0 +1,5 @@
+dataset_id,input_shape,window_size,num_channels,num_classes,conv_time,gru_input_dim,embedding_dim,macs,flops,conv_macs,conv_flops,gru_macs,gru_flops,attention_macs,attention_flops,backbone_params,shape_source
+hhar,"(1, 1, 100, 6)",100,6,6,25,48,32,249800,586267,95400,262200,153600,320800,800,3267,7087,artifacts/datasets/hhar/classifier/*/best_model_with_meta.pt
+wear,"(1, 1, 100, 12)",100,12,18,25,96,32,460400,1078867,190800,524400,268800,551200,800,3267,11695,artifacts/datasets/wear/classifier/*/best_model_with_meta.pt
+harth,"(1, 1, 150, 6)",150,6,12,37,48,32,370364,869791,141852,390156,227328,474784,1184,4851,7087,artifacts/datasets/harth/classifier/*/best_model_with_meta.pt
+hapt,"(1, 1, 128, 6)",128,6,12,32,48,32,319744,750431,122112,335616,196608,410624,1024,4191,7087,artifacts/datasets/hapt/classifier/*/best_model_with_meta.pt

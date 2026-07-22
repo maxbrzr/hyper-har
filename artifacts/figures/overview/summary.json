@@ -1,0 +1,63 @@
+{
+  "config": {
+    "output_root": "artifacts/datasets",
+    "comparison_stage_name": "overview",
+    "source_records_csv": "artifacts/results/paper_results.csv",
+    "dataset_ids": [
+      "hhar",
+      "wear",
+      "harth",
+      "hapt"
+    ],
+    "method_order": [
+      "Original Classifier",
+      "Prior Proto",
+      "MAP-EM Proto (16-Shot)",
+      "MAP Proto (16-Shot)"
+    ],
+    "require_all_methods_per_dataset": false,
+    "baseline_prefix": "original",
+    "fixed_prefix": "prior",
+    "map_em_prefix": "map_em",
+    "bayesian_prefix": "map",
+    "map_em_prefer_contains": [
+      "_centered"
+    ],
+    "k_value_for_proto_methods": 16,
+    "title": "LOSO Macro-F1 by Dataset",
+    "y_label": "Mean LOSO Macro-F1",
+    "x_label": "",
+    "figure_width": 12,
+    "figure_height": 2.7,
+    "dpi": 220,
+    "ylim_low": 0.45,
+    "ylim_high": 1.0,
+    "bar_label_fmt": "{:.3f}",
+    "bar_label_color": "white",
+    "bar_label_fontsize": 9,
+    "bar_label_inside_offset": 0.02,
+    "color_baseline_ce": "#9467bd",
+    "color_fixed_proto": "#d62728",
+    "color_map_em": "#1f77b4",
+    "color_bayesian": "#2ca02c",
+    "axis_label_fontsize": 12
+  },
+  "output_root": "artifacts/datasets",
+  "num_rows": 16,
+  "datasets": [
+    "hapt",
+    "harth",
+    "hhar",
+    "wear"
+  ],
+  "methods": [
+    "Original Classifier",
+    "Prior Proto",
+    "MAP-EM Proto (16-Shot)",
+    "MAP Proto (16-Shot)"
+  ],
+  "plot_png": "artifacts/figures/overview/grouped_macro_f1_loso.png",
+  "plot_pdf": "artifacts/figures/overview/grouped_macro_f1_loso.pdf",
+  "values_csv": "artifacts/figures/overview/grouped_macro_f1_loso_values.csv",
+  "warnings": []
+}

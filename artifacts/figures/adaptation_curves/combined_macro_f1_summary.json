@@ -1,0 +1,193 @@
+{
+  "config": {
+    "output_root": "artifacts/datasets",
+    "comparison_stage_name": "adaptation_curves",
+    "source_records_csv": "artifacts/results/paper_results.csv",
+    "mode": "combined",
+    "metric": "macro_f1",
+    "dataset_ids": [
+      "hhar",
+      "wear",
+      "harth",
+      "hapt"
+    ],
+    "dataset_titles": [
+      "HHAR",
+      "WEAR",
+      "HARTH",
+      "HAPT"
+    ],
+    "max_k": 16,
+    "k_values": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      12,
+      14,
+      16
+    ],
+    "x_label_k_values": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      8,
+      16
+    ],
+    "k0_plot_value": 0.5,
+    "fixed_prefix": "prior",
+    "support_prefix": "protonet",
+    "bayesian_prefix": "map",
+    "map_em_prefix": "map_em",
+    "pda_prefix": "pda",
+    "oftta_prefix": "oftta",
+    "logistic_prefix": "logistic",
+    "figure_width": 12.0,
+    "figure_height": 4,
+    "dpi": 240,
+    "y_axis_mode": "auto",
+    "y_axis_padding": 0.025,
+    "y_axis_min_floor": 0.0,
+    "y_axis_max_ceiling": 1.02,
+    "legend_y": 1.12,
+    "line_alpha": 0.78,
+    "fixed_line_alpha": 0.65,
+    "show_markers": false,
+    "force_all_methods_start_at_n0": true
+  },
+  "mode": "combined",
+  "metric": "macro_f1",
+  "output_path": "artifacts/figures/adaptation_curves/combined_macro_f1_n0_to_16_grid.png",
+  "pdf_path": "artifacts/figures/adaptation_curves/combined_macro_f1_n0_to_16_grid.pdf",
+  "records_csv": "artifacts/figures/adaptation_curves/combined_macro_f1_grid_values.csv",
+  "warnings": [],
+  "methods": {
+    "supervised": [
+      {
+        "key": "fixed",
+        "label": "Prior Proto\n(ours)",
+        "stage_prefix": "prior",
+        "color": "#d62728",
+        "marker": "",
+        "linestyle": "--",
+        "required_contains": [],
+        "forbidden_contains": [],
+        "summary_equals": [],
+        "is_fixed_baseline": true
+      },
+      {
+        "key": "bayesian",
+        "label": "MAP Proto\n(ours)",
+        "stage_prefix": "map",
+        "color": "#2ca02c",
+        "marker": "s",
+        "linestyle": "-",
+        "required_contains": [],
+        "forbidden_contains": [],
+        "summary_equals": [],
+        "is_fixed_baseline": false
+      },
+      {
+        "key": "support",
+        "label": "ProtoNet\n(baseline)",
+        "stage_prefix": "protonet",
+        "color": "#ff7f0e",
+        "marker": "o",
+        "linestyle": "-",
+        "required_contains": [],
+        "forbidden_contains": [],
+        "summary_equals": [],
+        "is_fixed_baseline": false
+      },
+      {
+        "key": "logistic",
+        "label": "Logistic Probe\n(baseline)",
+        "stage_prefix": "logistic",
+        "color": "#9467bd",
+        "marker": "D",
+        "linestyle": "-",
+        "required_contains": [],
+        "forbidden_contains": [],
+        "summary_equals": [],
+        "is_fixed_baseline": false
+      }
+    ],
+    "unsupervised": [
+      {
+        "key": "fixed",
+        "label": "Prior Proto\n(ours)",
+        "stage_prefix": "prior",
+        "color": "#d62728",
+        "marker": "",
+        "linestyle": "--",
+        "required_contains": [],
+        "forbidden_contains": [],
+        "summary_equals": [],
+        "is_fixed_baseline": true
+      },
+      {
+        "key": "map_em_centered",
+        "label": "MAP-EM Proto\n(ours)",
+        "stage_prefix": "map_em",
+        "color": "#1f77b4",
+        "marker": "s",
+        "linestyle": "-",
+        "required_contains": [
+          "_centered"
+        ],
+        "forbidden_contains": [],
+        "summary_equals": [
+          [
+            "em_likelihood_variance_source",
+            "fixed"
+          ],
+          [
+            "em_responsibility_variance_source",
+            "fixed"
+          ]
+        ],
+        "is_fixed_baseline": false
+      },
+      {
+        "key": "oftta",
+        "label": "OFTTA\n(baseline)",
+        "stage_prefix": "oftta",
+        "color": "#7f7f7f",
+        "marker": "o",
+        "linestyle": "-",
+        "required_contains": [],
+        "forbidden_contains": [],
+        "summary_equals": [],
+        "is_fixed_baseline": false
+      },
+      {
+        "key": "pda",
+        "label": "PDA\n(baseline)",
+        "stage_prefix": "pda",
+        "color": "#17becf",
+        "marker": "D",
+        "linestyle": "-",
+        "required_contains": [
+          "classifier_confidence"
+        ],
+        "forbidden_contains": [
+          "mcd"
+        ],
+        "summary_equals": [],
+        "is_fixed_baseline": false
+      }
+    ]
+  },
+  "num_records": 520
+}

@@ -1,7 +1,12 @@
 .DS_Store
 *.zip
 artifacts/*
-artifacts_old/*
+!artifacts/README.md
+!artifacts/figures/
+!artifacts/results/
+!artifacts/tables/
+datasets/
+tmp/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
