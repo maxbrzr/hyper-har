@@ -8,6 +8,11 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn.functional as F
+from sklearn.metrics import accuracy_score, confusion_matrix, f1_score
+from torch.utils.data import DataLoader
+from tqdm.auto import tqdm
+from whar_datasets import PreProcessingPipeline, WHARDatasetID
+
 from .common import (
     DEFAULT_DATASET_ID,
     DEFAULT_DATASETS_DIR,
@@ -18,7 +23,6 @@ from .common import (
     DEFAULT_VAL_PERCENTAGE,
     DEFAULT_VAL_SUBJECTS,
     DEFAULT_WINDOW_OVERLAP,
-    ROOT,
     SharedConfig,
     WindowDataset,
     build_loader,
@@ -38,10 +42,6 @@ from .common import (
     set_seed,
     split_indices_for_fold,
 )
-from sklearn.metrics import accuracy_score, confusion_matrix, f1_score
-from torch.utils.data import DataLoader
-from tqdm.auto import tqdm
-from whar_datasets import PreProcessingPipeline, WHARDatasetID
 
 
 @dataclass(frozen=True)

@@ -187,7 +187,9 @@ class TinierHARTrainer:
             self.state.history["val_macro_f1"].append(val_macro_f1)
 
             if self.config.early_stopping_metric == "val_macro_f1":
-                improved = val_macro_f1 > (self.state.best_val_macro_f1 + self.config.min_delta)
+                improved = val_macro_f1 > (
+                    self.state.best_val_macro_f1 + self.config.min_delta
+                )
             else:
                 improved = val_loss < (self.state.best_val_loss - self.config.min_delta)
             if improved:

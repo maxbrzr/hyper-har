@@ -4,6 +4,15 @@ from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Any
 
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from matplotlib.lines import Line2D
+from matplotlib.ticker import FormatStrFormatter, MaxNLocator
+
+from .common import repo_relative_path, resolve_output_root
+
 ROOT = Path(__file__).resolve().parents[3]
 FONT_CACHE_DIR = ROOT / "artifacts" / ".cache"
 FONT_CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -12,14 +21,6 @@ os.environ.setdefault(
     str(ROOT / "artifacts" / ".matplotlib"),
 )
 os.environ.setdefault("XDG_CACHE_HOME", str(FONT_CACHE_DIR))
-
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import seaborn as sns
-from .common import repo_relative_path, resolve_output_root
-from matplotlib.lines import Line2D
-from matplotlib.ticker import FormatStrFormatter, MaxNLocator
 
 
 @dataclass(frozen=True)
@@ -41,10 +42,7 @@ class Config:
     output_root: str | None = None
     comparison_stage_name: str = "adaptation_curves"
     source_records_csv: str | None = str(
-        ROOT
-        / "artifacts"
-        / "results"
-        / "paper_results.csv"
+        ROOT / "artifacts" / "results" / "paper_results.csv"
     )
     mode: str = "all"  # "supervised", "unsupervised", "combined", or "all"
     metric: str = "macro_f1"

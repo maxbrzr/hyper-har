@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import argparse
 from dataclasses import replace
 from pathlib import Path
@@ -20,7 +18,6 @@ from baya_har.experiments import (
     train_classifier,
 )
 from baya_har.experiments.common import ARTIFACTS_ROOT, ROOT
-
 
 DATASETS = ("hhar", "wear", "harth", "hapt")
 ADAPTATION_STAGES: dict[str, Any] = {
@@ -160,7 +157,9 @@ def _run_flops(args: argparse.Namespace) -> None:
 
 
 def _add_shared_arguments(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--datasets", nargs="+", choices=DATASETS, default=list(DATASETS))
+    parser.add_argument(
+        "--datasets", nargs="+", choices=DATASETS, default=list(DATASETS)
+    )
     parser.add_argument("--datasets-dir", type=Path, default=ROOT / "datasets")
     parser.add_argument("--artifacts-dir", type=Path, default=ARTIFACTS_ROOT)
     parser.add_argument("--device", choices=("cpu", "cuda", "mps"))

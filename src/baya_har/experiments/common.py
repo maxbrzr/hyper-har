@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import hashlib
 import json
 import os
@@ -9,17 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Sequence
 
-ROOT = Path(__file__).resolve().parents[3]
-ARTIFACTS_ROOT = ROOT / "artifacts"
-DATASET_ARTIFACTS_ROOT = ARTIFACTS_ROOT / "datasets"
-FIGURE_ARTIFACTS_ROOT = ARTIFACTS_ROOT / "figures"
-TABLE_ARTIFACTS_ROOT = ARTIFACTS_ROOT / "tables"
-os.environ.setdefault("MPLCONFIGDIR", str(ARTIFACTS_ROOT / ".matplotlib"))
-os.environ.setdefault("XDG_CACHE_HOME", str(ARTIFACTS_ROOT / ".cache"))
-
 import matplotlib
-matplotlib.use("Agg")
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -39,6 +27,15 @@ from whar_datasets import (
 
 from baya_har.config import DEFAULT_CONFIG
 from baya_har.models.tinierhar import TinierHAR
+
+ROOT = Path(__file__).resolve().parents[3]
+ARTIFACTS_ROOT = ROOT / "artifacts"
+DATASET_ARTIFACTS_ROOT = ARTIFACTS_ROOT / "datasets"
+FIGURE_ARTIFACTS_ROOT = ARTIFACTS_ROOT / "figures"
+TABLE_ARTIFACTS_ROOT = ARTIFACTS_ROOT / "tables"
+os.environ.setdefault("MPLCONFIGDIR", str(ARTIFACTS_ROOT / ".matplotlib"))
+os.environ.setdefault("XDG_CACHE_HOME", str(ARTIFACTS_ROOT / ".cache"))
+matplotlib.use("Agg")
 
 DEFAULT_DATASET_ID = WHARDatasetID.HARTH.value
 DEFAULT_DATASETS_DIR = "datasets"

@@ -4,6 +4,14 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from matplotlib.ticker import FormatStrFormatter
+
+from .common import repo_relative_path, resolve_output_root
+
 ROOT = Path(__file__).resolve().parents[3]
 FONT_CACHE_DIR = ROOT / "artifacts" / ".cache"
 FONT_CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -13,23 +21,13 @@ os.environ.setdefault(
 )
 os.environ.setdefault("XDG_CACHE_HOME", str(FONT_CACHE_DIR))
 
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import seaborn as sns
-from .common import repo_relative_path, resolve_output_root
-from matplotlib.ticker import FormatStrFormatter
-
 
 @dataclass(frozen=True)
 class Config:
     output_root: str | None = None
     comparison_stage_name: str = "overview"
     source_records_csv: str | None = str(
-        ROOT
-        / "artifacts"
-        / "results"
-        / "paper_results.csv"
+        ROOT / "artifacts" / "results" / "paper_results.csv"
     )
     dataset_ids: tuple[str, ...] = ("hhar", "wear", "harth", "hapt")
 

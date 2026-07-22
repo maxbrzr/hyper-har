@@ -4,17 +4,20 @@ from pathlib import Path
 from typing import Any
 
 import torch
+from torch.utils.data import DataLoader, Dataset
+from whar_datasets import PreProcessingPipeline, WHARDatasetID
+
+from baya_har.training.trainer import TinierHARTrainer, TrainerConfig
+
 from .common import (
     DEFAULT_DATASET_ID,
     DEFAULT_DATASETS_DIR,
     DEFAULT_SEED,
     DEFAULT_SELECTED_ACTIVITIES,
-    DEFAULT_TEST_SUBJECTS,
-    DEFAULT_VAL_SUBJECTS,
-    DEFAULT_WINDOW_OVERLAP,
     DEFAULT_SPLIT_STRATEGY,
+    DEFAULT_TEST_SUBJECTS,
     DEFAULT_VAL_PERCENTAGE,
-    ROOT,
+    DEFAULT_VAL_SUBJECTS,
     SharedConfig,
     WindowDataset,
     build_loader,
@@ -29,10 +32,6 @@ from .common import (
     set_seed,
     split_indices_for_fold,
 )
-from torch.utils.data import DataLoader, Dataset
-from whar_datasets import PreProcessingPipeline, WHARDatasetID
-
-from baya_har.training.trainer import TinierHARTrainer, TrainerConfig
 
 
 @dataclass(frozen=True)

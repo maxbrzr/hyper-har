@@ -8,6 +8,10 @@ import numpy as np
 import seaborn as sns
 import torch
 import torch.nn.functional as F
+from sklearn.manifold import TSNE
+from torch.utils.data import DataLoader
+from whar_datasets import PreProcessingPipeline, WHARDatasetID
+
 from .common import (
     DEFAULT_DATASET_ID,
     DEFAULT_DATASETS_DIR,
@@ -34,9 +38,6 @@ from .common import (
     set_seed,
     split_indices_for_fold,
 )
-from sklearn.manifold import TSNE
-from torch.utils.data import DataLoader
-from whar_datasets import PreProcessingPipeline, WHARDatasetID
 
 
 @dataclass(frozen=True)

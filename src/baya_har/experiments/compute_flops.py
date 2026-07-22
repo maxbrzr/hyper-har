@@ -1,12 +1,16 @@
-from __future__ import annotations
-
 import argparse
 import csv
 import json
 import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Iterable
+
+import torch
+
+from baya_har.config import DEFAULT_CONFIG
+from baya_har.experiments.common import repo_relative_path
+from baya_har.models.tinierhar import TinierHAR
 
 os.environ.setdefault(
     "MPLCONFIGDIR",
@@ -17,13 +21,8 @@ os.environ.setdefault(
     str(Path(__file__).resolve().parents[3] / "artifacts" / ".cache"),
 )
 
-import torch
 
 ROOT = Path(__file__).resolve().parents[3]
-
-from baya_har.config import DEFAULT_CONFIG
-from baya_har.experiments.common import repo_relative_path
-from baya_har.models.tinierhar import TinierHAR
 
 
 DEFAULT_DATASETS = ("hapt", "harth", "wear", "hhar")
@@ -128,12 +127,8 @@ def _conv2d(
     pad_h, pad_w = padding
     dilation_h, dilation_w = dilation
     stride_h, stride_w = stride
-    out_h = (
-        height + 2 * pad_h - dilation_h * (kernel_h - 1) - 1
-    ) // stride_h + 1
-    out_w = (
-        width + 2 * pad_w - dilation_w * (kernel_w - 1) - 1
-    ) // stride_w + 1
+    out_h = (height + 2 * pad_h - dilation_h * (kernel_h - 1) - 1) // stride_h + 1
+    out_w = (width + 2 * pad_w - dilation_w * (kernel_w - 1) - 1) // stride_w + 1
     output_elements = batch * out_channels * out_h * out_w
     macs = output_elements * (in_channels // groups) * kernel_h * kernel_w
     flops = count_config.multiply_add_flops * macs
@@ -283,8 +278,10 @@ def _gru(
         activations = 3 * hidden_dim
         candidate_reset_mul = hidden_dim
         hidden_update = 4 * hidden_dim
-        flops += directions * seq_len * (
-            gate_adds + activations + candidate_reset_mul + hidden_update
+        flops += (
+            directions
+            * seq_len
+            * (gate_adds + activations + candidate_reset_mul + hidden_update)
         )
     _add(counts, "gru", macs, flops)
     return directions * hidden_dim
@@ -696,6 +693,8 @@ def _load_shape_from_preprocessing(
     dataset_id: str,
     datasets_dir: Path,
 ) -> DatasetShape:
+    from whar_datasets import PreProcessingPipeline, WHARDatasetID
+
     from .common import (
         DEFAULT_SEED,
         DEFAULT_SELECTED_ACTIVITIES,
@@ -713,7 +712,6 @@ def _load_shape_from_preprocessing(
         sample_window_array,
         split_indices_for_fold,
     )
-    from whar_datasets import PreProcessingPipeline, WHARDatasetID
 
     cfg = prepare_cfg(
         dataset_id=WHARDatasetID(dataset_id),
@@ -808,7 +806,9 @@ def write_outputs(
         for row in rows:
             writer.writerow(asdict(row))
 
-    prototype_fieldnames = list(asdict(prototype_rows[0]).keys()) if prototype_rows else []
+    prototype_fieldnames = (
+        list(asdict(prototype_rows[0]).keys()) if prototype_rows else []
+    )
     with prototype_csv_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=prototype_fieldnames)
         writer.writeheader()

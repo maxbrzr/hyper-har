@@ -4,6 +4,9 @@ from pathlib import Path
 from typing import Any
 
 import torch
+from torch.utils.data import DataLoader
+from whar_datasets import PreProcessingPipeline, WHARDatasetID
+
 from .common import (
     DEFAULT_DATASET_ID,
     DEFAULT_DATASETS_DIR,
@@ -14,7 +17,6 @@ from .common import (
     DEFAULT_VAL_PERCENTAGE,
     DEFAULT_VAL_SUBJECTS,
     DEFAULT_WINDOW_OVERLAP,
-    ROOT,
     SharedConfig,
     WindowDataset,
     build_loader,
@@ -36,8 +38,6 @@ from .common import (
     set_seed,
     split_indices_for_fold,
 )
-from torch.utils.data import DataLoader
-from whar_datasets import PreProcessingPipeline, WHARDatasetID
 
 
 @dataclass(frozen=True)

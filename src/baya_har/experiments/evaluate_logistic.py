@@ -7,6 +7,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, confusion_matrix, f1_score
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from torch.utils.data import DataLoader
+from tqdm.auto import tqdm
+from whar_datasets import PreProcessingPipeline, WHARDatasetID
+
 from .common import (
     DEFAULT_DATASET_ID,
     DEFAULT_DATASETS_DIR,
@@ -34,13 +42,6 @@ from .common import (
     set_seed,
     split_indices_for_fold,
 )
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, confusion_matrix, f1_score
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
-from torch.utils.data import DataLoader
-from tqdm.auto import tqdm
-from whar_datasets import PreProcessingPipeline, WHARDatasetID
 
 
 @dataclass(frozen=True)
