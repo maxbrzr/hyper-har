@@ -130,392 +130,392 @@ hhar,HHAR,logistic,"Logistic Probe
 hhar,HHAR,logistic,"Logistic Probe
 (baseline)",artifacts/datasets/hhar/logistic_ce_backbone_C_1,16,0.9415982334476634
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,0,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,0,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,1,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,1,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,2,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,2,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,3,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,3,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,4,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,4,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,5,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,5,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,6,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,6,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,7,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,7,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,8,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,8,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,9,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,9,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,10,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,10,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,12,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,12,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,14,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,14,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,16,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,16,0.8146870588410722
 wear,WEAR,bayesian,"MAP Proto
-(ours)",artifacts/datasets/wear/map_euclidean,0,0.811593333955296
+(ours)",artifacts/datasets/wear/map_euclidean,0,0.8146870588410722
 wear,WEAR,bayesian,"MAP Proto
-(ours)",artifacts/datasets/wear/map_euclidean,1,0.8927468611330257
+(ours)",artifacts/datasets/wear/map_euclidean,1,0.8942782319573735
 wear,WEAR,bayesian,"MAP Proto
-(ours)",artifacts/datasets/wear/map_euclidean,2,0.908336974034531
+(ours)",artifacts/datasets/wear/map_euclidean,2,0.90961264690542
 wear,WEAR,bayesian,"MAP Proto
-(ours)",artifacts/datasets/wear/map_euclidean,3,0.9177770899714848
+(ours)",artifacts/datasets/wear/map_euclidean,3,0.919041846298096
 wear,WEAR,bayesian,"MAP Proto
-(ours)",artifacts/datasets/wear/map_euclidean,4,0.9228357689444904
+(ours)",artifacts/datasets/wear/map_euclidean,4,0.9240159848963342
 wear,WEAR,bayesian,"MAP Proto
-(ours)",artifacts/datasets/wear/map_euclidean,5,0.9258375509149424
+(ours)",artifacts/datasets/wear/map_euclidean,5,0.92692885688107
 wear,WEAR,bayesian,"MAP Proto
-(ours)",artifacts/datasets/wear/map_euclidean,6,0.9288441655308092
+(ours)",artifacts/datasets/wear/map_euclidean,6,0.93001572832691
 wear,WEAR,bayesian,"MAP Proto
-(ours)",artifacts/datasets/wear/map_euclidean,7,0.931044926537712
+(ours)",artifacts/datasets/wear/map_euclidean,7,0.931561567348162
 wear,WEAR,bayesian,"MAP Proto
-(ours)",artifacts/datasets/wear/map_euclidean,8,0.9318292901993972
+(ours)",artifacts/datasets/wear/map_euclidean,8,0.9328821212555862
 wear,WEAR,bayesian,"MAP Proto
-(ours)",artifacts/datasets/wear/map_euclidean,9,0.9333037783888511
+(ours)",artifacts/datasets/wear/map_euclidean,9,0.9336295524416188
 wear,WEAR,bayesian,"MAP Proto
-(ours)",artifacts/datasets/wear/map_euclidean,10,0.9340119607594826
+(ours)",artifacts/datasets/wear/map_euclidean,10,0.9344494522659044
 wear,WEAR,bayesian,"MAP Proto
-(ours)",artifacts/datasets/wear/map_euclidean,11,0.9350686850083584
+(ours)",artifacts/datasets/wear/map_euclidean,11,0.935471421032492
 wear,WEAR,bayesian,"MAP Proto
-(ours)",artifacts/datasets/wear/map_euclidean,12,0.9355183628986512
+(ours)",artifacts/datasets/wear/map_euclidean,12,0.9359816442994564
 wear,WEAR,bayesian,"MAP Proto
-(ours)",artifacts/datasets/wear/map_euclidean,13,0.9357150482614616
+(ours)",artifacts/datasets/wear/map_euclidean,13,0.9361758205198684
 wear,WEAR,bayesian,"MAP Proto
-(ours)",artifacts/datasets/wear/map_euclidean,14,0.936106527091703
+(ours)",artifacts/datasets/wear/map_euclidean,14,0.9365152523719876
 wear,WEAR,bayesian,"MAP Proto
-(ours)",artifacts/datasets/wear/map_euclidean,15,0.9363122857754496
+(ours)",artifacts/datasets/wear/map_euclidean,15,0.9367432979869726
 wear,WEAR,bayesian,"MAP Proto
-(ours)",artifacts/datasets/wear/map_euclidean,16,0.9360844650797358
+(ours)",artifacts/datasets/wear/map_euclidean,16,0.937122969562448
 wear,WEAR,support,"ProtoNet
-(baseline)",artifacts/datasets/wear/protonet_euclidean,0,0.811593333955296
+(baseline)",artifacts/datasets/wear/protonet_euclidean,0,0.8146870588410722
 wear,WEAR,support,"ProtoNet
-(baseline)",artifacts/datasets/wear/protonet_euclidean,1,0.8652783994549375
+(baseline)",artifacts/datasets/wear/protonet_euclidean,1,0.867039030038697
 wear,WEAR,support,"ProtoNet
-(baseline)",artifacts/datasets/wear/protonet_euclidean,2,0.908103838961972
+(baseline)",artifacts/datasets/wear/protonet_euclidean,2,0.9093910973791736
 wear,WEAR,support,"ProtoNet
-(baseline)",artifacts/datasets/wear/protonet_euclidean,3,0.920852602262052
+(baseline)",artifacts/datasets/wear/protonet_euclidean,3,0.9219209014711643
 wear,WEAR,support,"ProtoNet
-(baseline)",artifacts/datasets/wear/protonet_euclidean,4,0.9268724187616882
+(baseline)",artifacts/datasets/wear/protonet_euclidean,4,0.9278028218554772
 wear,WEAR,support,"ProtoNet
-(baseline)",artifacts/datasets/wear/protonet_euclidean,5,0.9298827013543574
+(baseline)",artifacts/datasets/wear/protonet_euclidean,5,0.930922637588041
 wear,WEAR,support,"ProtoNet
-(baseline)",artifacts/datasets/wear/protonet_euclidean,6,0.9327022684376504
+(baseline)",artifacts/datasets/wear/protonet_euclidean,6,0.9337933934107348
 wear,WEAR,support,"ProtoNet
-(baseline)",artifacts/datasets/wear/protonet_euclidean,7,0.934498137740968
+(baseline)",artifacts/datasets/wear/protonet_euclidean,7,0.9349331381228264
 wear,WEAR,support,"ProtoNet
-(baseline)",artifacts/datasets/wear/protonet_euclidean,8,0.9349802504646574
+(baseline)",artifacts/datasets/wear/protonet_euclidean,8,0.9359916333702892
 wear,WEAR,support,"ProtoNet
-(baseline)",artifacts/datasets/wear/protonet_euclidean,9,0.9362815947176872
+(baseline)",artifacts/datasets/wear/protonet_euclidean,9,0.9366092245751192
 wear,WEAR,support,"ProtoNet
-(baseline)",artifacts/datasets/wear/protonet_euclidean,10,0.9370597486482062
+(baseline)",artifacts/datasets/wear/protonet_euclidean,10,0.937336408482614
 wear,WEAR,support,"ProtoNet
-(baseline)",artifacts/datasets/wear/protonet_euclidean,11,0.9377913074327464
+(baseline)",artifacts/datasets/wear/protonet_euclidean,11,0.9381207759132584
 wear,WEAR,support,"ProtoNet
-(baseline)",artifacts/datasets/wear/protonet_euclidean,12,0.9380073352666652
+(baseline)",artifacts/datasets/wear/protonet_euclidean,12,0.938409054937942
 wear,WEAR,support,"ProtoNet
-(baseline)",artifacts/datasets/wear/protonet_euclidean,13,0.9381631112855354
+(baseline)",artifacts/datasets/wear/protonet_euclidean,13,0.938479777677772
 wear,WEAR,support,"ProtoNet
-(baseline)",artifacts/datasets/wear/protonet_euclidean,14,0.9383658659483012
+(baseline)",artifacts/datasets/wear/protonet_euclidean,14,0.9387291128886648
 wear,WEAR,support,"ProtoNet
-(baseline)",artifacts/datasets/wear/protonet_euclidean,15,0.9387194922788646
+(baseline)",artifacts/datasets/wear/protonet_euclidean,15,0.9391242388406386
 wear,WEAR,support,"ProtoNet
-(baseline)",artifacts/datasets/wear/protonet_euclidean,16,0.9382108718689036
+(baseline)",artifacts/datasets/wear/protonet_euclidean,16,0.9392173062598562
 wear,WEAR,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,0,0.811593333955296
+(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,0,0.8146870588410722
 wear,WEAR,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,1,0.8642432158426776
+(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,1,0.8660523621976438
 wear,WEAR,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,2,0.913216795587458
+(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,2,0.9143542944965932
 wear,WEAR,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,3,0.9299578304211024
+(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,3,0.9308711586050246
 wear,WEAR,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,4,0.9390256016545532
+(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,4,0.9397613289208774
 wear,WEAR,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,5,0.9443641886538178
+(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,5,0.9452097437008234
 wear,WEAR,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,6,0.9484392733591804
+(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,6,0.9493464439053642
 wear,WEAR,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,7,0.95129483911606
+(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,7,0.9516476588645206
 wear,WEAR,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,8,0.9537202870165394
+(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,8,0.9544882386064156
 wear,WEAR,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,9,0.9559035415322704
+(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,9,0.956089484289518
 wear,WEAR,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,10,0.957256561666872
+(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,10,0.9575473356004688
 wear,WEAR,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,11,0.9588726297061092
+(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,11,0.959083582376895
 wear,WEAR,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,12,0.9595205320966708
+(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,12,0.9597778780813748
 wear,WEAR,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,13,0.960345015906826
+(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,13,0.960609606791769
 wear,WEAR,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,14,0.9612848391467766
+(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,14,0.9615223327737756
 wear,WEAR,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,15,0.961899663152588
+(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,15,0.9621280123473436
 wear,WEAR,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,16,0.962222233446844
+(baseline)",artifacts/datasets/wear/logistic_ce_backbone_C_1,16,0.9627503882619474
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,0,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,0,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,1,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,1,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,2,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,2,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,3,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,3,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,4,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,4,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,5,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,5,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,6,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,6,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,7,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,7,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,8,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,8,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,9,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,9,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,10,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,10,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,12,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,12,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,14,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,14,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,16,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,16,0.7026614617356095
 harth,HARTH,bayesian,"MAP Proto
-(ours)",artifacts/datasets/harth/map_euclidean,0,0.6027334622763059
+(ours)",artifacts/datasets/harth/map_euclidean,0,0.7026614617356095
 harth,HARTH,bayesian,"MAP Proto
-(ours)",artifacts/datasets/harth/map_euclidean,1,0.9371428295089717
+(ours)",artifacts/datasets/harth/map_euclidean,1,0.8924206994366707
 harth,HARTH,bayesian,"MAP Proto
-(ours)",artifacts/datasets/harth/map_euclidean,2,0.9372119752792012
+(ours)",artifacts/datasets/harth/map_euclidean,2,0.8947820148828165
 harth,HARTH,bayesian,"MAP Proto
-(ours)",artifacts/datasets/harth/map_euclidean,3,0.9398832110965176
+(ours)",artifacts/datasets/harth/map_euclidean,3,0.898094403691697
 harth,HARTH,bayesian,"MAP Proto
-(ours)",artifacts/datasets/harth/map_euclidean,4,0.941165289630831
+(ours)",artifacts/datasets/harth/map_euclidean,4,0.8999962619972667
 harth,HARTH,bayesian,"MAP Proto
-(ours)",artifacts/datasets/harth/map_euclidean,5,0.9419296601876084
+(ours)",artifacts/datasets/harth/map_euclidean,5,0.9005079878481209
 harth,HARTH,bayesian,"MAP Proto
-(ours)",artifacts/datasets/harth/map_euclidean,6,0.9417223300671154
+(ours)",artifacts/datasets/harth/map_euclidean,6,0.9006768117238853
 harth,HARTH,bayesian,"MAP Proto
-(ours)",artifacts/datasets/harth/map_euclidean,7,0.9416252318364434
+(ours)",artifacts/datasets/harth/map_euclidean,7,0.8994518345194668
 harth,HARTH,bayesian,"MAP Proto
-(ours)",artifacts/datasets/harth/map_euclidean,8,0.942086099496743
+(ours)",artifacts/datasets/harth/map_euclidean,8,0.8995667556631347
 harth,HARTH,bayesian,"MAP Proto
-(ours)",artifacts/datasets/harth/map_euclidean,9,0.9414595882577398
+(ours)",artifacts/datasets/harth/map_euclidean,9,0.8976645648487668
 harth,HARTH,bayesian,"MAP Proto
-(ours)",artifacts/datasets/harth/map_euclidean,10,0.941876190588712
+(ours)",artifacts/datasets/harth/map_euclidean,10,0.8968458552776283
 harth,HARTH,bayesian,"MAP Proto
-(ours)",artifacts/datasets/harth/map_euclidean,11,0.9413461741181376
+(ours)",artifacts/datasets/harth/map_euclidean,11,0.8951310489547999
 harth,HARTH,bayesian,"MAP Proto
-(ours)",artifacts/datasets/harth/map_euclidean,12,0.9409844134555236
+(ours)",artifacts/datasets/harth/map_euclidean,12,0.8927972153000533
 harth,HARTH,bayesian,"MAP Proto
-(ours)",artifacts/datasets/harth/map_euclidean,13,0.9407396844434548
+(ours)",artifacts/datasets/harth/map_euclidean,13,0.8904224723522387
 harth,HARTH,bayesian,"MAP Proto
-(ours)",artifacts/datasets/harth/map_euclidean,14,0.9399791320188716
+(ours)",artifacts/datasets/harth/map_euclidean,14,0.8866323385418309
 harth,HARTH,bayesian,"MAP Proto
-(ours)",artifacts/datasets/harth/map_euclidean,15,0.9399022587551652
+(ours)",artifacts/datasets/harth/map_euclidean,15,0.8828498491152392
 harth,HARTH,bayesian,"MAP Proto
-(ours)",artifacts/datasets/harth/map_euclidean,16,0.9398242350742294
+(ours)",artifacts/datasets/harth/map_euclidean,16,0.8755681408317882
 harth,HARTH,support,"ProtoNet
-(baseline)",artifacts/datasets/harth/protonet_euclidean,0,0.6027334622763059
+(baseline)",artifacts/datasets/harth/protonet_euclidean,0,0.7026614617356095
 harth,HARTH,support,"ProtoNet
-(baseline)",artifacts/datasets/harth/protonet_euclidean,1,0.9100408388259678
+(baseline)",artifacts/datasets/harth/protonet_euclidean,1,0.8604201644926864
 harth,HARTH,support,"ProtoNet
-(baseline)",artifacts/datasets/harth/protonet_euclidean,2,0.9300282451819216
+(baseline)",artifacts/datasets/harth/protonet_euclidean,2,0.888609187105866
 harth,HARTH,support,"ProtoNet
-(baseline)",artifacts/datasets/harth/protonet_euclidean,3,0.9362980317211324
+(baseline)",artifacts/datasets/harth/protonet_euclidean,3,0.8957803299722737
 harth,HARTH,support,"ProtoNet
-(baseline)",artifacts/datasets/harth/protonet_euclidean,4,0.93941099651946
+(baseline)",artifacts/datasets/harth/protonet_euclidean,4,0.8999657166384296
 harth,HARTH,support,"ProtoNet
-(baseline)",artifacts/datasets/harth/protonet_euclidean,5,0.9403052448315516
+(baseline)",artifacts/datasets/harth/protonet_euclidean,5,0.9005398081223025
 harth,HARTH,support,"ProtoNet
-(baseline)",artifacts/datasets/harth/protonet_euclidean,6,0.940745324074296
+(baseline)",artifacts/datasets/harth/protonet_euclidean,6,0.9011666016993968
 harth,HARTH,support,"ProtoNet
-(baseline)",artifacts/datasets/harth/protonet_euclidean,7,0.9404050915429636
+(baseline)",artifacts/datasets/harth/protonet_euclidean,7,0.9000324536714978
 harth,HARTH,support,"ProtoNet
-(baseline)",artifacts/datasets/harth/protonet_euclidean,8,0.9412135833617622
+(baseline)",artifacts/datasets/harth/protonet_euclidean,8,0.9002440450728598
 harth,HARTH,support,"ProtoNet
-(baseline)",artifacts/datasets/harth/protonet_euclidean,9,0.9407263097259916
+(baseline)",artifacts/datasets/harth/protonet_euclidean,9,0.8983598151721619
 harth,HARTH,support,"ProtoNet
-(baseline)",artifacts/datasets/harth/protonet_euclidean,10,0.9411502175040632
+(baseline)",artifacts/datasets/harth/protonet_euclidean,10,0.8974652990611444
 harth,HARTH,support,"ProtoNet
-(baseline)",artifacts/datasets/harth/protonet_euclidean,11,0.9406145255515086
+(baseline)",artifacts/datasets/harth/protonet_euclidean,11,0.895572307254307
 harth,HARTH,support,"ProtoNet
-(baseline)",artifacts/datasets/harth/protonet_euclidean,12,0.9403751495021894
+(baseline)",artifacts/datasets/harth/protonet_euclidean,12,0.8935024364842774
 harth,HARTH,support,"ProtoNet
-(baseline)",artifacts/datasets/harth/protonet_euclidean,13,0.94031488938504
+(baseline)",artifacts/datasets/harth/protonet_euclidean,13,0.8912222936746425
 harth,HARTH,support,"ProtoNet
-(baseline)",artifacts/datasets/harth/protonet_euclidean,14,0.9394634673886996
+(baseline)",artifacts/datasets/harth/protonet_euclidean,14,0.8869844058880616
 harth,HARTH,support,"ProtoNet
-(baseline)",artifacts/datasets/harth/protonet_euclidean,15,0.939441717280812
+(baseline)",artifacts/datasets/harth/protonet_euclidean,15,0.8836205327226666
 harth,HARTH,support,"ProtoNet
-(baseline)",artifacts/datasets/harth/protonet_euclidean,16,0.9392137933814566
+(baseline)",artifacts/datasets/harth/protonet_euclidean,16,0.8768502077432704
 harth,HARTH,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,0,0.6027334622763059
+(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,0,0.7026614617356095
 harth,HARTH,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,1,0.9115151685997211
+(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,1,0.862782716975222
 harth,HARTH,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,2,0.9316664106877366
+(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,2,0.8917166838649234
 harth,HARTH,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,3,0.9377283858295296
+(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,3,0.8992286364914389
 harth,HARTH,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,4,0.9416058098677844
+(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,4,0.9042320836111176
 harth,HARTH,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,5,0.9426472291170276
+(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,5,0.9059890016858516
 harth,HARTH,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,6,0.9437028462140056
+(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,6,0.9067926664426308
 harth,HARTH,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,7,0.944245347198278
+(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,7,0.90668482129604
 harth,HARTH,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,8,0.9449274238950104
+(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,8,0.9071149070200594
 harth,HARTH,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,9,0.9451651433676084
+(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,9,0.905919034954871
 harth,HARTH,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,10,0.9463917246263874
+(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,10,0.9060410436275912
 harth,HARTH,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,11,0.946452268467478
+(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,11,0.9044855261177706
 harth,HARTH,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,12,0.9461400305556478
+(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,12,0.9025308065394348
 harth,HARTH,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,13,0.9467029544146404
+(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,13,0.9004455091182041
 harth,HARTH,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,14,0.9465444310253542
+(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,14,0.8975133142619732
 harth,HARTH,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,15,0.946427336303794
+(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,15,0.8938293591131672
 harth,HARTH,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,16,0.9464956012229744
+(baseline)",artifacts/datasets/harth/logistic_ce_backbone_C_1,16,0.8871650418147626
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,0,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,0,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,1,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,1,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,2,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,2,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,3,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,3,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,4,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,4,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,5,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,5,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,6,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,6,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,7,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,7,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,8,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,8,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,9,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,9,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,10,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,10,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,12,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,12,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,14,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,14,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,16,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,16,0.7414091865172201
 hapt,HAPT,bayesian,"MAP Proto
-(ours)",artifacts/datasets/hapt/map_euclidean,0,0.7344810383865671
+(ours)",artifacts/datasets/hapt/map_euclidean,0,0.7414091865172201
 hapt,HAPT,bayesian,"MAP Proto
-(ours)",artifacts/datasets/hapt/map_euclidean,1,0.9686810209021596
+(ours)",artifacts/datasets/hapt/map_euclidean,1,0.944029569228641
 hapt,HAPT,bayesian,"MAP Proto
-(ours)",artifacts/datasets/hapt/map_euclidean,2,0.9697388324349208
+(ours)",artifacts/datasets/hapt/map_euclidean,2,0.9495245427265484
 hapt,HAPT,bayesian,"MAP Proto
-(ours)",artifacts/datasets/hapt/map_euclidean,3,0.9721602035944524
+(ours)",artifacts/datasets/hapt/map_euclidean,3,0.9528486981938016
 hapt,HAPT,bayesian,"MAP Proto
-(ours)",artifacts/datasets/hapt/map_euclidean,4,0.9725173186241196
+(ours)",artifacts/datasets/hapt/map_euclidean,4,0.9540497187578664
 hapt,HAPT,bayesian,"MAP Proto
-(ours)",artifacts/datasets/hapt/map_euclidean,5,0.9736738874614248
+(ours)",artifacts/datasets/hapt/map_euclidean,5,0.9557329490477866
 hapt,HAPT,bayesian,"MAP Proto
-(ours)",artifacts/datasets/hapt/map_euclidean,6,0.973563320692587
+(ours)",artifacts/datasets/hapt/map_euclidean,6,0.9555414037005506
 hapt,HAPT,bayesian,"MAP Proto
-(ours)",artifacts/datasets/hapt/map_euclidean,7,0.9750349470008842
+(ours)",artifacts/datasets/hapt/map_euclidean,7,0.9570290991409424
 hapt,HAPT,bayesian,"MAP Proto
-(ours)",artifacts/datasets/hapt/map_euclidean,8,0.9756649760644038
+(ours)",artifacts/datasets/hapt/map_euclidean,8,0.9582429449006248
 hapt,HAPT,bayesian,"MAP Proto
-(ours)",artifacts/datasets/hapt/map_euclidean,9,0.9759946644604552
+(ours)",artifacts/datasets/hapt/map_euclidean,9,0.9592157247149588
 hapt,HAPT,bayesian,"MAP Proto
-(ours)",artifacts/datasets/hapt/map_euclidean,10,0.976913450354402
+(ours)",artifacts/datasets/hapt/map_euclidean,10,0.960151746590357
 hapt,HAPT,bayesian,"MAP Proto
-(ours)",artifacts/datasets/hapt/map_euclidean,11,0.9764696785056884
+(ours)",artifacts/datasets/hapt/map_euclidean,11,0.9603159769352716
 hapt,HAPT,bayesian,"MAP Proto
-(ours)",artifacts/datasets/hapt/map_euclidean,12,0.9777022925197062
+(ours)",artifacts/datasets/hapt/map_euclidean,12,0.9604963818565236
 hapt,HAPT,bayesian,"MAP Proto
-(ours)",artifacts/datasets/hapt/map_euclidean,13,0.9774731361065012
+(ours)",artifacts/datasets/hapt/map_euclidean,13,0.9612159253564152
 hapt,HAPT,bayesian,"MAP Proto
-(ours)",artifacts/datasets/hapt/map_euclidean,14,0.9772856031261448
+(ours)",artifacts/datasets/hapt/map_euclidean,14,0.9613345056395828
 hapt,HAPT,bayesian,"MAP Proto
-(ours)",artifacts/datasets/hapt/map_euclidean,15,0.9785216000272692
+(ours)",artifacts/datasets/hapt/map_euclidean,15,0.9616574141247786
 hapt,HAPT,bayesian,"MAP Proto
-(ours)",artifacts/datasets/hapt/map_euclidean,16,0.9775043661897584
+(ours)",artifacts/datasets/hapt/map_euclidean,16,0.960986663693149
 hapt,HAPT,support,"ProtoNet
-(baseline)",artifacts/datasets/hapt/protonet_euclidean,0,0.7344810383865671
+(baseline)",artifacts/datasets/hapt/protonet_euclidean,0,0.7414091865172201
 hapt,HAPT,support,"ProtoNet
-(baseline)",artifacts/datasets/hapt/protonet_euclidean,1,0.9607537882644692
+(baseline)",artifacts/datasets/hapt/protonet_euclidean,1,0.938174593751222
 hapt,HAPT,support,"ProtoNet
-(baseline)",artifacts/datasets/hapt/protonet_euclidean,2,0.9721062054300604
+(baseline)",artifacts/datasets/hapt/protonet_euclidean,2,0.9516819581577228
 hapt,HAPT,support,"ProtoNet
-(baseline)",artifacts/datasets/hapt/protonet_euclidean,3,0.9729909367747004
+(baseline)",artifacts/datasets/hapt/protonet_euclidean,3,0.9552410593749464
 hapt,HAPT,support,"ProtoNet
-(baseline)",artifacts/datasets/hapt/protonet_euclidean,4,0.9727215374360892
+(baseline)",artifacts/datasets/hapt/protonet_euclidean,4,0.9565698623015432
 hapt,HAPT,support,"ProtoNet
-(baseline)",artifacts/datasets/hapt/protonet_euclidean,5,0.9757007207364136
+(baseline)",artifacts/datasets/hapt/protonet_euclidean,5,0.9595063397848592
 hapt,HAPT,support,"ProtoNet
-(baseline)",artifacts/datasets/hapt/protonet_euclidean,6,0.9746169557780772
+(baseline)",artifacts/datasets/hapt/protonet_euclidean,6,0.958844025783413
 hapt,HAPT,support,"ProtoNet
-(baseline)",artifacts/datasets/hapt/protonet_euclidean,7,0.9754151953178418
+(baseline)",artifacts/datasets/hapt/protonet_euclidean,7,0.96011596295982
 hapt,HAPT,support,"ProtoNet
-(baseline)",artifacts/datasets/hapt/protonet_euclidean,8,0.9759566880157852
+(baseline)",artifacts/datasets/hapt/protonet_euclidean,8,0.9610687323413784
 hapt,HAPT,support,"ProtoNet
-(baseline)",artifacts/datasets/hapt/protonet_euclidean,9,0.9757439678595936
+(baseline)",artifacts/datasets/hapt/protonet_euclidean,9,0.9615849404977992
 hapt,HAPT,support,"ProtoNet
-(baseline)",artifacts/datasets/hapt/protonet_euclidean,10,0.9772416506737645
+(baseline)",artifacts/datasets/hapt/protonet_euclidean,10,0.9634582362353148
 hapt,HAPT,support,"ProtoNet
-(baseline)",artifacts/datasets/hapt/protonet_euclidean,11,0.9768445158983172
+(baseline)",artifacts/datasets/hapt/protonet_euclidean,11,0.9630541023652678
 hapt,HAPT,support,"ProtoNet
-(baseline)",artifacts/datasets/hapt/protonet_euclidean,12,0.9765021354925768
+(baseline)",artifacts/datasets/hapt/protonet_euclidean,12,0.9625888172937176
 hapt,HAPT,support,"ProtoNet
-(baseline)",artifacts/datasets/hapt/protonet_euclidean,13,0.9765233537072338
+(baseline)",artifacts/datasets/hapt/protonet_euclidean,13,0.96315203429139
 hapt,HAPT,support,"ProtoNet
-(baseline)",artifacts/datasets/hapt/protonet_euclidean,14,0.977079241324842
+(baseline)",artifacts/datasets/hapt/protonet_euclidean,14,0.963388910690504
 hapt,HAPT,support,"ProtoNet
-(baseline)",artifacts/datasets/hapt/protonet_euclidean,15,0.9775959245057552
+(baseline)",artifacts/datasets/hapt/protonet_euclidean,15,0.963486464626783
 hapt,HAPT,support,"ProtoNet
-(baseline)",artifacts/datasets/hapt/protonet_euclidean,16,0.9765287851375586
+(baseline)",artifacts/datasets/hapt/protonet_euclidean,16,0.9628444878861194
 hapt,HAPT,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,0,0.7344810383865671
+(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,0,0.7414091865172201
 hapt,HAPT,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,1,0.9618511980468284
+(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,1,0.9393586798855368
 hapt,HAPT,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,2,0.9748097517259536
+(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,2,0.9573234235155402
 hapt,HAPT,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,3,0.978953372590699
+(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,3,0.9656072935536992
 hapt,HAPT,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,4,0.9810676073953234
+(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,4,0.9704684300958226
 hapt,HAPT,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,5,0.9842435624435456
+(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,5,0.9746645254515952
 hapt,HAPT,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,6,0.984939640639263
+(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,6,0.9765098433596006
 hapt,HAPT,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,7,0.9855936695722468
+(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,7,0.9782238271999
 hapt,HAPT,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,8,0.9862827579768768
+(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,8,0.9806535476631362
 hapt,HAPT,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,9,0.9871392381805176
+(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,9,0.9821471662865598
 hapt,HAPT,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,10,0.987474720773744
+(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,10,0.983391493479244
 hapt,HAPT,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,11,0.9878073273828366
+(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,11,0.9837355091331882
 hapt,HAPT,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,12,0.9882790083838752
+(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,12,0.9844418431063112
 hapt,HAPT,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,13,0.9882299161202166
+(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,13,0.9849355306235869
 hapt,HAPT,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,14,0.988796081424436
+(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,14,0.9860519422776548
 hapt,HAPT,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,15,0.989073602787314
+(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,15,0.9859090930621506
 hapt,HAPT,logistic,"Logistic Probe
-(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,16,0.9887264197400356
+(baseline)",artifacts/datasets/hapt/logistic_ce_backbone_C_1,16,0.986271461727131

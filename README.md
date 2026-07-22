@@ -69,6 +69,9 @@ uv run baya-har evaluate \
 # Recreate the plots from completed evaluations.
 uv run baya-har figures
 
+# Plot freshly generated dataset results instead of frozen paper values.
+uv run baya-har figures --results-source live
+
 # Recreate the 1-shot/16-shot operation counts from saved checkpoints.
 uv run baya-har flops
 ```
@@ -92,7 +95,9 @@ completed outputs.
 
 
 All methods use the same pretrained classifier checkpoints and shared LOSO
-fold manifests. Support and query samples are disjoint.
+fold manifests. Support and query samples are disjoint. Macro-F1 is averaged
+over classes observed in the ground truth or predictions. Globally defined
+classes absent from both are not inserted with an F1 score of zero.
 
 ## Artifacts
 
@@ -108,9 +113,11 @@ artifacts/
 └── tables/                 # FLOP accounting
 ```
 
-The frozen aggregate values in `artifacts/results/paper_results.csv` are the
-values used to typeset the camera-ready Figures 2 and 4. Plotting also reads the
-per-method summaries to recover LOSO standard deviations.
+Frozen aggregate values are stored in `artifacts/results/paper_results.csv`
+for adaptation curves and `artifacts/results/paper_overview_results.csv` for
+the complete overview, including LOSO standard deviations. Figure generation
+uses these paper values by default; pass `--results-source live` to read only
+the freshly generated outputs under `artifacts/datasets/`.
 
 ## License
 

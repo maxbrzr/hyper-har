@@ -41,6 +41,7 @@ class MethodSpec:
 class Config:
     output_root: str | None = None
     comparison_stage_name: str = "adaptation_curves"
+    results_source: str = "paper"  # "paper" or "live"
     source_records_csv: str | None = str(
         ROOT / "artifacts" / "results" / "paper_results.csv"
     )
@@ -101,6 +102,7 @@ def _method_specs_for_mode(config: Config, mode: str) -> tuple[MethodSpec, ...]:
                 stage_prefix=config.bayesian_prefix,
                 color="#2ca02c",
                 marker="s",
+                forbidden_contains=("map_em",),
             ),
             MethodSpec(
                 key="support",
@@ -244,11 +246,15 @@ def _load_curve(
 
 
 def _load_source_records(config: Config) -> pd.DataFrame | None:
-    if not config.source_records_csv:
+    if config.results_source not in {"paper", "live"}:
+        raise ValueError("results_source must be 'paper' or 'live'.")
+    if config.results_source == "live":
         return None
+    if not config.source_records_csv:
+        raise ValueError("Paper results require source_records_csv.")
     csv_path = Path(config.source_records_csv)
     if not csv_path.exists():
-        return None
+        raise FileNotFoundError(f"Paper results CSV not found: {csv_path}")
 
     records = pd.read_csv(csv_path)
     required = {"dataset_id", "method_key", "stage_dir", "n", "value"}
@@ -392,7 +398,7 @@ def _plot_mode_on_axes(
     ):
         dataset_dir = output_root / dataset_id
         y_values: list[float] = []
-        if not dataset_dir.exists():
+        if config.results_source == "live" and not dataset_dir.exists():
             warnings.append(f"[{dataset_id}] dataset dir missing")
             ax.set_title(dataset_title, fontweight="bold")
             ax.text(
@@ -429,6 +435,9 @@ def _plot_mode_on_axes(
             )
             if source_curve is not None:
                 df, stage_dir = source_curve
+            elif config.results_source == "paper":
+                warnings.append(f"[{dataset_id}] missing paper result: {spec.label}")
+                continue
             elif spec.is_fixed_baseline:
                 value, stage_dir = _load_fixed_value(dataset_dir, spec, config.metric)
                 if value is None:
@@ -688,7 +697,7 @@ def _run_combined(config: Config) -> dict[str, Any]:
     fig.text(
         right_center,
         0.985,
-        "Weakly / Unsupervised Adaptation",
+        "Weakly Supervised Adaptation",
         ha="center",
         va="top",
         fontsize=12,

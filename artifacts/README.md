@@ -12,7 +12,9 @@ kept versionable.
 - `datasets/<dataset>/map_em_*`: weakly supervised BayaHAR MAP-EM evaluation.
 - `datasets/<dataset>/{pda,oftta,logistic}_*`: paper baselines.
 - `figures/`: generated camera-ready plots.
-- `results/paper_results.csv`: frozen aggregate values used by the paper.
+- `results/paper_results.csv`: frozen adaptation-curve values used by the paper.
+- `results/paper_overview_results.csv`: frozen overview means and LOSO standard
+  deviations.
 - `tables/computational_cost/`: backbone and adaptation operation counts.
 
 Every evaluation directory contains a `summary.json` plus aggregate and

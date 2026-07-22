@@ -30,37 +30,37 @@ hhar,HHAR,fixed,"Prior Proto
 hhar,HHAR,map_em_centered,"MAP-EM Proto
 (ours)",artifacts/datasets/hhar/map_em_euclidean_centered,0,0.8115347546295534
 hhar,HHAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,1,0.8171208009147991
+(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,1,0.8094901371495434
 hhar,HHAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,2,0.8180699674710774
+(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,2,0.8103099214188341
 hhar,HHAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,3,0.8167544164263092
+(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,3,0.8115101866359316
 hhar,HHAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,4,0.8200423623236329
+(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,4,0.816306916898557
 hhar,HHAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,5,0.8206139161455367
+(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,5,0.8168350519614926
 hhar,HHAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,6,0.8202743315009389
+(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,6,0.8179781810451247
 hhar,HHAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,7,0.8192159515635871
+(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,7,0.8173144640498664
 hhar,HHAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,8,0.8194410532638932
+(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,8,0.8174677271801829
 hhar,HHAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,9,0.8194188295918151
+(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,9,0.8178015190169925
 hhar,HHAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,10,0.8198734412605825
+(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,10,0.8178135172855217
 hhar,HHAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,11,0.8209199500525002
+(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,11,0.8195164005699758
 hhar,HHAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,12,0.8202418404613326
+(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,12,0.8195175054667118
 hhar,HHAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,13,0.8204830888821377
+(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,13,0.819827573542299
 hhar,HHAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,14,0.8201416125041244
+(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,14,0.8195080469201947
 hhar,HHAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,15,0.8196893815141467
+(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,15,0.8180757227194863
 hhar,HHAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,16,0.8207499618685687
+(ours)",artifacts/datasets/hhar/map_em_euclidean_centered,16,0.8193225811411509
 hhar,HHAR,oftta,"OFTTA
 (baseline)",artifacts/datasets/hhar/oftta_ce_backbone_edtn_d0p3_cap32,0,0.8115347546295534
 hhar,HHAR,oftta,"OFTTA
@@ -130,392 +130,392 @@ hhar,HHAR,pda,"PDA
 hhar,HHAR,pda,"PDA
 (baseline)",artifacts/datasets/hhar/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,16,0.8252905090893753
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,0,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,0,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,1,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,1,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,2,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,2,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,3,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,3,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,4,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,4,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,5,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,5,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,6,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,6,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,7,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,7,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,8,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,8,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,9,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,9,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,10,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,10,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,12,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,12,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,14,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,14,0.8146870588410722
 wear,WEAR,fixed,"Prior Proto
-(ours)",artifacts/datasets/wear/prior_euclidean,16,0.811593333955296
+(ours)",artifacts/datasets/wear/prior_euclidean,16,0.8146870588410722
 wear,WEAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/wear/map_em_euclidean_centered,0,0.811593333955296
+(ours)",artifacts/datasets/wear/map_em_euclidean_centered,0,0.8146870588410722
 wear,WEAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/wear/map_em_euclidean_centered,1,0.844477866714254
+(ours)",artifacts/datasets/wear/map_em_euclidean_centered,1,0.8379436135096806
 wear,WEAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/wear/map_em_euclidean_centered,2,0.8486911127816507
+(ours)",artifacts/datasets/wear/map_em_euclidean_centered,2,0.8468889588969203
 wear,WEAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/wear/map_em_euclidean_centered,3,0.8512952260130281
+(ours)",artifacts/datasets/wear/map_em_euclidean_centered,3,0.8521641966964357
 wear,WEAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/wear/map_em_euclidean_centered,4,0.8527716346213096
+(ours)",artifacts/datasets/wear/map_em_euclidean_centered,4,0.8545034260575983
 wear,WEAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/wear/map_em_euclidean_centered,5,0.8540292944508462
+(ours)",artifacts/datasets/wear/map_em_euclidean_centered,5,0.8571729678027618
 wear,WEAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/wear/map_em_euclidean_centered,6,0.8553445391509298
+(ours)",artifacts/datasets/wear/map_em_euclidean_centered,6,0.858660054582392
 wear,WEAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/wear/map_em_euclidean_centered,7,0.8559160445243098
+(ours)",artifacts/datasets/wear/map_em_euclidean_centered,7,0.8599154671530903
 wear,WEAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/wear/map_em_euclidean_centered,8,0.8567825852596963
+(ours)",artifacts/datasets/wear/map_em_euclidean_centered,8,0.8609236889982594
 wear,WEAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/wear/map_em_euclidean_centered,9,0.8572942955220698
+(ours)",artifacts/datasets/wear/map_em_euclidean_centered,9,0.8615637903172478
 wear,WEAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/wear/map_em_euclidean_centered,10,0.8575957731737461
+(ours)",artifacts/datasets/wear/map_em_euclidean_centered,10,0.8621529313824777
 wear,WEAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/wear/map_em_euclidean_centered,11,0.8580857051865841
+(ours)",artifacts/datasets/wear/map_em_euclidean_centered,11,0.8625309484190117
 wear,WEAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/wear/map_em_euclidean_centered,12,0.8588761460418315
+(ours)",artifacts/datasets/wear/map_em_euclidean_centered,12,0.8637477219153066
 wear,WEAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/wear/map_em_euclidean_centered,13,0.8586803117454623
+(ours)",artifacts/datasets/wear/map_em_euclidean_centered,13,0.8637340842085971
 wear,WEAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/wear/map_em_euclidean_centered,14,0.8586127004759031
+(ours)",artifacts/datasets/wear/map_em_euclidean_centered,14,0.8638530435323006
 wear,WEAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/wear/map_em_euclidean_centered,15,0.8590959237222536
+(ours)",artifacts/datasets/wear/map_em_euclidean_centered,15,0.86423089463945
 wear,WEAR,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/wear/map_em_euclidean_centered,16,0.8592530888374476
+(ours)",artifacts/datasets/wear/map_em_euclidean_centered,16,0.8646363986307173
 wear,WEAR,oftta,"OFTTA
-(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,0,0.811593333955296
+(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,0,0.8146870588410722
 wear,WEAR,oftta,"OFTTA
-(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,1,0.8040195737131824
+(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,1,0.8030978678791421
 wear,WEAR,oftta,"OFTTA
-(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,2,0.819300441380116
+(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,2,0.8181565858635178
 wear,WEAR,oftta,"OFTTA
-(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,3,0.82703602659628
+(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,3,0.8259353172566483
 wear,WEAR,oftta,"OFTTA
-(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,4,0.8314341205095058
+(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,4,0.8302120903466258
 wear,WEAR,oftta,"OFTTA
-(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,5,0.8349703996285932
+(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,5,0.833678342846062
 wear,WEAR,oftta,"OFTTA
-(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,6,0.8369322681334745
+(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,6,0.8354192305703361
 wear,WEAR,oftta,"OFTTA
-(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,7,0.8391124513710384
+(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,7,0.837246221811399
 wear,WEAR,oftta,"OFTTA
-(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,8,0.8398284282205682
+(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,8,0.838400279022174
 wear,WEAR,oftta,"OFTTA
-(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,9,0.8412498928106008
+(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,9,0.8389890492262815
 wear,WEAR,oftta,"OFTTA
-(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,10,0.8420131202057252
+(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,10,0.8396110877205748
 wear,WEAR,oftta,"OFTTA
-(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,11,0.8430292479730909
+(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,11,0.8406882407313132
 wear,WEAR,oftta,"OFTTA
-(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,12,0.8434330389030401
+(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,12,0.8410739356037217
 wear,WEAR,oftta,"OFTTA
-(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,13,0.8437813413515772
+(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,13,0.8414977815981589
 wear,WEAR,oftta,"OFTTA
-(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,14,0.843863567724069
+(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,14,0.8414374749654021
 wear,WEAR,oftta,"OFTTA
-(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,15,0.8442502076015831
+(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,15,0.842013028776088
 wear,WEAR,oftta,"OFTTA
-(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,16,0.8440992642387761
+(baseline)",artifacts/datasets/wear/oftta_ce_backbone_edtn_d0p3_cap32,16,0.8425382269963144
 wear,WEAR,pda,"PDA
-(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,0,0.811593333955296
+(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,0,0.8146870588410722
 wear,WEAR,pda,"PDA
-(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,1,0.7467993514356811
+(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,1,0.7466860369079087
 wear,WEAR,pda,"PDA
-(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,2,0.8132499708532149
+(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,2,0.812392436405568
 wear,WEAR,pda,"PDA
-(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,3,0.8325363880653761
+(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,3,0.8319259503556181
 wear,WEAR,pda,"PDA
-(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,4,0.8396138543950918
+(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,4,0.8389552513901634
 wear,WEAR,pda,"PDA
-(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,5,0.8451819347771942
+(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,5,0.8442542643257704
 wear,WEAR,pda,"PDA
-(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,6,0.8486372978031573
+(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,6,0.847579697679634
 wear,WEAR,pda,"PDA
-(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,7,0.8505251015620209
+(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,7,0.8491276597868733
 wear,WEAR,pda,"PDA
-(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,8,0.8510988074119079
+(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,8,0.850270690597783
 wear,WEAR,pda,"PDA
-(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,9,0.8525260506362661
+(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,9,0.850845868092048
 wear,WEAR,pda,"PDA
-(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,10,0.8532820034359846
+(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,10,0.8515487644509688
 wear,WEAR,pda,"PDA
-(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,11,0.8538109226193485
+(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,11,0.8520515899677322
 wear,WEAR,pda,"PDA
-(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,12,0.8544638281114025
+(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,12,0.8526777704762954
 wear,WEAR,pda,"PDA
-(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,13,0.85481236018675
+(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,13,0.8532078541595981
 wear,WEAR,pda,"PDA
-(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,14,0.8544549312348405
+(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,14,0.8527577353689716
 wear,WEAR,pda,"PDA
-(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,15,0.8548452474046737
+(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,15,0.8532901007510064
 wear,WEAR,pda,"PDA
-(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,16,0.8543977317017882
+(baseline)",artifacts/datasets/wear/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,16,0.8535454980052188
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,0,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,0,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,1,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,1,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,2,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,2,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,3,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,3,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,4,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,4,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,5,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,5,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,6,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,6,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,7,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,7,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,8,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,8,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,9,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,9,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,10,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,10,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,12,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,12,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,14,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,14,0.7026614617356095
 harth,HARTH,fixed,"Prior Proto
-(ours)",artifacts/datasets/harth/prior_euclidean,16,0.6027334622763059
+(ours)",artifacts/datasets/harth/prior_euclidean,16,0.7026614617356095
 harth,HARTH,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/harth/map_em_euclidean_centered,0,0.6027334622763059
+(ours)",artifacts/datasets/harth/map_em_euclidean_centered,0,0.7026614617356095
 harth,HARTH,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/harth/map_em_euclidean_centered,1,0.9240376593937722
+(ours)",artifacts/datasets/harth/map_em_euclidean_centered,1,0.8650972301064846
 harth,HARTH,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/harth/map_em_euclidean_centered,2,0.9260268316342144
+(ours)",artifacts/datasets/harth/map_em_euclidean_centered,2,0.8722990793548459
 harth,HARTH,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/harth/map_em_euclidean_centered,3,0.9268842261781
+(ours)",artifacts/datasets/harth/map_em_euclidean_centered,3,0.8768166180763096
 harth,HARTH,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/harth/map_em_euclidean_centered,4,0.92853865460496
+(ours)",artifacts/datasets/harth/map_em_euclidean_centered,4,0.8789096618484211
 harth,HARTH,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/harth/map_em_euclidean_centered,5,0.929098656809953
+(ours)",artifacts/datasets/harth/map_em_euclidean_centered,5,0.8787892486161257
 harth,HARTH,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/harth/map_em_euclidean_centered,6,0.9293936873946332
+(ours)",artifacts/datasets/harth/map_em_euclidean_centered,6,0.879421587660498
 harth,HARTH,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/harth/map_em_euclidean_centered,7,0.9295651194257508
+(ours)",artifacts/datasets/harth/map_em_euclidean_centered,7,0.8800979181815065
 harth,HARTH,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/harth/map_em_euclidean_centered,8,0.9296886402803864
+(ours)",artifacts/datasets/harth/map_em_euclidean_centered,8,0.879253404145621
 harth,HARTH,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/harth/map_em_euclidean_centered,9,0.929656464619312
+(ours)",artifacts/datasets/harth/map_em_euclidean_centered,9,0.8783544900078866
 harth,HARTH,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/harth/map_em_euclidean_centered,10,0.9295535786678062
+(ours)",artifacts/datasets/harth/map_em_euclidean_centered,10,0.8778083866744677
 harth,HARTH,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/harth/map_em_euclidean_centered,11,0.9294994279253248
+(ours)",artifacts/datasets/harth/map_em_euclidean_centered,11,0.8763675372977772
 harth,HARTH,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/harth/map_em_euclidean_centered,12,0.929187078255318
+(ours)",artifacts/datasets/harth/map_em_euclidean_centered,12,0.8745616895595826
 harth,HARTH,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/harth/map_em_euclidean_centered,13,0.928547041057576
+(ours)",artifacts/datasets/harth/map_em_euclidean_centered,13,0.8726860433763579
 harth,HARTH,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/harth/map_em_euclidean_centered,14,0.9280093454547236
+(ours)",artifacts/datasets/harth/map_em_euclidean_centered,14,0.869724053610719
 harth,HARTH,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/harth/map_em_euclidean_centered,15,0.9281440889656564
+(ours)",artifacts/datasets/harth/map_em_euclidean_centered,15,0.8674195947564338
 harth,HARTH,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/harth/map_em_euclidean_centered,16,0.9278439139229548
+(ours)",artifacts/datasets/harth/map_em_euclidean_centered,16,0.8611279531117302
 harth,HARTH,oftta,"OFTTA
-(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,0,0.6027334622763059
+(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,0,0.7026614617356095
 harth,HARTH,oftta,"OFTTA
-(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,1,0.891785363568372
+(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,1,0.833282227474596
 harth,HARTH,oftta,"OFTTA
-(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,2,0.903966836465988
+(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,2,0.8488767387771324
 harth,HARTH,oftta,"OFTTA
-(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,3,0.9101236039504514
+(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,3,0.8584480442098491
 harth,HARTH,oftta,"OFTTA
-(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,4,0.9126790559374948
+(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,4,0.8627900980928666
 harth,HARTH,oftta,"OFTTA
-(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,5,0.9154560155002288
+(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,5,0.865250759844805
 harth,HARTH,oftta,"OFTTA
-(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,6,0.9167810790037472
+(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,6,0.8665031252277378
 harth,HARTH,oftta,"OFTTA
-(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,7,0.91705327908935
+(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,7,0.8676728900320427
 harth,HARTH,oftta,"OFTTA
-(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,8,0.9178146716290322
+(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,8,0.8678790597623379
 harth,HARTH,oftta,"OFTTA
-(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,9,0.9182105232237998
+(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,9,0.866528761067883
 harth,HARTH,oftta,"OFTTA
-(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,10,0.919101848848634
+(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,10,0.8667998034051565
 harth,HARTH,oftta,"OFTTA
-(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,11,0.918309886369163
+(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,11,0.8651252830425205
 harth,HARTH,oftta,"OFTTA
-(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,12,0.9188990518694112
+(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,12,0.864707948648221
 harth,HARTH,oftta,"OFTTA
-(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,13,0.9182066481766832
+(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,13,0.8622603889764818
 harth,HARTH,oftta,"OFTTA
-(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,14,0.9177476430633204
+(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,14,0.8597318982486905
 harth,HARTH,oftta,"OFTTA
-(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,15,0.9182351237771094
+(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,15,0.8574438210227039
 harth,HARTH,oftta,"OFTTA
-(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,16,0.9173757251924054
+(baseline)",artifacts/datasets/harth/oftta_ce_backbone_edtn_d0p3_cap32,16,0.8526824356623567
 harth,HARTH,pda,"PDA
-(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,0,0.6027334622763059
+(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,0,0.7026614617356095
 harth,HARTH,pda,"PDA
-(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,1,0.8711596570096494
+(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,1,0.8122059268618554
 harth,HARTH,pda,"PDA
-(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,2,0.9096356425427068
+(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,2,0.8604486769892629
 harth,HARTH,pda,"PDA
-(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,3,0.922141939377369
+(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,3,0.877726157890827
 harth,HARTH,pda,"PDA
-(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,4,0.9266519362176276
+(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,4,0.8819208319908663
 harth,HARTH,pda,"PDA
-(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,5,0.9295722205179612
+(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,5,0.8860593381325096
 harth,HARTH,pda,"PDA
-(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,6,0.930693669608416
+(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,6,0.8863025953116718
 harth,HARTH,pda,"PDA
-(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,7,0.9325206268298274
+(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,7,0.8873910893755088
 harth,HARTH,pda,"PDA
-(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,8,0.9328222646132054
+(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,8,0.8867376036573368
 harth,HARTH,pda,"PDA
-(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,9,0.932913016923564
+(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,9,0.8848417553720843
 harth,HARTH,pda,"PDA
-(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,10,0.9335498476893614
+(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,10,0.8857826494411586
 harth,HARTH,pda,"PDA
-(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,11,0.9333019768561216
+(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,11,0.8834960615651152
 harth,HARTH,pda,"PDA
-(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,12,0.93313219975516
+(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,12,0.8822012433448786
 harth,HARTH,pda,"PDA
-(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,13,0.9328073846885918
+(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,13,0.879715861746994
 harth,HARTH,pda,"PDA
-(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,14,0.9329323253587334
+(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,14,0.8771531323819801
 harth,HARTH,pda,"PDA
-(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,15,0.932765431221659
+(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,15,0.8739844137642496
 harth,HARTH,pda,"PDA
-(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,16,0.9320706710724882
+(baseline)",artifacts/datasets/harth/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,16,0.8677621249637127
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,0,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,0,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,1,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,1,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,2,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,2,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,3,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,3,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,4,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,4,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,5,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,5,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,6,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,6,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,7,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,7,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,8,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,8,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,9,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,9,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,10,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,10,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,12,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,12,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,14,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,14,0.7414091865172201
 hapt,HAPT,fixed,"Prior Proto
-(ours)",artifacts/datasets/hapt/prior_euclidean,16,0.7344810383865671
+(ours)",artifacts/datasets/hapt/prior_euclidean,16,0.7414091865172201
 hapt,HAPT,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,0,0.7344810383865671
+(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,0,0.7414091865172201
 hapt,HAPT,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,1,0.9611541958460555
+(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,1,0.9346459028843838
 hapt,HAPT,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,2,0.9609095367845252
+(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,2,0.9387016658987132
 hapt,HAPT,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,3,0.961814777332586
+(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,3,0.9397904446877696
 hapt,HAPT,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,4,0.9612323128108682
+(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,4,0.9399120401137508
 hapt,HAPT,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,5,0.9628889015389746
+(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,5,0.9415164322143624
 hapt,HAPT,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,6,0.9617348409601012
+(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,6,0.9415945431616108
 hapt,HAPT,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,7,0.96213314580855
+(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,7,0.942270046130154
 hapt,HAPT,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,8,0.9625855079766374
+(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,8,0.9425781398269082
 hapt,HAPT,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,9,0.9620757167811947
+(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,9,0.9434041135892036
 hapt,HAPT,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,10,0.9624086682386082
+(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,10,0.9438979735006215
 hapt,HAPT,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,11,0.963043643394652
+(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,11,0.943620644945992
 hapt,HAPT,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,12,0.9635876392660864
+(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,12,0.9439979432853512
 hapt,HAPT,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,13,0.9620258235092212
+(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,13,0.9441194150828446
 hapt,HAPT,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,14,0.9630317984461824
+(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,14,0.9442415411303138
 hapt,HAPT,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,15,0.9636439274237568
+(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,15,0.9438652376154324
 hapt,HAPT,map_em_centered,"MAP-EM Proto
-(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,16,0.9625951943682804
+(ours)",artifacts/datasets/hapt/map_em_euclidean_centered,16,0.9436790680170324
 hapt,HAPT,oftta,"OFTTA
-(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,0,0.7344810383865671
+(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,0,0.7414091865172201
 hapt,HAPT,oftta,"OFTTA
-(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,1,0.9500182040959724
+(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,1,0.9130415338890436
 hapt,HAPT,oftta,"OFTTA
-(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,2,0.952171776180527
+(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,2,0.9183469230727846
 hapt,HAPT,oftta,"OFTTA
-(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,3,0.9546645119744088
+(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,3,0.9208074075006776
 hapt,HAPT,oftta,"OFTTA
-(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,4,0.9559774876055
+(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,4,0.9220684416344108
 hapt,HAPT,oftta,"OFTTA
-(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,5,0.9562604154299252
+(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,5,0.9234861832647024
 hapt,HAPT,oftta,"OFTTA
-(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,6,0.9570660982747063
+(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,6,0.9241041829259996
 hapt,HAPT,oftta,"OFTTA
-(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,7,0.9565859698915804
+(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,7,0.9244596052759186
 hapt,HAPT,oftta,"OFTTA
-(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,8,0.9574396057054472
+(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,8,0.9246358749220198
 hapt,HAPT,oftta,"OFTTA
-(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,9,0.958114311321504
+(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,9,0.9251918971496492
 hapt,HAPT,oftta,"OFTTA
-(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,10,0.95787870037232
+(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,10,0.92545651879617
 hapt,HAPT,oftta,"OFTTA
-(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,11,0.9583937537025036
+(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,11,0.9257925042926076
 hapt,HAPT,oftta,"OFTTA
-(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,12,0.958285524481214
+(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,12,0.9257604772429412
 hapt,HAPT,oftta,"OFTTA
-(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,13,0.9585181761366994
+(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,13,0.9257835966442962
 hapt,HAPT,oftta,"OFTTA
-(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,14,0.958837836158304
+(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,14,0.9263481193322628
 hapt,HAPT,oftta,"OFTTA
-(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,15,0.9580132925852578
+(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,15,0.9254715272318113
 hapt,HAPT,oftta,"OFTTA
-(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,16,0.959344958697638
+(baseline)",artifacts/datasets/hapt/oftta_ce_backbone_edtn_d0p3_cap32,16,0.9256901379370998
 hapt,HAPT,pda,"PDA
-(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,0,0.7344810383865671
+(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,0,0.7414091865172201
 hapt,HAPT,pda,"PDA
-(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,1,0.9393911882990515
+(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,1,0.8838656362092863
 hapt,HAPT,pda,"PDA
-(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,2,0.9584297445424697
+(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,2,0.9169666975331926
 hapt,HAPT,pda,"PDA
-(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,3,0.964575843690206
+(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,3,0.9256894565008496
 hapt,HAPT,pda,"PDA
-(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,4,0.9667946096526095
+(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,4,0.9315371587977308
 hapt,HAPT,pda,"PDA
-(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,5,0.9683136431158652
+(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,5,0.9341523893051248
 hapt,HAPT,pda,"PDA
-(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,6,0.9683243101744536
+(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,6,0.9351035754254706
 hapt,HAPT,pda,"PDA
-(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,7,0.9688035940438758
+(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,7,0.9367260156500792
 hapt,HAPT,pda,"PDA
-(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,8,0.9688818716807988
+(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,8,0.9373309602870524
 hapt,HAPT,pda,"PDA
-(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,9,0.9693786555563024
+(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,9,0.9376314308181474
 hapt,HAPT,pda,"PDA
-(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,10,0.9697574512144927
+(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,10,0.938853477374513
 hapt,HAPT,pda,"PDA
-(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,11,0.9694969136947428
+(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,11,0.9389149076120608
 hapt,HAPT,pda,"PDA
-(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,12,0.969858855024304
+(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,12,0.939194174435879
 hapt,HAPT,pda,"PDA
-(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,13,0.9700663299382258
+(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,13,0.9391443246882984
 hapt,HAPT,pda,"PDA
-(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,14,0.9697770200296076
+(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,14,0.9396802105915512
 hapt,HAPT,pda,"PDA
-(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,15,0.9697787779537338
+(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,15,0.9388632020805864
 hapt,HAPT,pda,"PDA
-(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,16,0.9699650670286346
+(baseline)",artifacts/datasets/hapt/pda_ce_backbone_cosine_l2norm_classifier_confidence_weighted,16,0.9391600036529852

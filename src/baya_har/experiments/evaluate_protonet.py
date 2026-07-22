@@ -12,6 +12,8 @@ from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 from whar_datasets import PreProcessingPipeline, WHARDatasetID
 
+from baya_har.metrics import observed_class_macro_f1
+
 from .common import (
     DEFAULT_DATASET_ID,
     DEFAULT_DATASETS_DIR,
@@ -713,15 +715,7 @@ def run(config: Config) -> dict[str, Any]:
                         config.cosine_temperature,
                         effective_distance_metric,
                     )
-                macro_f1 = float(
-                    f1_score(
-                        query_y,
-                        pred,
-                        labels=[int(x) for x in activity_ids],
-                        average="macro",
-                        zero_division=0,
-                    )
-                )
+                macro_f1 = observed_class_macro_f1(query_y, pred)
                 acc = float(accuracy_score(query_y, pred))
                 weighted_f1 = float(
                     f1_score(

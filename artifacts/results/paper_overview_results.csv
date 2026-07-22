@@ -1,0 +1,17 @@
+dataset_id,method_key,n,value,fold_std
+hapt,original,0,0.712,0.143
+hapt,fixed,16,0.734,0.133
+hapt,map_em_centered,16,0.963,0.089
+hapt,bayesian,16,0.978,0.089
+harth,original,0,0.614,0.125
+harth,fixed,16,0.603,0.132
+harth,map_em_centered,16,0.928,0.081
+harth,bayesian,16,0.940,0.081
+hhar,original,0,0.816,0.092
+hhar,fixed,16,0.812,0.085
+hhar,map_em_centered,16,0.821,0.078
+hhar,bayesian,16,0.880,0.078
+wear,original,0,0.819,0.147
+wear,fixed,16,0.812,0.148
+wear,map_em_centered,16,0.859,0.099
+wear,bayesian,16,0.936,0.099

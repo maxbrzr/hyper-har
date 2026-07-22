@@ -26,6 +26,7 @@ from whar_datasets import (
 )
 
 from baya_har.config import DEFAULT_CONFIG
+from baya_har.metrics import observed_class_macro_f1
 from baya_har.models.tinierhar import TinierHAR
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -655,9 +656,7 @@ def classification_metrics(
     labels = list(range(int(num_classes)))
     return {
         "accuracy": float(accuracy_score(true_np, pred_np)),
-        "macro_f1": float(
-            f1_score(true_np, pred_np, labels=labels, average="macro", zero_division=0)
-        ),
+        "macro_f1": observed_class_macro_f1(true_np, pred_np),
         "weighted_f1": float(
             f1_score(
                 true_np, pred_np, labels=labels, average="weighted", zero_division=0

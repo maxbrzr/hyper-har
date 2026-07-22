@@ -2,6 +2,7 @@
 *.zip
 tmp/
 artifacts/datasets
+.matplotlib/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

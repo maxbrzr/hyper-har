@@ -1,8 +1,9 @@
 {
   "config": {
-    "output_root": "artifacts/datasets",
+    "output_root": "/Users/maxburzer/hyper-har/artifacts/datasets",
     "comparison_stage_name": "overview",
-    "source_records_csv": "artifacts/results/paper_results.csv",
+    "results_source": "live",
+    "source_records_csv": null,
     "dataset_ids": [
       "hhar",
       "wear",
@@ -42,7 +43,7 @@
     "color_bayesian": "#2ca02c",
     "axis_label_fontsize": 12
   },
-  "output_root": "artifacts/datasets",
+  "output_root": "/Users/maxburzer/hyper-har/artifacts/datasets",
   "num_rows": 16,
   "datasets": [
     "hapt",

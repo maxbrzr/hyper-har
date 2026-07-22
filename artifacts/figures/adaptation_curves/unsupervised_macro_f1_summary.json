@@ -1,8 +1,9 @@
 {
   "config": {
-    "output_root": "artifacts/datasets",
+    "output_root": "/Users/maxburzer/hyper-har/artifacts/datasets",
     "comparison_stage_name": "adaptation_curves",
-    "source_records_csv": "artifacts/results/paper_results.csv",
+    "results_source": "live",
+    "source_records_csv": null,
     "mode": "unsupervised",
     "metric": "macro_f1",
     "dataset_ids": [

@@ -93,19 +93,35 @@ def _run_evaluation(args: argparse.Namespace) -> None:
 
 def _run_figures(args: argparse.Namespace) -> None:
     dataset_root = Path(args.artifacts_dir) / "datasets"
-    source_csv = Path(args.artifacts_dir) / "results" / "paper_results.csv"
+    use_paper = args.results_source == "paper"
+    overview_source_csv = (
+        Path(args.artifacts_dir) / "results" / "paper_overview_results.csv"
+        if use_paper
+        else None
+    )
+    curve_source_csv = (
+        Path(args.artifacts_dir) / "results" / "paper_results.csv"
+        if use_paper
+        else None
+    )
     plot_overview.run(
         replace(
             plot_overview.RUN_CONFIG,
             output_root=str(dataset_root),
-            source_records_csv=str(source_csv),
+            results_source=args.results_source,
+            source_records_csv=(
+                str(overview_source_csv) if overview_source_csv is not None else None
+            ),
         )
     )
     plot_adaptation_curves.run(
         replace(
             plot_adaptation_curves.RUN_CONFIG,
             output_root=str(dataset_root),
-            source_records_csv=str(source_csv),
+            results_source=args.results_source,
+            source_records_csv=(
+                str(curve_source_csv) if curve_source_csv is not None else None
+            ),
         )
     )
     if not args.skip_tsne:
@@ -187,6 +203,12 @@ def _build_parser() -> argparse.ArgumentParser:
 
     figures = subparsers.add_parser("figures", help="Regenerate paper figures 2-4.")
     _add_shared_arguments(figures)
+    figures.add_argument(
+        "--results-source",
+        choices=("paper", "live"),
+        default="paper",
+        help="Use frozen paper aggregates or live per-dataset evaluation outputs.",
+    )
     figures.add_argument("--skip-tsne", action="store_true")
 
     flops = subparsers.add_parser("flops", help="Regenerate computational-cost tables.")
@@ -198,6 +220,12 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_shared_arguments(reproduce)
     reproduce.add_argument("--shots", type=_k_values, default=tuple(range(17)))
     reproduce.add_argument("--episodes", type=int, default=100)
+    reproduce.add_argument(
+        "--results-source",
+        choices=("paper", "live"),
+        default="paper",
+        help="Use frozen paper aggregates or live per-dataset evaluation outputs.",
+    )
     reproduce.add_argument("--skip-tsne", action="store_true")
     reproduce.set_defaults(methods=list(DEFAULT_METHODS))
     return parser

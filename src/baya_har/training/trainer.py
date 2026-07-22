@@ -5,9 +5,10 @@ from typing import Any, Dict, Iterable, Mapping, Sequence
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
-from sklearn.metrics import f1_score
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
+
+from baya_har.metrics import observed_class_macro_f1
 
 
 @dataclass
@@ -150,7 +151,7 @@ class TinierHARTrainer:
         epoch_loss = running_loss / max(1, running_total)
         preds_t = torch.cat(all_preds).numpy()
         targets_t = torch.cat(all_targets).numpy()
-        epoch_macro_f1 = f1_score(targets_t, preds_t, average="macro", zero_division=0)
+        epoch_macro_f1 = observed_class_macro_f1(targets_t, preds_t)
         return epoch_loss, float(epoch_macro_f1)
 
     def _save_checkpoint(self) -> None:
@@ -244,9 +245,7 @@ class TinierHARTrainer:
 
         preds_t = torch.cat(all_preds)
         targets_t = torch.cat(all_targets)
-        macro_f1 = f1_score(
-            targets_t.numpy(), preds_t.numpy(), average="macro", zero_division=0
-        )
+        macro_f1 = observed_class_macro_f1(targets_t.numpy(), preds_t.numpy())
         mean_loss = running_loss / max(1, running_total)
         cm = self.compute_confusion_matrix(targets_t, preds_t, self.num_classes)
 

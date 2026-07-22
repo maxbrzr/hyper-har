@@ -1,6 +1,7 @@
 import json
 import os
 from dataclasses import asdict, dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -26,8 +27,9 @@ os.environ.setdefault("XDG_CACHE_HOME", str(FONT_CACHE_DIR))
 class Config:
     output_root: str | None = None
     comparison_stage_name: str = "overview"
+    results_source: str = "paper"  # "paper" or "live"
     source_records_csv: str | None = str(
-        ROOT / "artifacts" / "results" / "paper_results.csv"
+        ROOT / "artifacts" / "results" / "paper_overview_results.csv"
     )
     dataset_ids: tuple[str, ...] = ("hhar", "wear", "harth", "hapt")
 
@@ -80,11 +82,20 @@ def _list_dataset_dirs(output_root: Path) -> list[Path]:
 
 
 def _choose_stage_dir(
-    dataset_dir: Path, prefix: str, prefer_contains: tuple[str, ...] = ()
+    dataset_dir: Path,
+    prefix: str,
+    prefer_contains: tuple[str, ...] = (),
+    forbidden_contains: tuple[str, ...] = (),
 ) -> Path | None:
     candidates = sorted(
         [p for p in dataset_dir.iterdir() if p.is_dir() and p.name.startswith(prefix)]
     )
+    if forbidden_contains:
+        candidates = [
+            path
+            for path in candidates
+            if not any(token in path.name for token in forbidden_contains)
+        ]
     if not candidates:
         return None
 
@@ -149,8 +160,14 @@ def _k_result(
     method_key: str,
     k_value: int,
     prefer_contains: tuple[str, ...] = (),
+    forbidden_contains: tuple[str, ...] = (),
 ) -> tuple[float, float, str] | None:
-    stage_dir = _choose_stage_dir(dataset_dir, prefix, prefer_contains=prefer_contains)
+    stage_dir = _choose_stage_dir(
+        dataset_dir,
+        prefix,
+        prefer_contains=prefer_contains,
+        forbidden_contains=forbidden_contains,
+    )
     if stage_dir is None:
         return None
     csv_path = stage_dir / "overall_by_k_results.csv"
@@ -174,25 +191,29 @@ def _k_result(
 
 
 def _load_source_records(config: Config) -> pd.DataFrame | None:
-    if not config.source_records_csv:
+    if config.results_source not in {"paper", "live"}:
+        raise ValueError("results_source must be 'paper' or 'live'.")
+    if config.results_source == "live":
         return None
+    if not config.source_records_csv:
+        raise ValueError("Paper results require source_records_csv.")
     source_path = Path(config.source_records_csv)
     if not source_path.exists():
-        return None
+        raise FileNotFoundError(f"Paper results CSV not found: {source_path}")
 
     records = pd.read_csv(source_path)
-    required = {"dataset_id", "method_key", "n", "value"}
+    required = {"dataset_id", "method_key", "n", "value", "fold_std"}
     if not required.issubset(records.columns):
         raise ValueError(f"Source records CSV is missing columns: {source_path}")
     return records
 
 
-def _source_record_value(
+def _source_record_result(
     records: pd.DataFrame | None,
     dataset_id: str,
     method_key: str,
     n_value: int,
-) -> float | None:
+) -> tuple[float, float, str] | None:
     if records is None:
         return None
     rows = records[
@@ -202,64 +223,69 @@ def _source_record_value(
     ]
     if rows.empty:
         return None
-    return float(rows.iloc[0]["value"])
+    row = rows.iloc[0]
+    meta = (
+        "baseline"
+        if method_key == "original"
+        else f"{method_key}:n={int(n_value)}:source22"
+    )
+    return (
+        float(row["value"]),
+        float(row["fold_std"]),
+        meta,
+    )
 
 
 def _collect(config: Config) -> tuple[pd.DataFrame, list[str]]:
     output_root = resolve_output_root(config.output_root, dataset_id="")
-    dataset_dirs = _list_dataset_dirs(output_root)
     source_records = _load_source_records(config)
 
     rows: list[dict[str, Any]] = []
     warnings: list[str] = []
 
-    allowed = {x.lower() for x in config.dataset_ids}
-    for dataset_dir in dataset_dirs:
-        dataset_id = dataset_dir.name
-        if dataset_id.lower() not in allowed:
+    source_specs = {
+        "Original Classifier": ("original", 0),
+        "Prior Proto": ("fixed", config.k_value_for_proto_methods),
+        "MAP-EM Proto (16-Shot)": (
+            "map_em_centered",
+            config.k_value_for_proto_methods,
+        ),
+        "MAP Proto (16-Shot)": ("bayesian", config.k_value_for_proto_methods),
+    }
+    for dataset_id in sorted(config.dataset_ids):
+        dataset_dir = output_root / dataset_id
+        if config.results_source == "paper":
+            method_results = {
+                method_name: _source_record_result(
+                    source_records,
+                    dataset_id,
+                    source_key,
+                    source_k,
+                )
+                for method_name, (source_key, source_k) in source_specs.items()
+            }
+        elif not dataset_dir.exists():
+            warnings.append(f"[{dataset_id}] dataset dir missing")
             continue
-
-        method_results: dict[str, tuple[float, float, str] | None] = {
-            "Original Classifier": _baseline_result(dataset_dir, config),
-            "Prior Proto": _fixed_result(dataset_dir, config),
-            "MAP-EM Proto (16-Shot)": _k_result(
-                dataset_dir,
-                config.map_em_prefix,
-                method_key="map_em",
-                k_value=config.k_value_for_proto_methods,
-                prefer_contains=config.map_em_prefer_contains,
-            ),
-            "MAP Proto (16-Shot)": _k_result(
-                dataset_dir,
-                config.bayesian_prefix,
-                method_key="bayesian",
-                k_value=config.k_value_for_proto_methods,
-            ),
-        }
-        source_specs = {
-            "Prior Proto": ("fixed", config.k_value_for_proto_methods),
-            "MAP-EM Proto (16-Shot)": (
-                "map_em_centered",
-                config.k_value_for_proto_methods,
-            ),
-            "MAP Proto (16-Shot)": ("bayesian", config.k_value_for_proto_methods),
-        }
-        for method_name, (source_key, source_k) in source_specs.items():
-            source_value = _source_record_value(
-                source_records,
-                dataset_id,
-                source_key,
-                source_k,
-            )
-            if source_value is None:
-                continue
-            current = method_results.get(method_name)
-            fold_std = current[1] if current is not None else 0.0
-            method_results[method_name] = (
-                float(source_value),
-                float(fold_std),
-                f"{source_key}:n={int(source_k)}:source22",
-            )
+        else:
+            method_results = {
+                "Original Classifier": _baseline_result(dataset_dir, config),
+                "Prior Proto": _fixed_result(dataset_dir, config),
+                "MAP-EM Proto (16-Shot)": _k_result(
+                    dataset_dir,
+                    config.map_em_prefix,
+                    method_key="map_em",
+                    k_value=config.k_value_for_proto_methods,
+                    prefer_contains=config.map_em_prefer_contains,
+                ),
+                "MAP Proto (16-Shot)": _k_result(
+                    dataset_dir,
+                    config.bayesian_prefix,
+                    method_key="bayesian",
+                    k_value=config.k_value_for_proto_methods,
+                    forbidden_contains=("map_em",),
+                ),
+            }
 
         present_count = sum(result is not None for result in method_results.values())
         if present_count == 0:
@@ -282,7 +308,7 @@ def _collect(config: Config) -> tuple[pd.DataFrame, list[str]]:
             )
 
     if not rows:
-        raise RuntimeError("No method results found under artifacts/datasets.")
+        raise RuntimeError(f"No method results found for source '{config.results_source}'.")
 
     df = pd.DataFrame(rows)
     df["macro_f1"] = df["macro_f1"].astype(float).round(3)
@@ -449,7 +475,12 @@ def _plot(df: pd.DataFrame, config: Config, output_root: Path) -> dict[str, str]
     png_path = out_dir / "grouped_macro_f1_loso.png"
     pdf_path = out_dir / "grouped_macro_f1_loso.pdf"
     fig.savefig(png_path)
-    fig.savefig(pdf_path)
+    pdf_metadata = (
+        {"CreationDate": datetime(2026, 7, 22, 9, 48, 42)}
+        if config.results_source == "paper"
+        else None
+    )
+    fig.savefig(pdf_path, metadata=pdf_metadata)
     plt.close(fig)
 
     return {
