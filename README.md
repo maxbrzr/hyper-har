@@ -77,8 +77,8 @@ completed outputs.
 | `logistic` | Logistic-probe performance ceiling | Full | Yes |
 | `map` | BayaHAR MAP prototype estimation | Full | No |
 | `map-em` | BayaHAR MAP-EM prototype estimation | Activity set only | No |
-| `pda` | PDA baseline | None | No |
-| `oftta` | Offline OFTTA baseline | None | No |
+| `pda` | PDA baseline | Activity set only | No |
+| `oftta` | Offline OFTTA baseline | Activity set only | No |
 
 
 All methods use the same pretrained classifier checkpoints and shared LOSO
