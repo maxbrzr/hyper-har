@@ -42,19 +42,10 @@ Use `--datasets-dir` to select a different location.
 
 ## Reproduce the paper
 
-Run the full LOSO pipeline, all 100-episode few-shot evaluations, Figures 2–4,
-and the computational-cost table:
-
-```bash
-uv run baya-har reproduce
-```
-
 This is the camera-ready configuration: 3-second windows, 50% overlap during
 classifier training, no overlap during adaptation, 100 episodes per support
 size, and support sizes 0–16. A full run trains one TinierHAR model per LOSO
 fold on all four datasets and is therefore computationally expensive.
-
-Stages can also be run independently:
 
 ```bash
 # Train the pretrained classifiers.
@@ -66,10 +57,7 @@ uv run baya-har evaluate \
   --methods map map-em \
   --shots 0,1,4,16
 
-# Recreate the plots from completed evaluations.
-uv run baya-har figures
-
-# Plot freshly generated dataset results instead of frozen paper values.
+# Recreate the plots from completed evaluations from live runs or frozen paper runs.
 uv run baya-har figures --results-source live
 
 # Recreate the 1-shot/16-shot operation counts from saved checkpoints.
