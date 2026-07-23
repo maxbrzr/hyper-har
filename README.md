@@ -1,8 +1,7 @@
 # BayaHAR
 
-Official experiment code for **“BayaHAR: Lightweight Bayesian Few-Shot User
-Adaptation for On-Device Personalized Human Activity Recognition”** (ISWC
-2026).
+Official experiment code for **BayaHAR: Lightweight Bayesian Few-Shot User
+Adaptation for On-Device Personalized Human Activity Recognition**.
 
 BayaHAR turns a pretrained HAR classifier into a Prototypical Network with
 source-domain prior prototypes. It supports:
@@ -12,7 +11,7 @@ source-domain prior prototypes. It supports:
 - weakly supervised adaptation with a single closed-form MAP-EM update
 
 The adaptation steps are source-free at deployment, gradient-free, and operate
-only on the classifier embedding space. The camera-ready paper is included at
+only on the classifier embedding space. The paper is included at
 [paper/baya-har_cam-ready.pdf](paper/baya-har_cam-ready.pdf).
 
 ## Repository layout
@@ -23,7 +22,7 @@ src/baya_har/
 ├── training/               # Cross-entropy LOSO training
 ├── experiments/            # One module per paper experiment or figure
 └── cli.py                  # Unified `baya-har` command
-paper/                      # Camera-ready manuscript
+paper/                      # Manuscript
 artifacts/                  # Local outputs; see artifacts/README.md
 ```
 
@@ -42,7 +41,7 @@ Use `--datasets-dir` to select a different location.
 
 ## Reproduce the paper
 
-This is the camera-ready configuration: 3-second windows, 50% overlap during
+This is the paper configuration: 3-second windows, 50% overlap during
 classifier training, no overlap during adaptation, 100 episodes per support
 size, and support sizes 0–16. A full run trains one TinierHAR model per LOSO
 fold on all four datasets and is therefore computationally expensive.
@@ -83,21 +82,18 @@ completed outputs.
 
 
 All methods use the same pretrained classifier checkpoints and shared LOSO
-fold manifests. Support and query samples are disjoint. Macro-F1 is averaged
-over classes observed in the ground truth or predictions. Globally defined
-classes absent from both are not inserted with an F1 score of zero.
+fold manifests. Support and query samples are disjoint.
 
 ## Artifacts
 
 Large per-dataset runs are excluded from Git because they contain model
-checkpoints and per-episode records. The compact camera-ready figures, result
-table, and FLOP table remain versionable. The cleaned layout is:
+checkpoints and per-episode records. The cleaned layout is:
 
 ```text
 artifacts/
 ├── datasets/<dataset>/     # shared splits, checkpoints, and method outputs
 ├── figures/                # paper overview and adaptation-curve figures
-├── results/                # frozen camera-ready aggregate values
+├── results/                # frozen paper aggregate values
 └── tables/                 # FLOP accounting
 ```
 
@@ -106,6 +102,20 @@ for adaptation curves and `artifacts/results/paper_overview_results.csv` for
 the complete overview, including LOSO standard deviations. Figure generation
 uses these paper values by default; pass `--results-source live` to read only
 the freshly generated outputs under `artifacts/datasets/`.
+
+## Citation
+
+If you use BayaHAR in your research, please cite the associated
+[paper](https://arxiv.org/abs/2606.04798):
+
+```bibtex
+@article{burzer2026uncertainty,
+  title={Uncertainty-Aware (Un) Supervised Few-Shot User Adaptation for On-Device Personalized Human Activity Recognition},
+  author={Burzer, Maximilian and Riedel, Till and Beigl, Michael and R{\"o}ddiger, Tobias},
+  journal={arXiv preprint arXiv:2606.04798},
+  year={2026}
+}
+```
 
 ## License
 
