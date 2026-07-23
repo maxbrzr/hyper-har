@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the associated preprint."
+title: "Lightweight Bayesian Few-Shot User Adaptation for On-Device Personalized Human Activity Recognition"
+type: software
+authors:
+  - family-names: Burzer
+    given-names: Maximilian
+  - family-names: Riedel
+    given-names: Till
+  - family-names: Beigl
+    given-names: Michael
+  - family-names: Röddiger
+    given-names: Tobias
+version: 0.1.0
+preferred-citation:
+  type: article
+  title: "Uncertainty-Aware (Un) Supervised Few-Shot User Adaptation for On-Device Personalized Human Activity Recognition"
+  authors:
+    - family-names: Burzer
+      given-names: Maximilian
+    - family-names: Riedel
+      given-names: Till
+    - family-names: Beigl
+      given-names: Michael
+    - family-names: Röddiger
+      given-names: Tobias
+  year: 2026
+  journal: "arXiv preprint arXiv:2606.04798"
+  identifiers:
+    - type: url
+      value: "https://arxiv.org/abs/2606.04798"
+      description: "arXiv preprint"
