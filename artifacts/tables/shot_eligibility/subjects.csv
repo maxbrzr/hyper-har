@@ -1,0 +1,86 @@
+dataset_id,fold_id,subject_id,num_present_classes,min_class_windows,max_supported_k,limiting_classes,valid_requested_shots,invalid_requested_shots
+hhar,loso_subject_0,0,6,197,196,"{""5"": {""name"": ""Stairsdown"", ""windows"": 197}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+hhar,loso_subject_1,1,6,203,202,"{""5"": {""name"": ""Stairsdown"", ""windows"": 203}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+hhar,loso_subject_2,2,6,134,133,"{""0"": {""name"": ""Bike"", ""windows"": 134}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+hhar,loso_subject_3,3,6,157,156,"{""5"": {""name"": ""Stairsdown"", ""windows"": 157}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+hhar,loso_subject_4,4,6,183,182,"{""5"": {""name"": ""Stairsdown"", ""windows"": 183}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+hhar,loso_subject_5,5,6,177,176,"{""5"": {""name"": ""Stairsdown"", ""windows"": 177}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+hhar,loso_subject_6,6,6,132,131,"{""0"": {""name"": ""Bike"", ""windows"": 132}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+hhar,loso_subject_7,7,6,150,149,"{""2"": {""name"": ""Stand"", ""windows"": 150}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+hhar,loso_subject_8,8,6,149,148,"{""5"": {""name"": ""Stairsdown"", ""windows"": 149}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+wear,loso_subject_0,0,18,38,37,"{""12"": {""name"": ""Sit Ups Complex"", ""windows"": 38}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+wear,loso_subject_1,1,18,31,30,"{""14"": {""name"": ""Stretching Lumbar Rotation"", ""windows"": 31}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+wear,loso_subject_2,2,17,42,41,"{""9"": {""name"": ""Push Ups"", ""windows"": 42}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+wear,loso_subject_3,3,18,41,40,"{""13"": {""name"": ""Stretching Hamstrings"", ""windows"": 41}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+wear,loso_subject_4,4,18,32,31,"{""17"": {""name"": ""Stretching Triceps"", ""windows"": 32}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+wear,loso_subject_5,5,18,25,24,"{""3"": {""name"": ""Jogging Butt Kicks"", ""windows"": 25}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+wear,loso_subject_6,6,18,43,42,"{""0"": {""name"": ""Bench Dips"", ""windows"": 43}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+wear,loso_subject_7,7,18,39,38,"{""0"": {""name"": ""Bench Dips"", ""windows"": 39}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+wear,loso_subject_8,8,18,44,43,"{""17"": {""name"": ""Stretching Triceps"", ""windows"": 44}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+wear,loso_subject_9,9,18,44,43,"{""10"": {""name"": ""Push Ups Complex"", ""windows"": 44}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+wear,loso_subject_10,10,12,15,14,"{""1"": {""name"": ""Burpees"", ""windows"": 15}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14","15,16"
+wear,loso_subject_11,11,18,38,37,"{""6"": {""name"": ""Jogging Skipping"", ""windows"": 38}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+wear,loso_subject_12,12,18,40,39,"{""4"": {""name"": ""Jogging Rotating Arms"", ""windows"": 40}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+wear,loso_subject_13,13,18,42,41,"{""9"": {""name"": ""Push Ups"", ""windows"": 42}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+wear,loso_subject_14,14,18,41,40,"{""3"": {""name"": ""Jogging Butt Kicks"", ""windows"": 41}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+wear,loso_subject_15,15,18,41,40,"{""6"": {""name"": ""Jogging Skipping"", ""windows"": 41}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+wear,loso_subject_16,16,18,41,40,"{""9"": {""name"": ""Push Ups"", ""windows"": 41}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+wear,loso_subject_17,17,18,45,44,"{""11"": {""name"": ""Sit Ups"", ""windows"": 45}, ""17"": {""name"": ""Stretching Triceps"", ""windows"": 45}, ""3"": {""name"": ""Jogging Butt Kicks"", ""windows"": 45}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+wear,loso_subject_18,18,18,42,41,"{""10"": {""name"": ""Push Ups Complex"", ""windows"": 42}, ""15"": {""name"": ""Stretching Lunging"", ""windows"": 42}, ""9"": {""name"": ""Push Ups"", ""windows"": 42}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+wear,loso_subject_19,19,18,39,38,"{""11"": {""name"": ""Sit Ups"", ""windows"": 39}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+wear,loso_subject_20,20,18,39,38,"{""3"": {""name"": ""Jogging Butt Kicks"", ""windows"": 39}, ""8"": {""name"": ""Lunges Complex"", ""windows"": 39}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+wear,loso_subject_21,21,18,38,37,"{""0"": {""name"": ""Bench Dips"", ""windows"": 38}, ""14"": {""name"": ""Stretching Lumbar Rotation"", ""windows"": 38}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+wear,loso_subject_22,22,18,40,39,"{""0"": {""name"": ""Bench Dips"", ""windows"": 40}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+wear,loso_subject_23,23,18,36,35,"{""6"": {""name"": ""Jogging Skipping"", ""windows"": 36}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16",
+harth,loso_subject_0,0,10,2,1,"{""4"": {""name"": ""Stairs Descending"", ""windows"": 2}}","0,1","2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+harth,loso_subject_1,1,10,1,0,"{""7"": {""name"": ""Lying"", ""windows"": 1}}",0,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+harth,loso_subject_2,2,7,2,1,"{""4"": {""name"": ""Stairs Descending"", ""windows"": 2}}","0,1","2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+harth,loso_subject_3,3,6,15,14,"{""5"": {""name"": ""Standing"", ""windows"": 15}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13,14","15,16"
+harth,loso_subject_4,4,8,12,11,"{""5"": {""name"": ""Standing"", ""windows"": 12}}","0,1,2,3,4,5,6,7,8,9,10,11","12,13,14,15,16"
+harth,loso_subject_5,5,9,14,13,"{""5"": {""name"": ""Standing"", ""windows"": 14}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13","14,15,16"
+harth,loso_subject_6,6,9,14,13,"{""11"": {""name"": ""Cycling Stand Inactive"", ""windows"": 14}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13","14,15,16"
+harth,loso_subject_7,7,10,11,10,"{""9"": {""name"": ""Cycling Stand"", ""windows"": 11}}","0,1,2,3,4,5,6,7,8,9,10","11,12,13,14,15,16"
+harth,loso_subject_8,8,11,1,0,"{""7"": {""name"": ""Lying"", ""windows"": 1}, ""9"": {""name"": ""Cycling Stand"", ""windows"": 1}}",0,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+harth,loso_subject_9,9,12,1,0,"{""10"": {""name"": ""Cycling Sit Inactive"", ""windows"": 1}}",0,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+harth,loso_subject_10,10,10,8,7,"{""9"": {""name"": ""Cycling Stand"", ""windows"": 8}}","0,1,2,3,4,5,6,7","8,9,10,11,12,13,14,15,16"
+harth,loso_subject_11,11,10,1,0,"{""7"": {""name"": ""Lying"", ""windows"": 1}}",0,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+harth,loso_subject_12,12,11,3,2,"{""9"": {""name"": ""Cycling Stand"", ""windows"": 3}}","0,1,2","3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+harth,loso_subject_13,13,10,3,2,"{""9"": {""name"": ""Cycling Stand"", ""windows"": 3}}","0,1,2","3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+harth,loso_subject_14,14,11,2,1,"{""10"": {""name"": ""Cycling Sit Inactive"", ""windows"": 2}}","0,1","2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+harth,loso_subject_15,15,8,3,2,"{""2"": {""name"": ""Shuffling"", ""windows"": 3}}","0,1,2","3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+harth,loso_subject_16,16,8,3,2,"{""2"": {""name"": ""Shuffling"", ""windows"": 3}}","0,1,2","3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+harth,loso_subject_17,17,12,14,13,"{""5"": {""name"": ""Standing"", ""windows"": 14}}","0,1,2,3,4,5,6,7,8,9,10,11,12,13","14,15,16"
+harth,loso_subject_18,18,11,7,6,"{""2"": {""name"": ""Shuffling"", ""windows"": 7}}","0,1,2,3,4,5,6","7,8,9,10,11,12,13,14,15,16"
+harth,loso_subject_19,19,6,4,3,"{""2"": {""name"": ""Shuffling"", ""windows"": 4}}","0,1,2,3","4,5,6,7,8,9,10,11,12,13,14,15,16"
+harth,loso_subject_20,20,7,3,2,"{""2"": {""name"": ""Shuffling"", ""windows"": 3}}","0,1,2","3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+harth,loso_subject_21,21,10,2,1,"{""4"": {""name"": ""Stairs Descending"", ""windows"": 2}}","0,1","2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_0,0,12,2,1,"{""1"": {""name"": ""Walking Upstairs"", ""windows"": 2}, ""3"": {""name"": ""Sitting"", ""windows"": 2}, ""6"": {""name"": ""Stand To Sit"", ""windows"": 2}, ""7"": {""name"": ""Sit To Stand"", ""windows"": 2}, ""8"": {""name"": ""Sit To Lie"", ""windows"": 2}}","0,1","2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_1,1,12,2,1,"{""1"": {""name"": ""Walking Upstairs"", ""windows"": 2}, ""3"": {""name"": ""Sitting"", ""windows"": 2}, ""7"": {""name"": ""Sit To Stand"", ""windows"": 2}, ""8"": {""name"": ""Sit To Lie"", ""windows"": 2}}","0,1","2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_2,2,12,1,0,"{""3"": {""name"": ""Sitting"", ""windows"": 1}}",0,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_3,3,12,2,1,"{""1"": {""name"": ""Walking Upstairs"", ""windows"": 2}, ""3"": {""name"": ""Sitting"", ""windows"": 2}, ""6"": {""name"": ""Stand To Sit"", ""windows"": 2}, ""7"": {""name"": ""Sit To Stand"", ""windows"": 2}, ""8"": {""name"": ""Sit To Lie"", ""windows"": 2}}","0,1","2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_4,4,12,1,0,"{""3"": {""name"": ""Sitting"", ""windows"": 1}}",0,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_5,5,12,1,0,"{""3"": {""name"": ""Sitting"", ""windows"": 1}}",0,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_6,6,10,1,0,"{""6"": {""name"": ""Stand To Sit"", ""windows"": 1}}",0,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_7,7,11,1,0,"{""1"": {""name"": ""Walking Upstairs"", ""windows"": 1}, ""8"": {""name"": ""Sit To Lie"", ""windows"": 1}}",0,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_8,8,11,1,0,"{""1"": {""name"": ""Walking Upstairs"", ""windows"": 1}, ""6"": {""name"": ""Stand To Sit"", ""windows"": 1}}",0,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_9,9,11,1,0,"{""1"": {""name"": ""Walking Upstairs"", ""windows"": 1}, ""6"": {""name"": ""Stand To Sit"", ""windows"": 1}, ""8"": {""name"": ""Sit To Lie"", ""windows"": 1}}",0,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_10,10,12,2,1,"{""1"": {""name"": ""Walking Upstairs"", ""windows"": 2}, ""3"": {""name"": ""Sitting"", ""windows"": 2}, ""4"": {""name"": ""Standing"", ""windows"": 2}, ""6"": {""name"": ""Stand To Sit"", ""windows"": 2}, ""7"": {""name"": ""Sit To Stand"", ""windows"": 2}, ""8"": {""name"": ""Sit To Lie"", ""windows"": 2}}","0,1","2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_11,11,12,1,0,"{""3"": {""name"": ""Sitting"", ""windows"": 1}}",0,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_12,12,12,2,1,"{""1"": {""name"": ""Walking Upstairs"", ""windows"": 2}, ""3"": {""name"": ""Sitting"", ""windows"": 2}, ""4"": {""name"": ""Standing"", ""windows"": 2}, ""6"": {""name"": ""Stand To Sit"", ""windows"": 2}, ""7"": {""name"": ""Sit To Stand"", ""windows"": 2}}","0,1","2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_13,13,12,2,1,"{""3"": {""name"": ""Sitting"", ""windows"": 2}, ""6"": {""name"": ""Stand To Sit"", ""windows"": 2}}","0,1","2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_14,14,12,1,0,"{""3"": {""name"": ""Sitting"", ""windows"": 1}}",0,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_15,15,11,2,1,"{""1"": {""name"": ""Walking Upstairs"", ""windows"": 2}, ""4"": {""name"": ""Standing"", ""windows"": 2}, ""6"": {""name"": ""Stand To Sit"", ""windows"": 2}, ""7"": {""name"": ""Sit To Stand"", ""windows"": 2}, ""8"": {""name"": ""Sit To Lie"", ""windows"": 2}}","0,1","2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_16,16,12,2,1,"{""1"": {""name"": ""Walking Upstairs"", ""windows"": 2}, ""3"": {""name"": ""Sitting"", ""windows"": 2}, ""8"": {""name"": ""Sit To Lie"", ""windows"": 2}}","0,1","2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_17,17,12,2,1,"{""3"": {""name"": ""Sitting"", ""windows"": 2}, ""6"": {""name"": ""Stand To Sit"", ""windows"": 2}, ""7"": {""name"": ""Sit To Stand"", ""windows"": 2}, ""8"": {""name"": ""Sit To Lie"", ""windows"": 2}}","0,1","2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_18,18,12,1,0,"{""3"": {""name"": ""Sitting"", ""windows"": 1}}",0,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_19,19,12,1,0,"{""3"": {""name"": ""Sitting"", ""windows"": 1}}",0,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_20,20,12,1,0,"{""3"": {""name"": ""Sitting"", ""windows"": 1}}",0,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_21,21,11,1,0,"{""1"": {""name"": ""Walking Upstairs"", ""windows"": 1}}",0,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_22,22,12,1,0,"{""3"": {""name"": ""Sitting"", ""windows"": 1}}",0,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_23,23,11,2,1,"{""1"": {""name"": ""Walking Upstairs"", ""windows"": 2}, ""6"": {""name"": ""Stand To Sit"", ""windows"": 2}, ""7"": {""name"": ""Sit To Stand"", ""windows"": 2}}","0,1","2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_24,24,12,2,1,"{""1"": {""name"": ""Walking Upstairs"", ""windows"": 2}, ""3"": {""name"": ""Sitting"", ""windows"": 2}, ""4"": {""name"": ""Standing"", ""windows"": 2}, ""7"": {""name"": ""Sit To Stand"", ""windows"": 2}}","0,1","2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_25,25,12,1,0,"{""3"": {""name"": ""Sitting"", ""windows"": 1}}",0,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_26,26,11,1,0,"{""8"": {""name"": ""Sit To Lie"", ""windows"": 1}}",0,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_27,27,10,1,0,"{""3"": {""name"": ""Sitting"", ""windows"": 1}}",0,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_28,28,12,2,1,"{""1"": {""name"": ""Walking Upstairs"", ""windows"": 2}, ""3"": {""name"": ""Sitting"", ""windows"": 2}, ""4"": {""name"": ""Standing"", ""windows"": 2}, ""6"": {""name"": ""Stand To Sit"", ""windows"": 2}, ""8"": {""name"": ""Sit To Lie"", ""windows"": 2}}","0,1","2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+hapt,loso_subject_29,29,12,1,0,"{""1"": {""name"": ""Walking Upstairs"", ""windows"": 1}, ""3"": {""name"": ""Sitting"", ""windows"": 1}}",0,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"

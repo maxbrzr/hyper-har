@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from baya_har.experiments import (
+    check_shot_eligibility,
     evaluate_logistic,
     evaluate_map,
     evaluate_map_em,
@@ -89,6 +90,20 @@ def _run_evaluation(args: argparse.Namespace) -> None:
         for name, module in ADAPTATION_STAGES.items():
             if name in args.methods:
                 module.run(_base_config(module, args, dataset))
+
+
+def _run_shot_check(args: argparse.Namespace) -> None:
+    check_shot_eligibility.run(
+        replace(
+            check_shot_eligibility.RUN_CONFIG,
+            dataset_ids=tuple(args.datasets),
+            datasets_dir=str(args.datasets_dir),
+            artifacts_dir=str(args.artifacts_dir),
+            k_values=args.shots,
+            min_query_per_class=args.min_query_per_class,
+            max_folds=args.max_folds,
+        )
+    )
 
 
 def _run_figures(args: argparse.Namespace) -> None:
@@ -201,6 +216,19 @@ def _build_parser() -> argparse.ArgumentParser:
     evaluate.add_argument("--shots", type=_k_values, default=tuple(range(17)))
     evaluate.add_argument("--episodes", type=int, default=100)
 
+    check_shots = subparsers.add_parser(
+        "check-shots",
+        help="Report whether every subject class supports each requested shot count.",
+    )
+    check_shots.add_argument(
+        "--datasets", nargs="+", choices=DATASETS, default=list(DATASETS)
+    )
+    check_shots.add_argument("--datasets-dir", type=Path, default=ROOT / "datasets")
+    check_shots.add_argument("--artifacts-dir", type=Path, default=ARTIFACTS_ROOT)
+    check_shots.add_argument("--max-folds", type=int)
+    check_shots.add_argument("--shots", type=_k_values, default=tuple(range(17)))
+    check_shots.add_argument("--min-query-per-class", type=int, default=1)
+
     figures = subparsers.add_parser("figures", help="Regenerate paper figures 2-4.")
     _add_shared_arguments(figures)
     figures.add_argument(
@@ -237,6 +265,8 @@ def main(argv: Iterable[str] | None = None) -> None:
         _run_training(args)
     elif args.command == "evaluate":
         _run_evaluation(args)
+    elif args.command == "check-shots":
+        _run_shot_check(args)
     elif args.command == "figures":
         _run_figures(args)
     elif args.command == "flops":

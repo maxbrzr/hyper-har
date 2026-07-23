@@ -1,0 +1,1035 @@
+dataset_id,fold_id,subject_id,class_id,class_name,num_windows,max_supported_k
+hhar,loso_subject_0,0,0,Bike,203,202
+hhar,loso_subject_0,0,1,Sit,355,354
+hhar,loso_subject_0,0,2,Stand,311,310
+hhar,loso_subject_0,0,3,Walk,272,271
+hhar,loso_subject_0,0,4,Stairsup,231,230
+hhar,loso_subject_0,0,5,Stairsdown,197,196
+hhar,loso_subject_1,1,0,Bike,322,321
+hhar,loso_subject_1,1,1,Sit,249,248
+hhar,loso_subject_1,1,2,Stand,221,220
+hhar,loso_subject_1,1,3,Walk,361,360
+hhar,loso_subject_1,1,4,Stairsup,259,258
+hhar,loso_subject_1,1,5,Stairsdown,203,202
+hhar,loso_subject_2,2,0,Bike,134,133
+hhar,loso_subject_2,2,1,Sit,305,304
+hhar,loso_subject_2,2,2,Stand,213,212
+hhar,loso_subject_2,2,3,Walk,321,320
+hhar,loso_subject_2,2,4,Stairsup,260,259
+hhar,loso_subject_2,2,5,Stairsdown,178,177
+hhar,loso_subject_3,3,0,Bike,186,185
+hhar,loso_subject_3,3,1,Sit,306,305
+hhar,loso_subject_3,3,2,Stand,299,298
+hhar,loso_subject_3,3,3,Walk,353,352
+hhar,loso_subject_3,3,4,Stairsup,262,261
+hhar,loso_subject_3,3,5,Stairsdown,157,156
+hhar,loso_subject_4,4,0,Bike,283,282
+hhar,loso_subject_4,4,1,Sit,325,324
+hhar,loso_subject_4,4,2,Stand,305,304
+hhar,loso_subject_4,4,3,Walk,356,355
+hhar,loso_subject_4,4,4,Stairsup,209,208
+hhar,loso_subject_4,4,5,Stairsdown,183,182
+hhar,loso_subject_5,5,0,Bike,208,207
+hhar,loso_subject_5,5,1,Sit,242,241
+hhar,loso_subject_5,5,2,Stand,232,231
+hhar,loso_subject_5,5,3,Walk,270,269
+hhar,loso_subject_5,5,4,Stairsup,261,260
+hhar,loso_subject_5,5,5,Stairsdown,177,176
+hhar,loso_subject_6,6,0,Bike,132,131
+hhar,loso_subject_6,6,1,Sit,263,262
+hhar,loso_subject_6,6,2,Stand,215,214
+hhar,loso_subject_6,6,3,Walk,296,295
+hhar,loso_subject_6,6,4,Stairsup,172,171
+hhar,loso_subject_6,6,5,Stairsdown,166,165
+hhar,loso_subject_7,7,0,Bike,177,176
+hhar,loso_subject_7,7,1,Sit,302,301
+hhar,loso_subject_7,7,2,Stand,150,149
+hhar,loso_subject_7,7,3,Walk,274,273
+hhar,loso_subject_7,7,4,Stairsup,224,223
+hhar,loso_subject_7,7,5,Stairsdown,199,198
+hhar,loso_subject_8,8,0,Bike,211,210
+hhar,loso_subject_8,8,1,Sit,285,284
+hhar,loso_subject_8,8,2,Stand,218,217
+hhar,loso_subject_8,8,3,Walk,300,299
+hhar,loso_subject_8,8,4,Stairsup,163,162
+hhar,loso_subject_8,8,5,Stairsdown,149,148
+wear,loso_subject_0,0,0,Bench Dips,53,52
+wear,loso_subject_0,0,1,Burpees,56,55
+wear,loso_subject_0,0,2,Jogging,109,108
+wear,loso_subject_0,0,3,Jogging Butt Kicks,60,59
+wear,loso_subject_0,0,4,Jogging Rotating Arms,67,66
+wear,loso_subject_0,0,5,Jogging Sidesteps,78,77
+wear,loso_subject_0,0,6,Jogging Skipping,65,64
+wear,loso_subject_0,0,7,Lunges,86,85
+wear,loso_subject_0,0,8,Lunges Complex,91,90
+wear,loso_subject_0,0,9,Push Ups,44,43
+wear,loso_subject_0,0,10,Push Ups Complex,45,44
+wear,loso_subject_0,0,11,Sit Ups,73,72
+wear,loso_subject_0,0,12,Sit Ups Complex,38,37
+wear,loso_subject_0,0,13,Stretching Hamstrings,39,38
+wear,loso_subject_0,0,14,Stretching Lumbar Rotation,57,56
+wear,loso_subject_0,0,15,Stretching Lunging,51,50
+wear,loso_subject_0,0,16,Stretching Shoulders,40,39
+wear,loso_subject_0,0,17,Stretching Triceps,52,51
+wear,loso_subject_1,1,0,Bench Dips,39,38
+wear,loso_subject_1,1,1,Burpees,35,34
+wear,loso_subject_1,1,2,Jogging,42,41
+wear,loso_subject_1,1,3,Jogging Butt Kicks,48,47
+wear,loso_subject_1,1,4,Jogging Rotating Arms,46,45
+wear,loso_subject_1,1,5,Jogging Sidesteps,41,40
+wear,loso_subject_1,1,6,Jogging Skipping,47,46
+wear,loso_subject_1,1,7,Lunges,56,55
+wear,loso_subject_1,1,8,Lunges Complex,54,53
+wear,loso_subject_1,1,9,Push Ups,47,46
+wear,loso_subject_1,1,10,Push Ups Complex,72,71
+wear,loso_subject_1,1,11,Sit Ups,59,58
+wear,loso_subject_1,1,12,Sit Ups Complex,67,66
+wear,loso_subject_1,1,13,Stretching Hamstrings,46,45
+wear,loso_subject_1,1,14,Stretching Lumbar Rotation,31,30
+wear,loso_subject_1,1,15,Stretching Lunging,53,52
+wear,loso_subject_1,1,16,Stretching Shoulders,59,58
+wear,loso_subject_1,1,17,Stretching Triceps,52,51
+wear,loso_subject_2,2,0,Bench Dips,44,43
+wear,loso_subject_2,2,1,Burpees,56,55
+wear,loso_subject_2,2,2,Jogging,85,84
+wear,loso_subject_2,2,3,Jogging Butt Kicks,46,45
+wear,loso_subject_2,2,5,Jogging Sidesteps,111,110
+wear,loso_subject_2,2,6,Jogging Skipping,45,44
+wear,loso_subject_2,2,7,Lunges,52,51
+wear,loso_subject_2,2,8,Lunges Complex,63,62
+wear,loso_subject_2,2,9,Push Ups,42,41
+wear,loso_subject_2,2,10,Push Ups Complex,46,45
+wear,loso_subject_2,2,11,Sit Ups,51,50
+wear,loso_subject_2,2,12,Sit Ups Complex,60,59
+wear,loso_subject_2,2,13,Stretching Hamstrings,45,44
+wear,loso_subject_2,2,14,Stretching Lumbar Rotation,48,47
+wear,loso_subject_2,2,15,Stretching Lunging,72,71
+wear,loso_subject_2,2,16,Stretching Shoulders,50,49
+wear,loso_subject_2,2,17,Stretching Triceps,62,61
+wear,loso_subject_3,3,0,Bench Dips,42,41
+wear,loso_subject_3,3,1,Burpees,46,45
+wear,loso_subject_3,3,2,Jogging,48,47
+wear,loso_subject_3,3,3,Jogging Butt Kicks,45,44
+wear,loso_subject_3,3,4,Jogging Rotating Arms,47,46
+wear,loso_subject_3,3,5,Jogging Sidesteps,67,66
+wear,loso_subject_3,3,6,Jogging Skipping,90,89
+wear,loso_subject_3,3,7,Lunges,45,44
+wear,loso_subject_3,3,8,Lunges Complex,46,45
+wear,loso_subject_3,3,9,Push Ups,44,43
+wear,loso_subject_3,3,10,Push Ups Complex,47,46
+wear,loso_subject_3,3,11,Sit Ups,88,87
+wear,loso_subject_3,3,12,Sit Ups Complex,50,49
+wear,loso_subject_3,3,13,Stretching Hamstrings,41,40
+wear,loso_subject_3,3,14,Stretching Lumbar Rotation,44,43
+wear,loso_subject_3,3,15,Stretching Lunging,45,44
+wear,loso_subject_3,3,16,Stretching Shoulders,46,45
+wear,loso_subject_3,3,17,Stretching Triceps,45,44
+wear,loso_subject_4,4,0,Bench Dips,57,56
+wear,loso_subject_4,4,1,Burpees,57,56
+wear,loso_subject_4,4,2,Jogging,40,39
+wear,loso_subject_4,4,3,Jogging Butt Kicks,44,43
+wear,loso_subject_4,4,4,Jogging Rotating Arms,43,42
+wear,loso_subject_4,4,5,Jogging Sidesteps,35,34
+wear,loso_subject_4,4,6,Jogging Skipping,38,37
+wear,loso_subject_4,4,7,Lunges,53,52
+wear,loso_subject_4,4,8,Lunges Complex,65,64
+wear,loso_subject_4,4,9,Push Ups,43,42
+wear,loso_subject_4,4,10,Push Ups Complex,56,55
+wear,loso_subject_4,4,11,Sit Ups,35,34
+wear,loso_subject_4,4,12,Sit Ups Complex,48,47
+wear,loso_subject_4,4,13,Stretching Hamstrings,52,51
+wear,loso_subject_4,4,14,Stretching Lumbar Rotation,62,61
+wear,loso_subject_4,4,15,Stretching Lunging,41,40
+wear,loso_subject_4,4,16,Stretching Shoulders,41,40
+wear,loso_subject_4,4,17,Stretching Triceps,32,31
+wear,loso_subject_5,5,0,Bench Dips,34,33
+wear,loso_subject_5,5,1,Burpees,43,42
+wear,loso_subject_5,5,2,Jogging,38,37
+wear,loso_subject_5,5,3,Jogging Butt Kicks,25,24
+wear,loso_subject_5,5,4,Jogging Rotating Arms,43,42
+wear,loso_subject_5,5,5,Jogging Sidesteps,40,39
+wear,loso_subject_5,5,6,Jogging Skipping,36,35
+wear,loso_subject_5,5,7,Lunges,35,34
+wear,loso_subject_5,5,8,Lunges Complex,47,46
+wear,loso_subject_5,5,9,Push Ups,35,34
+wear,loso_subject_5,5,10,Push Ups Complex,36,35
+wear,loso_subject_5,5,11,Sit Ups,42,41
+wear,loso_subject_5,5,12,Sit Ups Complex,53,52
+wear,loso_subject_5,5,13,Stretching Hamstrings,54,53
+wear,loso_subject_5,5,14,Stretching Lumbar Rotation,44,43
+wear,loso_subject_5,5,15,Stretching Lunging,59,58
+wear,loso_subject_5,5,16,Stretching Shoulders,45,44
+wear,loso_subject_5,5,17,Stretching Triceps,56,55
+wear,loso_subject_6,6,0,Bench Dips,43,42
+wear,loso_subject_6,6,1,Burpees,50,49
+wear,loso_subject_6,6,2,Jogging,67,66
+wear,loso_subject_6,6,3,Jogging Butt Kicks,51,50
+wear,loso_subject_6,6,4,Jogging Rotating Arms,48,47
+wear,loso_subject_6,6,5,Jogging Sidesteps,47,46
+wear,loso_subject_6,6,6,Jogging Skipping,45,44
+wear,loso_subject_6,6,7,Lunges,54,53
+wear,loso_subject_6,6,8,Lunges Complex,48,47
+wear,loso_subject_6,6,9,Push Ups,46,45
+wear,loso_subject_6,6,10,Push Ups Complex,46,45
+wear,loso_subject_6,6,11,Sit Ups,51,50
+wear,loso_subject_6,6,12,Sit Ups Complex,51,50
+wear,loso_subject_6,6,13,Stretching Hamstrings,65,64
+wear,loso_subject_6,6,14,Stretching Lumbar Rotation,52,51
+wear,loso_subject_6,6,15,Stretching Lunging,51,50
+wear,loso_subject_6,6,16,Stretching Shoulders,46,45
+wear,loso_subject_6,6,17,Stretching Triceps,47,46
+wear,loso_subject_7,7,0,Bench Dips,39,38
+wear,loso_subject_7,7,1,Burpees,51,50
+wear,loso_subject_7,7,2,Jogging,48,47
+wear,loso_subject_7,7,3,Jogging Butt Kicks,46,45
+wear,loso_subject_7,7,4,Jogging Rotating Arms,48,47
+wear,loso_subject_7,7,5,Jogging Sidesteps,49,48
+wear,loso_subject_7,7,6,Jogging Skipping,46,45
+wear,loso_subject_7,7,7,Lunges,48,47
+wear,loso_subject_7,7,8,Lunges Complex,50,49
+wear,loso_subject_7,7,9,Push Ups,46,45
+wear,loso_subject_7,7,10,Push Ups Complex,47,46
+wear,loso_subject_7,7,11,Sit Ups,46,45
+wear,loso_subject_7,7,12,Sit Ups Complex,51,50
+wear,loso_subject_7,7,13,Stretching Hamstrings,47,46
+wear,loso_subject_7,7,14,Stretching Lumbar Rotation,47,46
+wear,loso_subject_7,7,15,Stretching Lunging,48,47
+wear,loso_subject_7,7,16,Stretching Shoulders,49,48
+wear,loso_subject_7,7,17,Stretching Triceps,45,44
+wear,loso_subject_8,8,0,Bench Dips,47,46
+wear,loso_subject_8,8,1,Burpees,46,45
+wear,loso_subject_8,8,2,Jogging,48,47
+wear,loso_subject_8,8,3,Jogging Butt Kicks,46,45
+wear,loso_subject_8,8,4,Jogging Rotating Arms,50,49
+wear,loso_subject_8,8,5,Jogging Sidesteps,46,45
+wear,loso_subject_8,8,6,Jogging Skipping,51,50
+wear,loso_subject_8,8,7,Lunges,46,45
+wear,loso_subject_8,8,8,Lunges Complex,51,50
+wear,loso_subject_8,8,9,Push Ups,60,59
+wear,loso_subject_8,8,10,Push Ups Complex,48,47
+wear,loso_subject_8,8,11,Sit Ups,48,47
+wear,loso_subject_8,8,12,Sit Ups Complex,52,51
+wear,loso_subject_8,8,13,Stretching Hamstrings,50,49
+wear,loso_subject_8,8,14,Stretching Lumbar Rotation,50,49
+wear,loso_subject_8,8,15,Stretching Lunging,48,47
+wear,loso_subject_8,8,16,Stretching Shoulders,48,47
+wear,loso_subject_8,8,17,Stretching Triceps,44,43
+wear,loso_subject_9,9,0,Bench Dips,46,45
+wear,loso_subject_9,9,1,Burpees,46,45
+wear,loso_subject_9,9,2,Jogging,50,49
+wear,loso_subject_9,9,3,Jogging Butt Kicks,47,46
+wear,loso_subject_9,9,4,Jogging Rotating Arms,46,45
+wear,loso_subject_9,9,5,Jogging Sidesteps,50,49
+wear,loso_subject_9,9,6,Jogging Skipping,46,45
+wear,loso_subject_9,9,7,Lunges,46,45
+wear,loso_subject_9,9,8,Lunges Complex,54,53
+wear,loso_subject_9,9,9,Push Ups,48,47
+wear,loso_subject_9,9,10,Push Ups Complex,44,43
+wear,loso_subject_9,9,11,Sit Ups,52,51
+wear,loso_subject_9,9,12,Sit Ups Complex,51,50
+wear,loso_subject_9,9,13,Stretching Hamstrings,48,47
+wear,loso_subject_9,9,14,Stretching Lumbar Rotation,46,45
+wear,loso_subject_9,9,15,Stretching Lunging,50,49
+wear,loso_subject_9,9,16,Stretching Shoulders,46,45
+wear,loso_subject_9,9,17,Stretching Triceps,50,49
+wear,loso_subject_10,10,1,Burpees,15,14
+wear,loso_subject_10,10,2,Jogging,48,47
+wear,loso_subject_10,10,3,Jogging Butt Kicks,43,42
+wear,loso_subject_10,10,4,Jogging Rotating Arms,54,53
+wear,loso_subject_10,10,5,Jogging Sidesteps,49,48
+wear,loso_subject_10,10,6,Jogging Skipping,40,39
+wear,loso_subject_10,10,9,Push Ups,48,47
+wear,loso_subject_10,10,10,Push Ups Complex,54,53
+wear,loso_subject_10,10,11,Sit Ups,45,44
+wear,loso_subject_10,10,12,Sit Ups Complex,52,51
+wear,loso_subject_10,10,15,Stretching Lunging,51,50
+wear,loso_subject_10,10,17,Stretching Triceps,47,46
+wear,loso_subject_11,11,0,Bench Dips,46,45
+wear,loso_subject_11,11,1,Burpees,47,46
+wear,loso_subject_11,11,2,Jogging,47,46
+wear,loso_subject_11,11,3,Jogging Butt Kicks,43,42
+wear,loso_subject_11,11,4,Jogging Rotating Arms,49,48
+wear,loso_subject_11,11,5,Jogging Sidesteps,54,53
+wear,loso_subject_11,11,6,Jogging Skipping,38,37
+wear,loso_subject_11,11,7,Lunges,47,46
+wear,loso_subject_11,11,8,Lunges Complex,47,46
+wear,loso_subject_11,11,9,Push Ups,44,43
+wear,loso_subject_11,11,10,Push Ups Complex,48,47
+wear,loso_subject_11,11,11,Sit Ups,45,44
+wear,loso_subject_11,11,12,Sit Ups Complex,51,50
+wear,loso_subject_11,11,13,Stretching Hamstrings,49,48
+wear,loso_subject_11,11,14,Stretching Lumbar Rotation,50,49
+wear,loso_subject_11,11,15,Stretching Lunging,45,44
+wear,loso_subject_11,11,16,Stretching Shoulders,48,47
+wear,loso_subject_11,11,17,Stretching Triceps,48,47
+wear,loso_subject_12,12,0,Bench Dips,46,45
+wear,loso_subject_12,12,1,Burpees,51,50
+wear,loso_subject_12,12,2,Jogging,49,48
+wear,loso_subject_12,12,3,Jogging Butt Kicks,47,46
+wear,loso_subject_12,12,4,Jogging Rotating Arms,40,39
+wear,loso_subject_12,12,5,Jogging Sidesteps,46,45
+wear,loso_subject_12,12,6,Jogging Skipping,49,48
+wear,loso_subject_12,12,7,Lunges,50,49
+wear,loso_subject_12,12,8,Lunges Complex,49,48
+wear,loso_subject_12,12,9,Push Ups,44,43
+wear,loso_subject_12,12,10,Push Ups Complex,49,48
+wear,loso_subject_12,12,11,Sit Ups,47,46
+wear,loso_subject_12,12,12,Sit Ups Complex,50,49
+wear,loso_subject_12,12,13,Stretching Hamstrings,46,45
+wear,loso_subject_12,12,14,Stretching Lumbar Rotation,49,48
+wear,loso_subject_12,12,15,Stretching Lunging,52,51
+wear,loso_subject_12,12,16,Stretching Shoulders,48,47
+wear,loso_subject_12,12,17,Stretching Triceps,47,46
+wear,loso_subject_13,13,0,Bench Dips,43,42
+wear,loso_subject_13,13,1,Burpees,44,43
+wear,loso_subject_13,13,2,Jogging,56,55
+wear,loso_subject_13,13,3,Jogging Butt Kicks,44,43
+wear,loso_subject_13,13,4,Jogging Rotating Arms,51,50
+wear,loso_subject_13,13,5,Jogging Sidesteps,47,46
+wear,loso_subject_13,13,6,Jogging Skipping,46,45
+wear,loso_subject_13,13,7,Lunges,49,48
+wear,loso_subject_13,13,8,Lunges Complex,46,45
+wear,loso_subject_13,13,9,Push Ups,42,41
+wear,loso_subject_13,13,10,Push Ups Complex,47,46
+wear,loso_subject_13,13,11,Sit Ups,50,49
+wear,loso_subject_13,13,12,Sit Ups Complex,47,46
+wear,loso_subject_13,13,13,Stretching Hamstrings,46,45
+wear,loso_subject_13,13,14,Stretching Lumbar Rotation,45,44
+wear,loso_subject_13,13,15,Stretching Lunging,48,47
+wear,loso_subject_13,13,16,Stretching Shoulders,45,44
+wear,loso_subject_13,13,17,Stretching Triceps,51,50
+wear,loso_subject_14,14,0,Bench Dips,46,45
+wear,loso_subject_14,14,1,Burpees,46,45
+wear,loso_subject_14,14,2,Jogging,44,43
+wear,loso_subject_14,14,3,Jogging Butt Kicks,41,40
+wear,loso_subject_14,14,4,Jogging Rotating Arms,47,46
+wear,loso_subject_14,14,5,Jogging Sidesteps,43,42
+wear,loso_subject_14,14,6,Jogging Skipping,47,46
+wear,loso_subject_14,14,7,Lunges,46,45
+wear,loso_subject_14,14,8,Lunges Complex,46,45
+wear,loso_subject_14,14,9,Push Ups,49,48
+wear,loso_subject_14,14,10,Push Ups Complex,44,43
+wear,loso_subject_14,14,11,Sit Ups,46,45
+wear,loso_subject_14,14,12,Sit Ups Complex,51,50
+wear,loso_subject_14,14,13,Stretching Hamstrings,47,46
+wear,loso_subject_14,14,14,Stretching Lumbar Rotation,49,48
+wear,loso_subject_14,14,15,Stretching Lunging,52,51
+wear,loso_subject_14,14,16,Stretching Shoulders,45,44
+wear,loso_subject_14,14,17,Stretching Triceps,48,47
+wear,loso_subject_15,15,0,Bench Dips,44,43
+wear,loso_subject_15,15,1,Burpees,46,45
+wear,loso_subject_15,15,2,Jogging,48,47
+wear,loso_subject_15,15,3,Jogging Butt Kicks,44,43
+wear,loso_subject_15,15,4,Jogging Rotating Arms,50,49
+wear,loso_subject_15,15,5,Jogging Sidesteps,51,50
+wear,loso_subject_15,15,6,Jogging Skipping,41,40
+wear,loso_subject_15,15,7,Lunges,50,49
+wear,loso_subject_15,15,8,Lunges Complex,49,48
+wear,loso_subject_15,15,9,Push Ups,45,44
+wear,loso_subject_15,15,10,Push Ups Complex,48,47
+wear,loso_subject_15,15,11,Sit Ups,46,45
+wear,loso_subject_15,15,12,Sit Ups Complex,49,48
+wear,loso_subject_15,15,13,Stretching Hamstrings,49,48
+wear,loso_subject_15,15,14,Stretching Lumbar Rotation,60,59
+wear,loso_subject_15,15,15,Stretching Lunging,63,62
+wear,loso_subject_15,15,16,Stretching Shoulders,48,47
+wear,loso_subject_15,15,17,Stretching Triceps,48,47
+wear,loso_subject_16,16,0,Bench Dips,45,44
+wear,loso_subject_16,16,1,Burpees,47,46
+wear,loso_subject_16,16,2,Jogging,46,45
+wear,loso_subject_16,16,3,Jogging Butt Kicks,45,44
+wear,loso_subject_16,16,4,Jogging Rotating Arms,48,47
+wear,loso_subject_16,16,5,Jogging Sidesteps,45,44
+wear,loso_subject_16,16,6,Jogging Skipping,47,46
+wear,loso_subject_16,16,7,Lunges,45,44
+wear,loso_subject_16,16,8,Lunges Complex,47,46
+wear,loso_subject_16,16,9,Push Ups,41,40
+wear,loso_subject_16,16,10,Push Ups Complex,42,41
+wear,loso_subject_16,16,11,Sit Ups,45,44
+wear,loso_subject_16,16,12,Sit Ups Complex,48,47
+wear,loso_subject_16,16,13,Stretching Hamstrings,46,45
+wear,loso_subject_16,16,14,Stretching Lumbar Rotation,51,50
+wear,loso_subject_16,16,15,Stretching Lunging,50,49
+wear,loso_subject_16,16,16,Stretching Shoulders,48,47
+wear,loso_subject_16,16,17,Stretching Triceps,47,46
+wear,loso_subject_17,17,0,Bench Dips,47,46
+wear,loso_subject_17,17,1,Burpees,55,54
+wear,loso_subject_17,17,2,Jogging,50,49
+wear,loso_subject_17,17,3,Jogging Butt Kicks,45,44
+wear,loso_subject_17,17,4,Jogging Rotating Arms,48,47
+wear,loso_subject_17,17,5,Jogging Sidesteps,49,48
+wear,loso_subject_17,17,6,Jogging Skipping,48,47
+wear,loso_subject_17,17,7,Lunges,48,47
+wear,loso_subject_17,17,8,Lunges Complex,47,46
+wear,loso_subject_17,17,9,Push Ups,49,48
+wear,loso_subject_17,17,10,Push Ups Complex,48,47
+wear,loso_subject_17,17,11,Sit Ups,45,44
+wear,loso_subject_17,17,12,Sit Ups Complex,52,51
+wear,loso_subject_17,17,13,Stretching Hamstrings,47,46
+wear,loso_subject_17,17,14,Stretching Lumbar Rotation,50,49
+wear,loso_subject_17,17,15,Stretching Lunging,47,46
+wear,loso_subject_17,17,16,Stretching Shoulders,46,45
+wear,loso_subject_17,17,17,Stretching Triceps,45,44
+wear,loso_subject_18,18,0,Bench Dips,46,45
+wear,loso_subject_18,18,1,Burpees,45,44
+wear,loso_subject_18,18,2,Jogging,45,44
+wear,loso_subject_18,18,3,Jogging Butt Kicks,43,42
+wear,loso_subject_18,18,4,Jogging Rotating Arms,43,42
+wear,loso_subject_18,18,5,Jogging Sidesteps,45,44
+wear,loso_subject_18,18,6,Jogging Skipping,43,42
+wear,loso_subject_18,18,7,Lunges,46,45
+wear,loso_subject_18,18,8,Lunges Complex,45,44
+wear,loso_subject_18,18,9,Push Ups,42,41
+wear,loso_subject_18,18,10,Push Ups Complex,42,41
+wear,loso_subject_18,18,11,Sit Ups,51,50
+wear,loso_subject_18,18,12,Sit Ups Complex,44,43
+wear,loso_subject_18,18,13,Stretching Hamstrings,47,46
+wear,loso_subject_18,18,14,Stretching Lumbar Rotation,45,44
+wear,loso_subject_18,18,15,Stretching Lunging,42,41
+wear,loso_subject_18,18,16,Stretching Shoulders,46,45
+wear,loso_subject_18,18,17,Stretching Triceps,49,48
+wear,loso_subject_19,19,0,Bench Dips,41,40
+wear,loso_subject_19,19,1,Burpees,46,45
+wear,loso_subject_19,19,2,Jogging,45,44
+wear,loso_subject_19,19,3,Jogging Butt Kicks,44,43
+wear,loso_subject_19,19,4,Jogging Rotating Arms,46,45
+wear,loso_subject_19,19,5,Jogging Sidesteps,52,51
+wear,loso_subject_19,19,6,Jogging Skipping,48,47
+wear,loso_subject_19,19,7,Lunges,49,48
+wear,loso_subject_19,19,8,Lunges Complex,48,47
+wear,loso_subject_19,19,9,Push Ups,44,43
+wear,loso_subject_19,19,10,Push Ups Complex,46,45
+wear,loso_subject_19,19,11,Sit Ups,39,38
+wear,loso_subject_19,19,12,Sit Ups Complex,40,39
+wear,loso_subject_19,19,13,Stretching Hamstrings,49,48
+wear,loso_subject_19,19,14,Stretching Lumbar Rotation,46,45
+wear,loso_subject_19,19,15,Stretching Lunging,47,46
+wear,loso_subject_19,19,16,Stretching Shoulders,46,45
+wear,loso_subject_19,19,17,Stretching Triceps,54,53
+wear,loso_subject_20,20,0,Bench Dips,42,41
+wear,loso_subject_20,20,1,Burpees,43,42
+wear,loso_subject_20,20,2,Jogging,45,44
+wear,loso_subject_20,20,3,Jogging Butt Kicks,39,38
+wear,loso_subject_20,20,4,Jogging Rotating Arms,43,42
+wear,loso_subject_20,20,5,Jogging Sidesteps,43,42
+wear,loso_subject_20,20,6,Jogging Skipping,50,49
+wear,loso_subject_20,20,7,Lunges,41,40
+wear,loso_subject_20,20,8,Lunges Complex,39,38
+wear,loso_subject_20,20,9,Push Ups,45,44
+wear,loso_subject_20,20,10,Push Ups Complex,49,48
+wear,loso_subject_20,20,11,Sit Ups,50,49
+wear,loso_subject_20,20,12,Sit Ups Complex,50,49
+wear,loso_subject_20,20,13,Stretching Hamstrings,43,42
+wear,loso_subject_20,20,14,Stretching Lumbar Rotation,43,42
+wear,loso_subject_20,20,15,Stretching Lunging,55,54
+wear,loso_subject_20,20,16,Stretching Shoulders,45,44
+wear,loso_subject_20,20,17,Stretching Triceps,46,45
+wear,loso_subject_21,21,0,Bench Dips,38,37
+wear,loso_subject_21,21,1,Burpees,44,43
+wear,loso_subject_21,21,2,Jogging,40,39
+wear,loso_subject_21,21,3,Jogging Butt Kicks,46,45
+wear,loso_subject_21,21,4,Jogging Rotating Arms,43,42
+wear,loso_subject_21,21,5,Jogging Sidesteps,41,40
+wear,loso_subject_21,21,6,Jogging Skipping,42,41
+wear,loso_subject_21,21,7,Lunges,45,44
+wear,loso_subject_21,21,8,Lunges Complex,42,41
+wear,loso_subject_21,21,9,Push Ups,40,39
+wear,loso_subject_21,21,10,Push Ups Complex,40,39
+wear,loso_subject_21,21,11,Sit Ups,43,42
+wear,loso_subject_21,21,12,Sit Ups Complex,42,41
+wear,loso_subject_21,21,13,Stretching Hamstrings,42,41
+wear,loso_subject_21,21,14,Stretching Lumbar Rotation,38,37
+wear,loso_subject_21,21,15,Stretching Lunging,48,47
+wear,loso_subject_21,21,16,Stretching Shoulders,43,42
+wear,loso_subject_21,21,17,Stretching Triceps,42,41
+wear,loso_subject_22,22,0,Bench Dips,40,39
+wear,loso_subject_22,22,1,Burpees,43,42
+wear,loso_subject_22,22,2,Jogging,51,50
+wear,loso_subject_22,22,3,Jogging Butt Kicks,44,43
+wear,loso_subject_22,22,4,Jogging Rotating Arms,43,42
+wear,loso_subject_22,22,5,Jogging Sidesteps,45,44
+wear,loso_subject_22,22,6,Jogging Skipping,44,43
+wear,loso_subject_22,22,7,Lunges,42,41
+wear,loso_subject_22,22,8,Lunges Complex,46,45
+wear,loso_subject_22,22,9,Push Ups,45,44
+wear,loso_subject_22,22,10,Push Ups Complex,49,48
+wear,loso_subject_22,22,11,Sit Ups,41,40
+wear,loso_subject_22,22,12,Sit Ups Complex,49,48
+wear,loso_subject_22,22,13,Stretching Hamstrings,42,41
+wear,loso_subject_22,22,14,Stretching Lumbar Rotation,46,45
+wear,loso_subject_22,22,15,Stretching Lunging,44,43
+wear,loso_subject_22,22,16,Stretching Shoulders,46,45
+wear,loso_subject_22,22,17,Stretching Triceps,47,46
+wear,loso_subject_23,23,0,Bench Dips,39,38
+wear,loso_subject_23,23,1,Burpees,48,47
+wear,loso_subject_23,23,2,Jogging,47,46
+wear,loso_subject_23,23,3,Jogging Butt Kicks,38,37
+wear,loso_subject_23,23,4,Jogging Rotating Arms,43,42
+wear,loso_subject_23,23,5,Jogging Sidesteps,45,44
+wear,loso_subject_23,23,6,Jogging Skipping,36,35
+wear,loso_subject_23,23,7,Lunges,44,43
+wear,loso_subject_23,23,8,Lunges Complex,41,40
+wear,loso_subject_23,23,9,Push Ups,38,37
+wear,loso_subject_23,23,10,Push Ups Complex,53,52
+wear,loso_subject_23,23,11,Sit Ups,44,43
+wear,loso_subject_23,23,12,Sit Ups Complex,47,46
+wear,loso_subject_23,23,13,Stretching Hamstrings,44,43
+wear,loso_subject_23,23,14,Stretching Lumbar Rotation,39,38
+wear,loso_subject_23,23,15,Stretching Lunging,46,45
+wear,loso_subject_23,23,16,Stretching Shoulders,44,43
+wear,loso_subject_23,23,17,Stretching Triceps,46,45
+harth,loso_subject_0,0,0,Walking,149,148
+harth,loso_subject_0,0,1,Running,36,35
+harth,loso_subject_0,0,2,Shuffling,4,3
+harth,loso_subject_0,0,3,Stairs Ascending,836,835
+harth,loso_subject_0,0,4,Stairs Descending,2,1
+harth,loso_subject_0,0,5,Standing,3,2
+harth,loso_subject_0,0,6,Sitting,41,40
+harth,loso_subject_0,0,7,Lying,31,30
+harth,loso_subject_0,0,8,Cycling Sit,77,76
+harth,loso_subject_0,0,9,Cycling Stand,8,7
+harth,loso_subject_1,1,0,Walking,345,344
+harth,loso_subject_1,1,1,Running,99,98
+harth,loso_subject_1,1,2,Shuffling,97,96
+harth,loso_subject_1,1,3,Stairs Ascending,1949,1948
+harth,loso_subject_1,1,4,Stairs Descending,4,3
+harth,loso_subject_1,1,5,Standing,4,3
+harth,loso_subject_1,1,7,Lying,1,0
+harth,loso_subject_1,1,8,Cycling Sit,49,48
+harth,loso_subject_1,1,9,Cycling Stand,4,3
+harth,loso_subject_1,1,10,Cycling Sit Inactive,4,3
+harth,loso_subject_2,2,0,Walking,34,33
+harth,loso_subject_2,2,1,Running,32,31
+harth,loso_subject_2,2,4,Stairs Descending,2,1
+harth,loso_subject_2,2,5,Standing,3,2
+harth,loso_subject_2,2,7,Lying,55,54
+harth,loso_subject_2,2,8,Cycling Sit,781,780
+harth,loso_subject_2,2,9,Cycling Stand,66,65
+harth,loso_subject_3,3,0,Walking,520,519
+harth,loso_subject_3,3,1,Running,1113,1112
+harth,loso_subject_3,3,2,Shuffling,87,86
+harth,loso_subject_3,3,3,Stairs Ascending,309,308
+harth,loso_subject_3,3,4,Stairs Descending,36,35
+harth,loso_subject_3,3,5,Standing,15,14
+harth,loso_subject_4,4,0,Walking,127,126
+harth,loso_subject_4,4,1,Running,60,59
+harth,loso_subject_4,4,2,Shuffling,18,17
+harth,loso_subject_4,4,3,Stairs Ascending,2072,2071
+harth,loso_subject_4,4,4,Stairs Descending,23,22
+harth,loso_subject_4,4,5,Standing,12,11
+harth,loso_subject_4,4,6,Sitting,124,123
+harth,loso_subject_4,4,11,Cycling Stand Inactive,13,12
+harth,loso_subject_5,5,0,Walking,285,284
+harth,loso_subject_5,5,1,Running,181,180
+harth,loso_subject_5,5,2,Shuffling,138,137
+harth,loso_subject_5,5,3,Stairs Ascending,1485,1484
+harth,loso_subject_5,5,4,Stairs Descending,17,16
+harth,loso_subject_5,5,5,Standing,14,13
+harth,loso_subject_5,5,6,Sitting,45,44
+harth,loso_subject_5,5,8,Cycling Sit,17,16
+harth,loso_subject_5,5,11,Cycling Stand Inactive,22,21
+harth,loso_subject_6,6,0,Walking,289,288
+harth,loso_subject_6,6,1,Running,122,121
+harth,loso_subject_6,6,2,Shuffling,35,34
+harth,loso_subject_6,6,3,Stairs Ascending,1573,1572
+harth,loso_subject_6,6,4,Stairs Descending,26,25
+harth,loso_subject_6,6,5,Standing,18,17
+harth,loso_subject_6,6,6,Sitting,57,56
+harth,loso_subject_6,6,8,Cycling Sit,37,36
+harth,loso_subject_6,6,11,Cycling Stand Inactive,14,13
+harth,loso_subject_7,7,0,Walking,400,399
+harth,loso_subject_7,7,1,Running,310,309
+harth,loso_subject_7,7,2,Shuffling,15,14
+harth,loso_subject_7,7,3,Stairs Ascending,1295,1294
+harth,loso_subject_7,7,4,Stairs Descending,36,35
+harth,loso_subject_7,7,5,Standing,31,30
+harth,loso_subject_7,7,6,Sitting,417,416
+harth,loso_subject_7,7,8,Cycling Sit,47,46
+harth,loso_subject_7,7,9,Cycling Stand,11,10
+harth,loso_subject_7,7,11,Cycling Stand Inactive,18,17
+harth,loso_subject_8,8,0,Walking,297,296
+harth,loso_subject_8,8,1,Running,223,222
+harth,loso_subject_8,8,2,Shuffling,42,41
+harth,loso_subject_8,8,3,Stairs Ascending,1263,1262
+harth,loso_subject_8,8,4,Stairs Descending,2,1
+harth,loso_subject_8,8,5,Standing,9,8
+harth,loso_subject_8,8,6,Sitting,261,260
+harth,loso_subject_8,8,7,Lying,1,0
+harth,loso_subject_8,8,8,Cycling Sit,68,67
+harth,loso_subject_8,8,9,Cycling Stand,1,0
+harth,loso_subject_8,8,11,Cycling Stand Inactive,16,15
+harth,loso_subject_9,9,0,Walking,175,174
+harth,loso_subject_9,9,1,Running,210,209
+harth,loso_subject_9,9,2,Shuffling,21,20
+harth,loso_subject_9,9,3,Stairs Ascending,1448,1447
+harth,loso_subject_9,9,4,Stairs Descending,47,46
+harth,loso_subject_9,9,5,Standing,29,28
+harth,loso_subject_9,9,6,Sitting,289,288
+harth,loso_subject_9,9,7,Lying,6,5
+harth,loso_subject_9,9,8,Cycling Sit,29,28
+harth,loso_subject_9,9,9,Cycling Stand,18,17
+harth,loso_subject_9,9,10,Cycling Sit Inactive,1,0
+harth,loso_subject_9,9,11,Cycling Stand Inactive,32,31
+harth,loso_subject_10,10,0,Walking,205,204
+harth,loso_subject_10,10,1,Running,360,359
+harth,loso_subject_10,10,2,Shuffling,40,39
+harth,loso_subject_10,10,3,Stairs Ascending,947,946
+harth,loso_subject_10,10,4,Stairs Descending,17,16
+harth,loso_subject_10,10,5,Standing,17,16
+harth,loso_subject_10,10,6,Sitting,216,215
+harth,loso_subject_10,10,8,Cycling Sit,39,38
+harth,loso_subject_10,10,9,Cycling Stand,8,7
+harth,loso_subject_10,10,11,Cycling Stand Inactive,89,88
+harth,loso_subject_11,11,0,Walking,101,100
+harth,loso_subject_11,11,1,Running,183,182
+harth,loso_subject_11,11,2,Shuffling,20,19
+harth,loso_subject_11,11,3,Stairs Ascending,1271,1270
+harth,loso_subject_11,11,4,Stairs Descending,21,20
+harth,loso_subject_11,11,5,Standing,16,15
+harth,loso_subject_11,11,6,Sitting,140,139
+harth,loso_subject_11,11,7,Lying,1,0
+harth,loso_subject_11,11,8,Cycling Sit,91,90
+harth,loso_subject_11,11,11,Cycling Stand Inactive,28,27
+harth,loso_subject_12,12,0,Walking,95,94
+harth,loso_subject_12,12,1,Running,203,202
+harth,loso_subject_12,12,2,Shuffling,11,10
+harth,loso_subject_12,12,3,Stairs Ascending,1577,1576
+harth,loso_subject_12,12,4,Stairs Descending,15,14
+harth,loso_subject_12,12,5,Standing,11,10
+harth,loso_subject_12,12,6,Sitting,309,308
+harth,loso_subject_12,12,7,Lying,4,3
+harth,loso_subject_12,12,8,Cycling Sit,95,94
+harth,loso_subject_12,12,9,Cycling Stand,3,2
+harth,loso_subject_12,12,11,Cycling Stand Inactive,23,22
+harth,loso_subject_13,13,0,Walking,230,229
+harth,loso_subject_13,13,1,Running,287,286
+harth,loso_subject_13,13,2,Shuffling,11,10
+harth,loso_subject_13,13,3,Stairs Ascending,1118,1117
+harth,loso_subject_13,13,4,Stairs Descending,17,16
+harth,loso_subject_13,13,5,Standing,8,7
+harth,loso_subject_13,13,6,Sitting,176,175
+harth,loso_subject_13,13,8,Cycling Sit,15,14
+harth,loso_subject_13,13,9,Cycling Stand,3,2
+harth,loso_subject_13,13,11,Cycling Stand Inactive,23,22
+harth,loso_subject_14,14,0,Walking,295,294
+harth,loso_subject_14,14,1,Running,417,416
+harth,loso_subject_14,14,2,Shuffling,25,24
+harth,loso_subject_14,14,3,Stairs Ascending,933,932
+harth,loso_subject_14,14,4,Stairs Descending,29,28
+harth,loso_subject_14,14,5,Standing,24,23
+harth,loso_subject_14,14,6,Sitting,124,123
+harth,loso_subject_14,14,7,Lying,7,6
+harth,loso_subject_14,14,8,Cycling Sit,85,84
+harth,loso_subject_14,14,10,Cycling Sit Inactive,2,1
+harth,loso_subject_14,14,11,Cycling Stand Inactive,14,13
+harth,loso_subject_15,15,0,Walking,41,40
+harth,loso_subject_15,15,1,Running,453,452
+harth,loso_subject_15,15,2,Shuffling,3,2
+harth,loso_subject_15,15,3,Stairs Ascending,85,84
+harth,loso_subject_15,15,4,Stairs Descending,16,15
+harth,loso_subject_15,15,5,Standing,10,9
+harth,loso_subject_15,15,6,Sitting,109,108
+harth,loso_subject_15,15,11,Cycling Stand Inactive,148,147
+harth,loso_subject_16,16,0,Walking,47,46
+harth,loso_subject_16,16,1,Running,502,501
+harth,loso_subject_16,16,2,Shuffling,3,2
+harth,loso_subject_16,16,3,Stairs Ascending,91,90
+harth,loso_subject_16,16,4,Stairs Descending,18,17
+harth,loso_subject_16,16,5,Standing,15,14
+harth,loso_subject_16,16,6,Sitting,205,204
+harth,loso_subject_16,16,11,Cycling Stand Inactive,173,172
+harth,loso_subject_17,17,0,Walking,82,81
+harth,loso_subject_17,17,1,Running,417,416
+harth,loso_subject_17,17,2,Shuffling,25,24
+harth,loso_subject_17,17,3,Stairs Ascending,57,56
+harth,loso_subject_17,17,4,Stairs Descending,21,20
+harth,loso_subject_17,17,5,Standing,14,13
+harth,loso_subject_17,17,6,Sitting,135,134
+harth,loso_subject_17,17,7,Lying,25,24
+harth,loso_subject_17,17,8,Cycling Sit,340,339
+harth,loso_subject_17,17,9,Cycling Stand,81,80
+harth,loso_subject_17,17,10,Cycling Sit Inactive,21,20
+harth,loso_subject_17,17,11,Cycling Stand Inactive,225,224
+harth,loso_subject_18,18,0,Walking,13,12
+harth,loso_subject_18,18,1,Running,146,145
+harth,loso_subject_18,18,2,Shuffling,7,6
+harth,loso_subject_18,18,3,Stairs Ascending,30,29
+harth,loso_subject_18,18,4,Stairs Descending,40,39
+harth,loso_subject_18,18,5,Standing,48,47
+harth,loso_subject_18,18,7,Lying,56,55
+harth,loso_subject_18,18,8,Cycling Sit,636,635
+harth,loso_subject_18,18,9,Cycling Stand,127,126
+harth,loso_subject_18,18,10,Cycling Sit Inactive,16,15
+harth,loso_subject_18,18,11,Cycling Stand Inactive,76,75
+harth,loso_subject_19,19,0,Walking,6,5
+harth,loso_subject_19,19,1,Running,13,12
+harth,loso_subject_19,19,2,Shuffling,4,3
+harth,loso_subject_19,19,3,Stairs Ascending,64,63
+harth,loso_subject_19,19,6,Sitting,74,73
+harth,loso_subject_19,19,11,Cycling Stand Inactive,871,870
+harth,loso_subject_20,20,0,Walking,47,46
+harth,loso_subject_20,20,1,Running,981,980
+harth,loso_subject_20,20,2,Shuffling,3,2
+harth,loso_subject_20,20,3,Stairs Ascending,17,16
+harth,loso_subject_20,20,4,Stairs Descending,6,5
+harth,loso_subject_20,20,5,Standing,7,6
+harth,loso_subject_20,20,6,Sitting,11,10
+harth,loso_subject_21,21,0,Walking,66,65
+harth,loso_subject_21,21,1,Running,798,797
+harth,loso_subject_21,21,2,Shuffling,20,19
+harth,loso_subject_21,21,3,Stairs Ascending,22,21
+harth,loso_subject_21,21,4,Stairs Descending,2,1
+harth,loso_subject_21,21,5,Standing,5,4
+harth,loso_subject_21,21,6,Sitting,32,31
+harth,loso_subject_21,21,7,Lying,8,7
+harth,loso_subject_21,21,8,Cycling Sit,67,66
+harth,loso_subject_21,21,11,Cycling Stand Inactive,117,116
+hapt,loso_subject_0,0,0,Walking,28,27
+hapt,loso_subject_0,0,1,Walking Upstairs,2,1
+hapt,loso_subject_0,0,2,Walking Downstairs,25,24
+hapt,loso_subject_0,0,3,Sitting,2,1
+hapt,loso_subject_0,0,4,Standing,4,3
+hapt,loso_subject_0,0,5,Laying,25,24
+hapt,loso_subject_0,0,6,Stand To Sit,2,1
+hapt,loso_subject_0,0,7,Sit To Stand,2,1
+hapt,loso_subject_0,0,8,Sit To Lie,2,1
+hapt,loso_subject_0,0,9,Lie To Sit,49,48
+hapt,loso_subject_0,0,10,Stand To Lie,26,25
+hapt,loso_subject_0,0,11,Lie To Stand,29,28
+hapt,loso_subject_1,1,0,Walking,28,27
+hapt,loso_subject_1,1,1,Walking Upstairs,2,1
+hapt,loso_subject_1,1,2,Walking Downstairs,25,24
+hapt,loso_subject_1,1,3,Sitting,2,1
+hapt,loso_subject_1,1,4,Standing,4,3
+hapt,loso_subject_1,1,5,Laying,26,25
+hapt,loso_subject_1,1,6,Stand To Sit,3,2
+hapt,loso_subject_1,1,7,Sit To Stand,2,1
+hapt,loso_subject_1,1,8,Sit To Lie,2,1
+hapt,loso_subject_1,1,9,Lie To Sit,31,30
+hapt,loso_subject_1,1,10,Stand To Lie,25,24
+hapt,loso_subject_1,1,11,Lie To Stand,25,24
+hapt,loso_subject_2,2,0,Walking,32,31
+hapt,loso_subject_2,2,1,Walking Upstairs,2,1
+hapt,loso_subject_2,2,2,Walking Downstairs,26,25
+hapt,loso_subject_2,2,3,Sitting,1,0
+hapt,loso_subject_2,2,4,Standing,2,1
+hapt,loso_subject_2,2,5,Laying,32,31
+hapt,loso_subject_2,2,6,Stand To Sit,2,1
+hapt,loso_subject_2,2,7,Sit To Stand,2,1
+hapt,loso_subject_2,2,8,Sit To Lie,2,1
+hapt,loso_subject_2,2,9,Lie To Sit,30,29
+hapt,loso_subject_2,2,10,Stand To Lie,26,25
+hapt,loso_subject_2,2,11,Lie To Stand,31,30
+hapt,loso_subject_3,3,0,Walking,29,28
+hapt,loso_subject_3,3,1,Walking Upstairs,2,1
+hapt,loso_subject_3,3,2,Walking Downstairs,25,24
+hapt,loso_subject_3,3,3,Sitting,2,1
+hapt,loso_subject_3,3,4,Standing,4,3
+hapt,loso_subject_3,3,5,Laying,27,26
+hapt,loso_subject_3,3,6,Stand To Sit,2,1
+hapt,loso_subject_3,3,7,Sit To Stand,2,1
+hapt,loso_subject_3,3,8,Sit To Lie,2,1
+hapt,loso_subject_3,3,9,Lie To Sit,31,30
+hapt,loso_subject_3,3,10,Stand To Lie,24,23
+hapt,loso_subject_3,3,11,Lie To Stand,27,26
+hapt,loso_subject_4,4,0,Walking,29,28
+hapt,loso_subject_4,4,1,Walking Upstairs,2,1
+hapt,loso_subject_4,4,2,Walking Downstairs,23,22
+hapt,loso_subject_4,4,3,Sitting,1,0
+hapt,loso_subject_4,4,4,Standing,4,3
+hapt,loso_subject_4,4,5,Laying,26,25
+hapt,loso_subject_4,4,6,Stand To Sit,2,1
+hapt,loso_subject_4,4,7,Sit To Stand,3,2
+hapt,loso_subject_4,4,8,Sit To Lie,2,1
+hapt,loso_subject_4,4,9,Lie To Sit,29,28
+hapt,loso_subject_4,4,10,Stand To Lie,25,24
+hapt,loso_subject_4,4,11,Lie To Stand,25,24
+hapt,loso_subject_5,5,0,Walking,30,29
+hapt,loso_subject_5,5,1,Walking Upstairs,2,1
+hapt,loso_subject_5,5,2,Walking Downstairs,29,28
+hapt,loso_subject_5,5,3,Sitting,1,0
+hapt,loso_subject_5,5,4,Standing,4,3
+hapt,loso_subject_5,5,5,Laying,30,29
+hapt,loso_subject_5,5,6,Stand To Sit,2,1
+hapt,loso_subject_5,5,7,Sit To Stand,2,1
+hapt,loso_subject_5,5,8,Sit To Lie,2,1
+hapt,loso_subject_5,5,9,Lie To Sit,29,28
+hapt,loso_subject_5,5,10,Stand To Lie,24,23
+hapt,loso_subject_5,5,11,Lie To Stand,27,26
+hapt,loso_subject_6,6,0,Walking,28,27
+hapt,loso_subject_6,6,2,Walking Downstairs,24,23
+hapt,loso_subject_6,6,4,Standing,2,1
+hapt,loso_subject_6,6,5,Laying,26,25
+hapt,loso_subject_6,6,6,Stand To Sit,1,0
+hapt,loso_subject_6,6,7,Sit To Stand,3,2
+hapt,loso_subject_6,6,8,Sit To Lie,2,1
+hapt,loso_subject_6,6,9,Lie To Sit,29,28
+hapt,loso_subject_6,6,10,Stand To Lie,25,24
+hapt,loso_subject_6,6,11,Lie To Stand,26,25
+hapt,loso_subject_7,7,0,Walking,30,29
+hapt,loso_subject_7,7,1,Walking Upstairs,1,0
+hapt,loso_subject_7,7,2,Walking Downstairs,23,22
+hapt,loso_subject_7,7,4,Standing,2,1
+hapt,loso_subject_7,7,5,Laying,29,28
+hapt,loso_subject_7,7,6,Stand To Sit,3,2
+hapt,loso_subject_7,7,7,Sit To Stand,2,1
+hapt,loso_subject_7,7,8,Sit To Lie,1,0
+hapt,loso_subject_7,7,9,Lie To Sit,25,24
+hapt,loso_subject_7,7,10,Stand To Lie,20,19
+hapt,loso_subject_7,7,11,Lie To Stand,22,21
+hapt,loso_subject_8,8,0,Walking,25,24
+hapt,loso_subject_8,8,1,Walking Upstairs,1,0
+hapt,loso_subject_8,8,2,Walking Downstairs,27,26
+hapt,loso_subject_8,8,4,Standing,3,2
+hapt,loso_subject_8,8,5,Laying,28,27
+hapt,loso_subject_8,8,6,Stand To Sit,1,0
+hapt,loso_subject_8,8,7,Sit To Stand,2,1
+hapt,loso_subject_8,8,8,Sit To Lie,2,1
+hapt,loso_subject_8,8,9,Lie To Sit,28,27
+hapt,loso_subject_8,8,10,Stand To Lie,23,22
+hapt,loso_subject_8,8,11,Lie To Stand,25,24
+hapt,loso_subject_9,9,0,Walking,24,23
+hapt,loso_subject_9,9,1,Walking Upstairs,1,0
+hapt,loso_subject_9,9,2,Walking Downstairs,28,27
+hapt,loso_subject_9,9,4,Standing,2,1
+hapt,loso_subject_9,9,5,Laying,31,30
+hapt,loso_subject_9,9,6,Stand To Sit,1,0
+hapt,loso_subject_9,9,7,Sit To Stand,2,1
+hapt,loso_subject_9,9,8,Sit To Lie,1,0
+hapt,loso_subject_9,9,9,Lie To Sit,28,27
+hapt,loso_subject_9,9,10,Stand To Lie,20,19
+hapt,loso_subject_9,9,11,Lie To Stand,24,23
+hapt,loso_subject_10,10,0,Walking,26,25
+hapt,loso_subject_10,10,1,Walking Upstairs,2,1
+hapt,loso_subject_10,10,2,Walking Downstairs,28,27
+hapt,loso_subject_10,10,3,Sitting,2,1
+hapt,loso_subject_10,10,4,Standing,2,1
+hapt,loso_subject_10,10,5,Laying,29,28
+hapt,loso_subject_10,10,6,Stand To Sit,2,1
+hapt,loso_subject_10,10,7,Sit To Stand,2,1
+hapt,loso_subject_10,10,8,Sit To Lie,2,1
+hapt,loso_subject_10,10,9,Lie To Sit,31,30
+hapt,loso_subject_10,10,10,Stand To Lie,24,23
+hapt,loso_subject_10,10,11,Lie To Stand,29,28
+hapt,loso_subject_11,11,0,Walking,32,31
+hapt,loso_subject_11,11,1,Walking Upstairs,2,1
+hapt,loso_subject_11,11,2,Walking Downstairs,29,28
+hapt,loso_subject_11,11,3,Sitting,1,0
+hapt,loso_subject_11,11,4,Standing,2,1
+hapt,loso_subject_11,11,5,Laying,32,31
+hapt,loso_subject_11,11,6,Stand To Sit,2,1
+hapt,loso_subject_11,11,7,Sit To Stand,2,1
+hapt,loso_subject_11,11,8,Sit To Lie,2,1
+hapt,loso_subject_11,11,9,Lie To Sit,26,25
+hapt,loso_subject_11,11,10,Stand To Lie,25,24
+hapt,loso_subject_11,11,11,Lie To Stand,28,27
+hapt,loso_subject_12,12,0,Walking,31,30
+hapt,loso_subject_12,12,1,Walking Upstairs,2,1
+hapt,loso_subject_12,12,2,Walking Downstairs,26,25
+hapt,loso_subject_12,12,3,Sitting,2,1
+hapt,loso_subject_12,12,4,Standing,2,1
+hapt,loso_subject_12,12,5,Laying,31,30
+hapt,loso_subject_12,12,6,Stand To Sit,2,1
+hapt,loso_subject_12,12,7,Sit To Stand,2,1
+hapt,loso_subject_12,12,8,Sit To Lie,3,2
+hapt,loso_subject_12,12,9,Lie To Sit,29,28
+hapt,loso_subject_12,12,10,Stand To Lie,26,25
+hapt,loso_subject_12,12,11,Lie To Stand,28,27
+hapt,loso_subject_13,13,0,Walking,32,31
+hapt,loso_subject_13,13,1,Walking Upstairs,3,2
+hapt,loso_subject_13,13,2,Walking Downstairs,27,26
+hapt,loso_subject_13,13,3,Sitting,2,1
+hapt,loso_subject_13,13,4,Standing,4,3
+hapt,loso_subject_13,13,5,Laying,25,24
+hapt,loso_subject_13,13,6,Stand To Sit,2,1
+hapt,loso_subject_13,13,7,Sit To Stand,3,2
+hapt,loso_subject_13,13,8,Sit To Lie,3,2
+hapt,loso_subject_13,13,9,Lie To Sit,30,29
+hapt,loso_subject_13,13,10,Stand To Lie,24,23
+hapt,loso_subject_13,13,11,Lie To Stand,29,28
+hapt,loso_subject_14,14,0,Walking,29,28
+hapt,loso_subject_14,14,1,Walking Upstairs,2,1
+hapt,loso_subject_14,14,2,Walking Downstairs,31,30
+hapt,loso_subject_14,14,3,Sitting,1,0
+hapt,loso_subject_14,14,4,Standing,3,2
+hapt,loso_subject_14,14,5,Laying,39,38
+hapt,loso_subject_14,14,6,Stand To Sit,2,1
+hapt,loso_subject_14,14,7,Sit To Stand,2,1
+hapt,loso_subject_14,14,8,Sit To Lie,2,1
+hapt,loso_subject_14,14,9,Lie To Sit,28,27
+hapt,loso_subject_14,14,10,Stand To Lie,24,23
+hapt,loso_subject_14,14,11,Lie To Stand,24,23
+hapt,loso_subject_15,15,0,Walking,41,40
+hapt,loso_subject_15,15,1,Walking Upstairs,2,1
+hapt,loso_subject_15,15,2,Walking Downstairs,35,34
+hapt,loso_subject_15,15,4,Standing,2,1
+hapt,loso_subject_15,15,5,Laying,36,35
+hapt,loso_subject_15,15,6,Stand To Sit,2,1
+hapt,loso_subject_15,15,7,Sit To Stand,2,1
+hapt,loso_subject_15,15,8,Sit To Lie,2,1
+hapt,loso_subject_15,15,9,Lie To Sit,26,25
+hapt,loso_subject_15,15,10,Stand To Lie,24,23
+hapt,loso_subject_15,15,11,Lie To Stand,27,26
+hapt,loso_subject_16,16,0,Walking,42,41
+hapt,loso_subject_16,16,1,Walking Upstairs,2,1
+hapt,loso_subject_16,16,2,Walking Downstairs,33,32
+hapt,loso_subject_16,16,3,Sitting,2,1
+hapt,loso_subject_16,16,4,Standing,3,2
+hapt,loso_subject_16,16,5,Laying,38,37
+hapt,loso_subject_16,16,6,Stand To Sit,3,2
+hapt,loso_subject_16,16,7,Sit To Stand,3,2
+hapt,loso_subject_16,16,8,Sit To Lie,2,1
+hapt,loso_subject_16,16,9,Lie To Sit,32,31
+hapt,loso_subject_16,16,10,Stand To Lie,25,24
+hapt,loso_subject_16,16,11,Lie To Stand,24,23
+hapt,loso_subject_17,17,0,Walking,41,40
+hapt,loso_subject_17,17,1,Walking Upstairs,3,2
+hapt,loso_subject_17,17,2,Walking Downstairs,32,31
+hapt,loso_subject_17,17,3,Sitting,2,1
+hapt,loso_subject_17,17,4,Standing,3,2
+hapt,loso_subject_17,17,5,Laying,37,36
+hapt,loso_subject_17,17,6,Stand To Sit,2,1
+hapt,loso_subject_17,17,7,Sit To Stand,2,1
+hapt,loso_subject_17,17,8,Sit To Lie,2,1
+hapt,loso_subject_17,17,9,Lie To Sit,29,28
+hapt,loso_subject_17,17,10,Stand To Lie,30,29
+hapt,loso_subject_17,17,11,Lie To Stand,30,29
+hapt,loso_subject_18,18,0,Walking,38,37
+hapt,loso_subject_18,18,1,Walking Upstairs,2,1
+hapt,loso_subject_18,18,2,Walking Downstairs,37,36
+hapt,loso_subject_18,18,3,Sitting,1,0
+hapt,loso_subject_18,18,4,Standing,3,2
+hapt,loso_subject_18,18,5,Laying,44,43
+hapt,loso_subject_18,18,6,Stand To Sit,2,1
+hapt,loso_subject_18,18,7,Sit To Stand,2,1
+hapt,loso_subject_18,18,8,Sit To Lie,2,1
+hapt,loso_subject_18,18,9,Lie To Sit,27,26
+hapt,loso_subject_18,18,10,Stand To Lie,21,20
+hapt,loso_subject_18,18,11,Lie To Stand,22,21
+hapt,loso_subject_19,19,0,Walking,40,39
+hapt,loso_subject_19,19,1,Walking Upstairs,2,1
+hapt,loso_subject_19,19,2,Walking Downstairs,34,33
+hapt,loso_subject_19,19,3,Sitting,1,0
+hapt,loso_subject_19,19,4,Standing,5,4
+hapt,loso_subject_19,19,5,Laying,34,33
+hapt,loso_subject_19,19,6,Stand To Sit,2,1
+hapt,loso_subject_19,19,7,Sit To Stand,4,3
+hapt,loso_subject_19,19,8,Sit To Lie,2,1
+hapt,loso_subject_19,19,9,Lie To Sit,26,25
+hapt,loso_subject_19,19,10,Stand To Lie,24,23
+hapt,loso_subject_19,19,11,Lie To Stand,26,25
+hapt,loso_subject_20,20,0,Walking,48,47
+hapt,loso_subject_20,20,1,Walking Upstairs,2,1
+hapt,loso_subject_20,20,2,Walking Downstairs,43,42
+hapt,loso_subject_20,20,3,Sitting,1,0
+hapt,loso_subject_20,20,4,Standing,4,3
+hapt,loso_subject_20,20,5,Laying,46,45
+hapt,loso_subject_20,20,6,Stand To Sit,2,1
+hapt,loso_subject_20,20,7,Sit To Stand,2,1
+hapt,loso_subject_20,20,8,Sit To Lie,2,1
+hapt,loso_subject_20,20,9,Lie To Sit,27,26
+hapt,loso_subject_20,20,10,Stand To Lie,24,23
+hapt,loso_subject_20,20,11,Lie To Stand,25,24
+hapt,loso_subject_21,21,0,Walking,33,32
+hapt,loso_subject_21,21,1,Walking Upstairs,1,0
+hapt,loso_subject_21,21,2,Walking Downstairs,32,31
+hapt,loso_subject_21,21,4,Standing,2,1
+hapt,loso_subject_21,21,5,Laying,37,36
+hapt,loso_subject_21,21,6,Stand To Sit,3,2
+hapt,loso_subject_21,21,7,Sit To Stand,2,1
+hapt,loso_subject_21,21,8,Sit To Lie,2,1
+hapt,loso_subject_21,21,9,Lie To Sit,24,23
+hapt,loso_subject_21,21,10,Stand To Lie,18,17
+hapt,loso_subject_21,21,11,Lie To Stand,24,23
+hapt,loso_subject_22,22,0,Walking,36,35
+hapt,loso_subject_22,22,1,Walking Upstairs,2,1
+hapt,loso_subject_22,22,2,Walking Downstairs,35,34
+hapt,loso_subject_22,22,3,Sitting,1,0
+hapt,loso_subject_22,22,4,Standing,3,2
+hapt,loso_subject_22,22,5,Laying,37,36
+hapt,loso_subject_22,22,6,Stand To Sit,2,1
+hapt,loso_subject_22,22,7,Sit To Stand,2,1
+hapt,loso_subject_22,22,8,Sit To Lie,2,1
+hapt,loso_subject_22,22,9,Lie To Sit,31,30
+hapt,loso_subject_22,22,10,Stand To Lie,30,29
+hapt,loso_subject_22,22,11,Lie To Stand,27,26
+hapt,loso_subject_23,23,0,Walking,37,36
+hapt,loso_subject_23,23,1,Walking Upstairs,2,1
+hapt,loso_subject_23,23,2,Walking Downstairs,36,35
+hapt,loso_subject_23,23,4,Standing,4,3
+hapt,loso_subject_23,23,5,Laying,37,36
+hapt,loso_subject_23,23,6,Stand To Sit,2,1
+hapt,loso_subject_23,23,7,Sit To Stand,2,1
+hapt,loso_subject_23,23,8,Sit To Lie,3,2
+hapt,loso_subject_23,23,9,Lie To Sit,29,28
+hapt,loso_subject_23,23,10,Stand To Lie,29,28
+hapt,loso_subject_23,23,11,Lie To Stand,30,29
+hapt,loso_subject_24,24,0,Walking,38,37
+hapt,loso_subject_24,24,1,Walking Upstairs,2,1
+hapt,loso_subject_24,24,2,Walking Downstairs,34,33
+hapt,loso_subject_24,24,3,Sitting,2,1
+hapt,loso_subject_24,24,4,Standing,2,1
+hapt,loso_subject_24,24,5,Laying,39,38
+hapt,loso_subject_24,24,6,Stand To Sit,3,2
+hapt,loso_subject_24,24,7,Sit To Stand,2,1
+hapt,loso_subject_24,24,8,Sit To Lie,3,2
+hapt,loso_subject_24,24,9,Lie To Sit,39,38
+hapt,loso_subject_24,24,10,Stand To Lie,31,30
+hapt,loso_subject_24,24,11,Lie To Stand,33,32
+hapt,loso_subject_25,25,0,Walking,40,39
+hapt,loso_subject_25,25,1,Walking Upstairs,2,1
+hapt,loso_subject_25,25,2,Walking Downstairs,40,39
+hapt,loso_subject_25,25,3,Sitting,1,0
+hapt,loso_subject_25,25,4,Standing,2,1
+hapt,loso_subject_25,25,5,Laying,40,39
+hapt,loso_subject_25,25,6,Stand To Sit,2,1
+hapt,loso_subject_25,25,7,Sit To Stand,2,1
+hapt,loso_subject_25,25,8,Sit To Lie,2,1
+hapt,loso_subject_25,25,9,Lie To Sit,31,30
+hapt,loso_subject_25,25,10,Stand To Lie,26,25
+hapt,loso_subject_25,25,11,Lie To Stand,30,29
+hapt,loso_subject_26,26,0,Walking,42,41
+hapt,loso_subject_26,26,1,Walking Upstairs,2,1
+hapt,loso_subject_26,26,2,Walking Downstairs,36,35
+hapt,loso_subject_26,26,4,Standing,2,1
+hapt,loso_subject_26,26,5,Laying,39,38
+hapt,loso_subject_26,26,6,Stand To Sit,2,1
+hapt,loso_subject_26,26,7,Sit To Stand,2,1
+hapt,loso_subject_26,26,8,Sit To Lie,1,0
+hapt,loso_subject_26,26,9,Lie To Sit,29,28
+hapt,loso_subject_26,26,10,Stand To Lie,23,22
+hapt,loso_subject_26,26,11,Lie To Stand,27,26
+hapt,loso_subject_27,27,0,Walking,41,40
+hapt,loso_subject_27,27,1,Walking Upstairs,3,2
+hapt,loso_subject_27,27,2,Walking Downstairs,39,38
+hapt,loso_subject_27,27,3,Sitting,1,0
+hapt,loso_subject_27,27,5,Laying,40,39
+hapt,loso_subject_27,27,7,Sit To Stand,2,1
+hapt,loso_subject_27,27,8,Sit To Lie,2,1
+hapt,loso_subject_27,27,9,Lie To Sit,29,28
+hapt,loso_subject_27,27,10,Stand To Lie,24,23
+hapt,loso_subject_27,27,11,Lie To Stand,27,26
+hapt,loso_subject_28,28,0,Walking,35,34
+hapt,loso_subject_28,28,1,Walking Upstairs,2,1
+hapt,loso_subject_28,28,2,Walking Downstairs,31,30
+hapt,loso_subject_28,28,3,Sitting,2,1
+hapt,loso_subject_28,28,4,Standing,2,1
+hapt,loso_subject_28,28,5,Laying,35,34
+hapt,loso_subject_28,28,6,Stand To Sit,2,1
+hapt,loso_subject_28,28,7,Sit To Stand,3,2
+hapt,loso_subject_28,28,8,Sit To Lie,2,1
+hapt,loso_subject_28,28,9,Lie To Sit,28,27
+hapt,loso_subject_28,28,10,Stand To Lie,24,23
+hapt,loso_subject_28,28,11,Lie To Stand,25,24
+hapt,loso_subject_29,29,0,Walking,33,32
+hapt,loso_subject_29,29,1,Walking Upstairs,1,0
+hapt,loso_subject_29,29,2,Walking Downstairs,33,32
+hapt,loso_subject_29,29,3,Sitting,1,0
+hapt,loso_subject_29,29,4,Standing,2,1
+hapt,loso_subject_29,29,5,Laying,38,37
+hapt,loso_subject_29,29,6,Stand To Sit,2,1
+hapt,loso_subject_29,29,7,Sit To Stand,3,2
+hapt,loso_subject_29,29,8,Sit To Lie,2,1
+hapt,loso_subject_29,29,9,Lie To Sit,33,32
+hapt,loso_subject_29,29,10,Stand To Lie,33,32
+hapt,loso_subject_29,29,11,Lie To Stand,33,32

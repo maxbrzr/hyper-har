@@ -16,6 +16,8 @@ kept versionable.
 - `results/paper_overview_results.csv`: frozen overview means and LOSO standard
   deviations.
 - `tables/computational_cost/`: backbone and adaptation operation counts.
+- `tables/shot_eligibility/`: per-subject class counts and valid/invalid K-shot
+  configurations.
 
 Every evaluation directory contains a `summary.json` plus aggregate and
 per-episode CSV files. All methods for a dataset share the fold manifest under

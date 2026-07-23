@@ -1,0 +1,47 @@
+{
+  "config": {
+    "dataset_ids": [
+      "hhar",
+      "wear",
+      "harth",
+      "hapt"
+    ],
+    "datasets_dir": "datasets",
+    "artifacts_dir": "artifacts",
+    "k_values": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "min_query_per_class": 1,
+    "selected_activities": null,
+    "window_overlap": 0.0,
+    "val_subjects": 3,
+    "test_subjects": 1,
+    "seed": 0,
+    "split_strategy": "whar_loso",
+    "val_percentage": 0.2,
+    "max_folds": null
+  },
+  "num_subjects": 85,
+  "num_subject_k_checks": 1445,
+  "num_invalid_subject_k_checks": 718,
+  "all_requested_shots_valid": false,
+  "subject_report": "artifacts/tables/shot_eligibility/subjects.csv",
+  "subject_by_k_report": "artifacts/tables/shot_eligibility/subject_by_k.csv",
+  "class_count_report": "artifacts/tables/shot_eligibility/class_counts.csv"
+}
